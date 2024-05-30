@@ -4,6 +4,10 @@ export type DefineInstanceFn<parameters> = (parameters: parameters) => {
   stop(): Promise<void>
 }
 
+export type InstanceOptions = {
+  timeout?: number
+}
+
 export type Instance = {
   status: 'idle' | 'stopped' | 'starting' | 'started' | 'stopping'
   start(): Promise<void>
@@ -15,8 +19,8 @@ export function defineInstance<parameters = undefined>(
 ) {
   return (
     ...[parametersOrOptions, options_]: parameters extends undefined
-      ? [options?: { timeout?: number | undefined }]
-      : [parameters: parameters, options?: { timeout?: number | undefined }]
+      ? [options?: InstanceOptions]
+      : [parameters: parameters, options?: InstanceOptions]
   ): Instance => {
     const parameters = parametersOrOptions as parameters
     const options = options_ || parametersOrOptions || {}
