@@ -72,7 +72,7 @@ export function defineInstance<parameters = undefined>(
           const timer = setTimeout(() => {
             clearTimeout(timer)
             stopResolver.reject(
-              new Error(`Instance "${name}" failed to stop in time`),
+              new Error(`Instance "${name}" failed to stop in time.`),
             )
           }, timeout)
         }
