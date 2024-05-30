@@ -4,7 +4,7 @@
 import { defineProxyPool } from 'http-proxy-pool'
 import { alto, anvil, ponder } from 'http-proxy-pool/instances/ethereum'
 
-const executionProxy = defineProxyPool({
+const executionPool = defineProxyPool({
   instance: anvil({ 
     // ...
     forkRpcUrl: 'https://cloudflare-eth.com'
@@ -12,14 +12,14 @@ const executionProxy = defineProxyPool({
   port: 8545,
 })
 
-await executionProxy.start() 
+await executionPool.start() 
 // Instances started at:
 // "http://localhost:8545/1"
 // "http://localhost:8545/2"
 // "http://localhost:8545/3"
 // "http://localhost:8545/n"
 
-const bundlerProxy = defineProxyPool({
+const bundlerPool = defineProxyPool({
   instance: ({ id }) => alto({
     // ...
     executionRpcUrl: `${executionPool.hostname}/${id}`
@@ -27,14 +27,14 @@ const bundlerProxy = defineProxyPool({
   port: 4337,
 })
 
-await bundlerProxy.start() 
+await bundlerPool.start() 
 // Instances started at:
 // "http://localhost:4337/1" (executionRpcUrl: "http://localhost:8545/1")
 // "http://localhost:4337/2" (executionRpcUrl: "http://localhost:8545/2")
 // "http://localhost:4337/3" (executionRpcUrl: "http://localhost:8545/3")
 // "http://localhost:4337/n" (executionRpcUrl: "http://localhost:8545/n")
 
-const indexerProxy = defineProxyPool({
+const indexerPool = defineProxyPool({
   instance: ({ id }) => ponder({
     // ...
     executionRpcUrl: `${executionPool.hostname}/${id}`
@@ -42,7 +42,7 @@ const indexerProxy = defineProxyPool({
   port: 1337,
 })
 
-await indexerProxy.start() 
+await indexerPool.start() 
 // Instances started at:
 // "http://localhost:1337/1" (executionRpcUrl: "http://localhost:8545/1")
 // "http://localhost:1337/2" (executionRpcUrl: "http://localhost:8545/2")
