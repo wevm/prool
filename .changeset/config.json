@@ -1,0 +1,14 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.0.0/schema.json",
+  "access": "public",
+  "baseBranch": "main",
+  "changelog": [
+    "@changesets/changelog-github",
+    { "repo": "wevm/http-proxy-pool" }
+  ],
+  "commit": false,
+  "fixed": [],
+  "ignore": ["site"],
+  "linked": [],
+  "updateInternalDependencies": "patch"
+}

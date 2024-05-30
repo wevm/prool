@@ -1,0 +1,28 @@
+{
+  "name": "http-proxy-pool",
+  "description": "",
+  "version": "0.0.0",
+  "type": "module",
+  "module": "_lib/index.mjs",
+  "types": "_lib/index.d.ts",
+  "typings": "_lib/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./_lib/index.d.ts",
+      "default": "./_lib/index.js"
+    }
+  },
+  "dependencies": {},
+  "license": "MIT",
+  "homepage": "https://wevm.dev",
+  "repository": "wevm/http-proxy-pool",
+  "authors": ["awkweb", "jxom"],
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/wevm"
+    }
+  ],
+  "keywords": []
+}

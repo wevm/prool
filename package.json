@@ -1,0 +1,25 @@
+{
+  "name": "http-proxy-pool",
+  "scripts": {
+    "build": "pnpm clean && tsc --project ./tsconfig.build.json",
+    "changeset": "changeset",
+    "changeset:release": "pnpm build && changeset publish",
+    "changeset:version": "changeset version && pnpm install --lockfile-only && bun .scripts/postversion.ts",
+    "clean": "rimraf src/_lib src/tsconfig.build.tsbuildinfo",
+    "lint": "biome check . --apply",
+    "postinstall": "pnpm build",
+    "test": "vitest",
+    "test:cov": "vitest --coverage",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.7.3",
+    "@changesets/changelog-github": "^0.5.0",
+    "@changesets/cli": "^2.27.3",
+    "@vitest/coverage-v8": "^1.6.0",
+    "rimraf": "^5.0.7",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  },
+  "packageManager": "pnpm@9.1.0"
+}
