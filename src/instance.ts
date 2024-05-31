@@ -1,13 +1,21 @@
 import { EventEmitter } from 'eventemitter3'
 
 type EventTypes = {
+  exit: [code: number | null, signal: NodeJS.Signals | null]
+  listening: []
   message: [message: string]
   stderr: [message: string]
   stdout: [message: string]
 }
 
-type InstanceStartOptions_internal = { emitter: EventEmitter<EventTypes> }
-type InstanceStopOptions_internal = { emitter: EventEmitter<EventTypes> }
+type InstanceStartOptions_internal = {
+  emitter: EventEmitter<EventTypes>
+  status: Instance['status']
+}
+type InstanceStopOptions_internal = {
+  emitter: EventEmitter<EventTypes>
+  status: Instance['status']
+}
 
 export type InstanceStartOptions = {
   /**
@@ -16,17 +24,20 @@ export type InstanceStartOptions = {
   port?: number | undefined
 }
 
-export type DefineInstanceFn<parameters> = (parameters: parameters) => Pick<
-  Instance,
-  'host' | 'name' | 'port'
-> & {
+export type DefineInstanceFn<
+  parameters,
+  _internal extends object | undefined = object | undefined,
+> = (parameters: parameters) => Pick<Instance, 'host' | 'name' | 'port'> & {
+  _internal?: _internal | undefined
   start(
     options: InstanceStartOptions & InstanceStartOptions_internal,
   ): Promise<void>
   stop(options: InstanceStopOptions_internal): Promise<void>
 }
 
-export type Instance = Pick<
+export type Instance<
+  _internal extends object | undefined = object | undefined,
+> = Pick<
   EventEmitter<EventTypes>,
   | 'addListener'
   | 'off'
@@ -35,6 +46,7 @@ export type Instance = Pick<
   | 'removeAllListeners'
   | 'removeListener'
 > & {
+  _internal: _internal
   /**
    * Name of the instance.
    *
@@ -109,18 +121,19 @@ export type InstanceOptions = {
  * })
  * ```
  */
-export function defineInstance<parameters = undefined>(
-  fn: DefineInstanceFn<parameters>,
-) {
+export function defineInstance<
+  _internal extends object | undefined,
+  parameters = undefined,
+>(fn: DefineInstanceFn<parameters, _internal>) {
   return (
     ...[parametersOrOptions, options_]: parameters extends undefined
       ? [options?: InstanceOptions]
       : [parameters: parameters, options?: InstanceOptions]
-  ): Instance => {
+  ): Instance<_internal> => {
     const parameters = parametersOrOptions as parameters
     const options = options_ || parametersOrOptions || {}
 
-    const { host, name, port, start, stop } = fn(parameters)
+    const { _internal, host, name, port, start, stop } = fn(parameters)
     const { messageBuffer = 20, timeout = 10_000 } = options
 
     let startResolver = Promise.withResolvers<() => void>()
@@ -135,8 +148,15 @@ export function defineInstance<parameters = undefined>(
       messages.push(message)
       if (messages.length > messageBuffer) messages.shift()
     }
+    function onListening() {
+      status = 'started'
+    }
+    function onExit() {
+      status = 'stopped'
+    }
 
     return {
+      _internal: _internal as _internal,
       host,
       messages: {
         clear() {
@@ -168,9 +188,15 @@ export function defineInstance<parameters = undefined>(
         }
 
         emitter.on('message', onMessage)
+        emitter.on('listening', onListening)
+        emitter.on('exit', onExit)
 
         status = 'starting'
-        start({ emitter, port })
+        start({
+          emitter,
+          port,
+          status: this.status,
+        })
           .then(() => {
             status = 'started'
 
@@ -203,17 +229,24 @@ export function defineInstance<parameters = undefined>(
         }
 
         status = 'stopping'
-        stop({ emitter })
+        stop({
+          emitter,
+          status: this.status,
+        })
           .then((...args) => {
             status = 'stopped'
             this.messages.clear()
+
             emitter.off('message', onMessage)
+            emitter.off('listening', onListening)
+            emitter.off('exit', onExit)
+
             startResolver = Promise.withResolvers<() => void>()
             stopResolver.resolve(...args)
           })
-          .catch(() => {
+          .catch((error) => {
             status = 'started'
-            stopResolver.reject()
+            stopResolver.reject(error)
           })
 
         return stopResolver.promise

@@ -99,3 +99,34 @@ test('behavior: starts anvil with custom options', async () => {
 
   await instance.start()
 })
+
+test('behavior: exit', async () => {
+  const instance = defineInstance({ timestamp })
+
+  let exitCode: number | null | undefined = undefined
+  instance.on('exit', (code) => {
+    exitCode = code
+  })
+
+  await instance.start()
+  expect(instance.status).toEqual('started')
+
+  instance._internal.process.kill()
+
+  await new Promise<void>((res) => setTimeout(res, 100))
+  expect(instance.status).toEqual('stopped')
+  expect(exitCode).toEqual(0)
+})
+
+test('behavior: exit when status is starting', async () => {
+  const instance = defineInstance({ timestamp })
+
+  const promise = instance.start()
+  expect(instance.status).toEqual('starting')
+
+  instance._internal.process.kill()
+
+  await expect(promise).rejects.toThrowErrorMatchingInlineSnapshot(
+    '[Error: Anvil exited.]',
+  )
+})

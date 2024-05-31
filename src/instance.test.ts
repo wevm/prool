@@ -90,6 +90,28 @@ test('behavior: start', async () => {
   )
 })
 
+test('behavior: start (error)', async () => {
+  const foo = defineInstance(() => {
+    return {
+      name: 'foo',
+      host: 'localhost',
+      port: 3000,
+      async start() {
+        throw new Error('oh no')
+      },
+      async stop() {},
+    }
+  })
+
+  const instance = foo()
+
+  expect(instance.status).toEqual('idle')
+  await expect(instance.start()).rejects.toThrowErrorMatchingInlineSnapshot(
+    '[Error: oh no]',
+  )
+  expect(instance.status).toEqual('idle')
+})
+
 test('behavior: stop', async () => {
   let count = 0
   const foo = defineInstance(() => {
@@ -127,6 +149,30 @@ test('behavior: stop', async () => {
   )
 })
 
+test('behavior: stop (error)', async () => {
+  const foo = defineInstance(() => {
+    return {
+      name: 'foo',
+      host: 'localhost',
+      port: 3000,
+      async start() {},
+      async stop() {
+        throw new Error('oh no')
+      },
+    }
+  })
+
+  const instance = foo()
+
+  await instance.start()
+  expect(instance.status).toEqual('started')
+
+  await expect(instance.stop()).rejects.toThrowErrorMatchingInlineSnapshot(
+    '[Error: oh no]',
+  )
+  expect(instance.status).toEqual('started')
+})
+
 test('behavior: events', async () => {
   const foo = defineInstance(() => {
     let count = 0
@@ -136,27 +182,34 @@ test('behavior: events', async () => {
       port: 3000,
       async start({ emitter }) {
         emitter.emit('message', count.toString())
+        emitter.emit('listening')
         if (count > 0) emitter.emit('stderr', 'stderr')
         else emitter.emit('stdout', 'stdout')
         count++
       },
       async stop({ emitter }) {
+        emitter.emit('exit', 0, 'SIGTERM')
         emitter.emit('message', 'goodbye')
       },
     }
   })
 
+  const listening = Promise.withResolvers<void>()
   const message_1 = Promise.withResolvers<string>()
   const stdout = Promise.withResolvers<string>()
   const stderr = Promise.withResolvers<string>()
+  const exit = Promise.withResolvers<unknown>()
 
   const instance = foo()
+  instance.once('listening', listening.resolve)
   instance.once('message', message_1.resolve)
   instance.once('stdout', stdout.resolve)
   instance.once('stderr', stderr.resolve)
+  instance.once('exit', exit.resolve)
 
   await instance.start()
 
+  await listening.promise
   expect(await message_1.promise).toEqual('0')
   expect(await stdout.promise).toEqual('stdout')
 
@@ -166,6 +219,7 @@ test('behavior: events', async () => {
   await instance.stop()
 
   expect(await message_2.promise).toEqual('goodbye')
+  await exit.promise
 
   const message_3 = Promise.withResolvers()
   instance.once('message', message_3.resolve)

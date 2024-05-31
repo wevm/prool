@@ -268,10 +268,15 @@ export const anvil = defineInstance((parameters: AnvilParameters) => {
   }
 
   return {
+    _internal: {
+      get process() {
+        return process
+      },
+    },
     name: 'anvil',
     host: args.host ?? '127.0.0.1',
     port: args.port ?? 8545,
-    async start({ emitter, port = args.port }) {
+    async start({ emitter, port = args.port, status }) {
       const { promise, resolve, reject } = Promise.withResolvers<void>()
 
       process = execa(binary, toArgs({ ...args, port }), {
@@ -283,7 +288,10 @@ export const anvil = defineInstance((parameters: AnvilParameters) => {
         const message = stripColors(data.toString())
         emitter.emit('message', message)
         emitter.emit('stdout', message)
-        if (message.includes('Listening on')) resolve()
+        if (message.includes('Listening on')) {
+          emitter.emit('listening')
+          resolve()
+        }
       })
       process.stderr.on('data', async (data) => {
         const message = stripColors(data.toString())
@@ -292,10 +300,20 @@ export const anvil = defineInstance((parameters: AnvilParameters) => {
         await stop()
         reject(new Error(`Failed to start anvil: ${data.toString()}`))
       })
+      process.on('close', () => process.removeAllListeners())
+      process.on('exit', (code, signal) => {
+        emitter.emit('exit', code, signal)
+
+        if (!code) {
+          process.removeAllListeners()
+          if (status === 'starting') reject(new Error('Anvil exited.'))
+        }
+      })
 
       return promise
     },
     async stop() {
+      process.removeAllListeners()
       await stop()
     },
   }
