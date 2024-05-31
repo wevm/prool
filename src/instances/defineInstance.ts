@@ -1,17 +1,87 @@
-export type DefineInstanceFn<parameters> = (parameters: parameters) => {
+import { EventEmitter } from 'eventemitter3'
+
+type EventTypes = {
+  message: [message: string]
+  stderr: [message: string]
+  stdout: [message: string]
+}
+
+type InstanceStartOptions_internal = { emitter: EventEmitter<EventTypes> }
+type InstanceStopOptions_internal = { emitter: EventEmitter<EventTypes> }
+
+export type InstanceStartOptions = {
+  port?: number | undefined
+}
+
+export type DefineInstanceFn<parameters> = (parameters: parameters) => Pick<
+  Instance,
+  'host' | 'name' | 'port'
+> & {
+  start(
+    options: InstanceStartOptions & InstanceStartOptions_internal,
+  ): Promise<void>
+  stop(options: InstanceStopOptions_internal): Promise<void>
+}
+
+export type Instance = Pick<
+  EventEmitter<EventTypes>,
+  | 'addListener'
+  | 'off'
+  | 'on'
+  | 'once'
+  | 'removeAllListeners'
+  | 'removeListener'
+> & {
+  /**
+   * Name of the instance.
+   *
+   * @example "anvil"
+   */
   name: string
-  start(): Promise<void>
+  /**
+   * Host of the instance.
+   *
+   * @example "127.0.0.1"
+   */
+  host: string
+  /**
+   * Set of messages emitted from the `"message"` event stored in-memory,
+   * with length {@link InstanceOptions`messageBuffer`}.
+   * Useful for debugging.
+   *
+   * @example ["Listening on http://127.0.0.1", "Started successfully."]
+   */
+  messages: { clear(): void; get(): string[] }
+  /**
+   * Port of the instance.
+   *
+   * @example 8545
+   */
+  port: number
+  /**
+   * Status of the instance.
+   *
+   * @default "idle"
+   */
+  status: 'idle' | 'stopped' | 'starting' | 'started' | 'stopping'
+  /**
+   * Starts the instance.
+   *
+   * @param options - Options for starting the instance.
+   * @returns A function to stop the instance.
+   */
+  start(options?: InstanceStartOptions): Promise<() => void>
+  /**
+   * Stops the instance.
+   */
   stop(): Promise<void>
 }
 
 export type InstanceOptions = {
+  /** Number of messages to store in-memory. */
+  messageBuffer?: number
+  /** Timeout (in milliseconds) for starting and stopping the instance. */
   timeout?: number
-}
-
-export type Instance = {
-  status: 'idle' | 'stopped' | 'starting' | 'started' | 'stopping'
-  start(): Promise<void>
-  stop(): Promise<void>
 }
 
 export function defineInstance<parameters = undefined>(
@@ -25,19 +95,33 @@ export function defineInstance<parameters = undefined>(
     const parameters = parametersOrOptions as parameters
     const options = options_ || parametersOrOptions || {}
 
-    const { name, start, stop } = fn(parameters)
-    const { timeout } = options
+    const { host, name, port, start, stop } = fn(parameters)
+    const { messageBuffer = 20, timeout } = options
 
-    const startResolver = Promise.withResolvers<void>()
+    const startResolver = Promise.withResolvers<() => void>()
     const stopResolver = Promise.withResolvers<void>()
 
+    const emitter = new EventEmitter<EventTypes>()
+
+    let messages: string[] = []
     let status: Instance['status'] = 'idle'
 
     return {
+      host,
+      messages: {
+        clear() {
+          messages = []
+        },
+        get() {
+          return messages
+        },
+      },
+      name,
+      port,
       get status() {
         return status
       },
-      async start() {
+      async start({ port } = {}) {
         if (status === 'starting') return startResolver.promise
         if (status !== 'idle' && status !== 'stopped')
           throw new Error(
@@ -53,18 +137,23 @@ export function defineInstance<parameters = undefined>(
           }, timeout)
         }
 
+        emitter.on('message', (message) => {
+          messages.push(message)
+          if (messages.length > messageBuffer) messages.shift()
+        })
+
         status = 'starting'
-        start()
-          .then((...args) => {
+        start({ emitter, port })
+          .then(() => {
             status = 'started'
-            startResolver.resolve(...args)
+            startResolver.resolve(this.stop)
           })
           .catch(startResolver.reject)
 
         return startResolver.promise
       },
       async stop() {
-        if (status === 'stopping') return startResolver.promise
+        if (status === 'stopping') return stopResolver.promise
         if (status !== 'started')
           throw new Error(`Instance "${name}" has not started.`)
 
@@ -78,15 +167,24 @@ export function defineInstance<parameters = undefined>(
         }
 
         status = 'stopping'
-        stop()
+        stop({ emitter })
           .then((...args) => {
             status = 'stopped'
+            this.messages.clear()
+            emitter.removeAllListeners()
             stopResolver.resolve(...args)
           })
           .catch(stopResolver.reject)
 
         return stopResolver.promise
       },
+
+      addListener: emitter.addListener,
+      off: emitter.off,
+      on: emitter.on,
+      once: emitter.once,
+      removeListener: emitter.removeListener,
+      removeAllListeners: emitter.removeAllListeners,
     }
   }
 }

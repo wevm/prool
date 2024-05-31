@@ -13,11 +13,17 @@
       "default": "./_lib/index.js"
     }
   },
-  "dependencies": {},
+  "dependencies": {
+    "eventemitter3": "^5.0.1",
+    "execa": "^9.1.0"
+  },
   "license": "MIT",
   "homepage": "https://wevm.dev",
   "repository": "wevm/http-proxy-pool",
-  "authors": ["awkweb", "jxom"],
+  "authors": [
+    "awkweb",
+    "jxom"
+  ],
   "funding": [
     {
       "type": "github",

@@ -6,6 +6,8 @@ test('default', async () => {
   const foo = defineInstance(() => {
     return {
       name: 'foo',
+      host: 'localhost',
+      port: 3000,
       async start() {
         started = true
       },
@@ -29,6 +31,8 @@ test('behavior: parameters', async () => {
   const foo = defineInstance((parameters: { bar: string }) => {
     return {
       name: 'foo',
+      host: 'localhost',
+      port: 3000,
       async start() {
         started = [true, parameters]
       },
@@ -52,6 +56,8 @@ test('behavior: start', async () => {
   const foo = defineInstance(() => {
     return {
       name: 'foo',
+      host: 'localhost',
+      port: 3000,
       async start() {
         count++
       },
@@ -89,6 +95,8 @@ test('behavior: stop', async () => {
   const foo = defineInstance(() => {
     return {
       name: 'foo',
+      host: 'localhost',
+      port: 3000,
       async start() {},
       async stop() {
         count++
@@ -123,6 +131,8 @@ test('options: timeout', async () => {
   const foo = defineInstance(() => {
     return {
       name: 'foo',
+      host: 'localhost',
+      port: 3000,
       async start() {
         await new Promise((resolve) => setTimeout(resolve, 200))
       },
@@ -138,6 +148,8 @@ test('options: timeout', async () => {
   const bar = defineInstance(() => {
     return {
       name: 'bar',
+      host: 'localhost',
+      port: 3000,
       async start() {},
       async stop() {
         await new Promise((resolve) => setTimeout(resolve, 200))
@@ -150,4 +162,22 @@ test('options: timeout', async () => {
   await expect(() => instance_2.stop()).rejects.toThrow(
     'Instance "bar" failed to stop in time',
   )
+})
+
+test('behavior: events', async () => {
+  const foo = defineInstance(() => {
+    return {
+      name: 'foo',
+      host: 'localhost',
+      port: 3000,
+      async start({ emitter }) {
+        emitter.emit('message', 'hello')
+      },
+      async stop() {
+        emitter.emit('message', 'goodbye')
+      },
+    }
+  })
+
+  const instance = foo()
 })
