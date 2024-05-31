@@ -73,7 +73,7 @@ export type Instance = Pick<
    * @param options - Options for starting the instance.
    * @returns A function to stop the instance.
    */
-  start(options?: InstanceStartOptions): Promise<() => void>
+  start(): Promise<() => void>
   /**
    * Stops the instance.
    */
@@ -87,6 +87,28 @@ export type InstanceOptions = {
   timeout?: number
 }
 
+/**
+ * Creates an instance definition.
+ *
+ * @param fn - Function to define the instance.
+ *
+ * @example
+ * ```ts
+ * const foo = defineInstance((parameters: FooParameters) => {
+ *  return {
+ *    name: 'foo',
+ *    host: 'localhost',
+ *    port: 3000,
+ *    async start() {
+ *      // ...
+ *    },
+ *    async stop() {
+ *      // ...
+ *    },
+ *  }
+ * })
+ * ```
+ */
 export function defineInstance<parameters = undefined>(
   fn: DefineInstanceFn<parameters>,
 ) {
@@ -129,7 +151,7 @@ export function defineInstance<parameters = undefined>(
       get status() {
         return status
       },
-      async start({ port } = {}) {
+      async start() {
         if (status === 'starting') return startResolver.promise
         if (status !== 'idle' && status !== 'stopped')
           throw new Error(

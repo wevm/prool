@@ -245,6 +245,17 @@ export type AnvilParameters = {
   transactionBlockKeeper?: number | undefined
 }
 
+/**
+ * Defines an Anvil instance.
+ *
+ * @example
+ * ```ts
+ * const instance = anvil({ forkRpcUrl: 'https://cloudflare-eth.com', port: 8546 })
+ * await instance.start()
+ * // ...
+ * await instance.stop()
+ * ```
+ */
 export const anvil = defineInstance((parameters: AnvilParameters) => {
   const { binary = 'anvil', ...args } = parameters
 
