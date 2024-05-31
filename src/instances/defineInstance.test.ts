@@ -86,7 +86,7 @@ test('behavior: start', async () => {
   expect(instance.status).toEqual('stopping')
 
   expect(() => instance.start()).rejects.toThrowErrorMatchingInlineSnapshot(
-    `[Error: Instance "foo" is not in an idle or stopped state.]`,
+    `[Error: Instance "foo" is not in an idle or stopped state. Status: stopping]`,
   )
 })
 
@@ -123,8 +123,100 @@ test('behavior: stop', async () => {
   expect(instance.status).toEqual('starting')
 
   expect(() => instance.stop()).rejects.toThrowErrorMatchingInlineSnapshot(
-    `[Error: Instance "foo" has not started.]`,
+    `[Error: Instance "foo" has not started. Status: starting]`,
   )
+})
+
+test('behavior: events', async () => {
+  const foo = defineInstance(() => {
+    let count = 0
+    return {
+      name: 'foo',
+      host: 'localhost',
+      port: 3000,
+      async start({ emitter }) {
+        emitter.emit('message', count.toString())
+        if (count > 0) emitter.emit('stderr', 'stderr')
+        else emitter.emit('stdout', 'stdout')
+        count++
+      },
+      async stop({ emitter }) {
+        emitter.emit('message', 'goodbye')
+      },
+    }
+  })
+
+  const message_1 = Promise.withResolvers<string>()
+  const stdout = Promise.withResolvers<string>()
+  const stderr = Promise.withResolvers<string>()
+
+  const instance = foo()
+  instance.once('message', message_1.resolve)
+  instance.once('stdout', stdout.resolve)
+  instance.once('stderr', stderr.resolve)
+
+  await instance.start()
+
+  expect(await message_1.promise).toEqual('0')
+  expect(await stdout.promise).toEqual('stdout')
+
+  const message_2 = Promise.withResolvers()
+  instance.once('message', message_2.resolve)
+
+  await instance.stop()
+
+  expect(await message_2.promise).toEqual('goodbye')
+
+  const message_3 = Promise.withResolvers()
+  instance.once('message', message_3.resolve)
+
+  await instance.start()
+
+  expect(await message_3.promise).toEqual('1')
+  expect(await stderr.promise).toEqual('stderr')
+})
+
+test('behavior: messages', async () => {
+  const foo = defineInstance(() => {
+    return {
+      name: 'foo',
+      host: 'localhost',
+      port: 3000,
+      async start({ emitter }) {
+        for (let i = 0; i < 50; i++) emitter.emit('message', i.toString())
+      },
+      async stop() {},
+    }
+  })
+
+  const instance = foo()
+  expect(instance.messages.get()).toEqual([])
+
+  await instance.start()
+  expect(instance.messages.get()).toMatchInlineSnapshot(`
+    [
+      "30",
+      "31",
+      "32",
+      "33",
+      "34",
+      "35",
+      "36",
+      "37",
+      "38",
+      "39",
+      "40",
+      "41",
+      "42",
+      "43",
+      "44",
+      "45",
+      "46",
+      "47",
+      "48",
+      "49",
+    ]
+  `)
 })
 
 test('options: timeout', async () => {
@@ -162,22 +254,4 @@ test('options: timeout', async () => {
   await expect(() => instance_2.stop()).rejects.toThrow(
     'Instance "bar" failed to stop in time',
   )
-})
-
-test('behavior: events', async () => {
-  const foo = defineInstance(() => {
-    return {
-      name: 'foo',
-      host: 'localhost',
-      port: 3000,
-      async start({ emitter }) {
-        emitter.emit('message', 'hello')
-      },
-      async stop() {
-        emitter.emit('message', 'goodbye')
-      },
-    }
-  })
-
-  const instance = foo()
 })

@@ -234,10 +234,16 @@ export type AnvilParameters = {
   transactionBlockKeeper?: number | undefined
 }
 
-export const anvil = defineInstance((parameters?: AnvilParameters) => {
-  const { binary = 'anvil', ...args } = parameters || {}
+export const anvil = defineInstance((parameters: AnvilParameters) => {
+  const { binary = 'anvil', ...args } = parameters
 
-  let process: ResultPromise<{}>
+  let process: ResultPromise<{ cleanup: true; reject: false }>
+
+  async function stop() {
+    const killed = process.kill()
+    if (!killed) throw new Error('Failed to stop anvil')
+    return new Promise((resolve) => process.on('close', resolve))
+  }
 
   return {
     name: 'anvil',
@@ -248,6 +254,7 @@ export const anvil = defineInstance((parameters?: AnvilParameters) => {
 
       process = execa(binary, toArgs({ ...args, port }), {
         cleanup: true,
+        reject: false,
       })
 
       process.stdout.on('data', (data) => {
@@ -256,19 +263,18 @@ export const anvil = defineInstance((parameters?: AnvilParameters) => {
         emitter.emit('stdout', message)
         if (message.includes('Listening on')) resolve()
       })
-      process.stderr.on('data', (data) => {
+      process.stderr.on('data', async (data) => {
         const message = stripColors(data.toString())
         emitter.emit('message', message)
         emitter.emit('stderr', message)
+        await stop()
         reject(new Error(`Failed to start anvil: ${data.toString()}`))
-        this.stop()
       })
 
       return promise
     },
     async stop() {
-      const killed = process.kill()
-      if (!killed) throw new Error('Failed to stop anvil')
+      await stop()
     },
   }
 })

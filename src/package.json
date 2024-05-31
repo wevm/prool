@@ -3,14 +3,18 @@
   "description": "",
   "version": "0.0.0",
   "type": "module",
-  "module": "_lib/index.mjs",
-  "types": "_lib/index.d.ts",
-  "typings": "_lib/index.d.ts",
+  "module": "_lib/exports/index.mjs",
+  "types": "_lib/exports/index.d.ts",
+  "typings": "_lib/exports/index.d.ts",
   "sideEffects": false,
   "exports": {
     ".": {
-      "types": "./_lib/index.d.ts",
-      "default": "./_lib/index.js"
+      "types": "./_lib/exports/index.d.ts",
+      "default": "./_lib/exports/index.js"
+    },
+    "./instances/ethereum": {
+      "types": "./_lib/exports/instances/ethereum.d.ts",
+      "default": "./_lib/exports/instances/ethereum.js"
     }
   },
   "dependencies": {
@@ -20,10 +24,7 @@
   "license": "MIT",
   "homepage": "https://wevm.dev",
   "repository": "wevm/http-proxy-pool",
-  "authors": [
-    "awkweb",
-    "jxom"
-  ],
+  "authors": ["awkweb", "jxom"],
   "funding": [
     {
       "type": "github",

@@ -10,6 +10,9 @@ type InstanceStartOptions_internal = { emitter: EventEmitter<EventTypes> }
 type InstanceStopOptions_internal = { emitter: EventEmitter<EventTypes> }
 
 export type InstanceStartOptions = {
+  /**
+   * Port to start the instance on.
+   */
   port?: number | undefined
 }
 
@@ -78,9 +81,9 @@ export type Instance = Pick<
 }
 
 export type InstanceOptions = {
-  /** Number of messages to store in-memory. */
+  /** Number of messages to store in-memory. @default 20 */
   messageBuffer?: number
-  /** Timeout (in milliseconds) for starting and stopping the instance. */
+  /** Timeout (in milliseconds) for starting and stopping the instance. @default 10_000 */
   timeout?: number
 }
 
@@ -96,15 +99,20 @@ export function defineInstance<parameters = undefined>(
     const options = options_ || parametersOrOptions || {}
 
     const { host, name, port, start, stop } = fn(parameters)
-    const { messageBuffer = 20, timeout } = options
+    const { messageBuffer = 20, timeout = 10_000 } = options
 
-    const startResolver = Promise.withResolvers<() => void>()
-    const stopResolver = Promise.withResolvers<void>()
+    let startResolver = Promise.withResolvers<() => void>()
+    let stopResolver = Promise.withResolvers<void>()
 
     const emitter = new EventEmitter<EventTypes>()
 
     let messages: string[] = []
     let status: Instance['status'] = 'idle'
+
+    function onMessage(message: string) {
+      messages.push(message)
+      if (messages.length > messageBuffer) messages.shift()
+    }
 
     return {
       host,
@@ -125,7 +133,7 @@ export function defineInstance<parameters = undefined>(
         if (status === 'starting') return startResolver.promise
         if (status !== 'idle' && status !== 'stopped')
           throw new Error(
-            `Instance "${name}" is not in an idle or stopped state.`,
+            `Instance "${name}" is not in an idle or stopped state. Status: ${status}`,
           )
 
         if (typeof timeout === 'number') {
@@ -137,25 +145,31 @@ export function defineInstance<parameters = undefined>(
           }, timeout)
         }
 
-        emitter.on('message', (message) => {
-          messages.push(message)
-          if (messages.length > messageBuffer) messages.shift()
-        })
+        emitter.on('message', onMessage)
 
         status = 'starting'
         start({ emitter, port })
           .then(() => {
             status = 'started'
+
+            stopResolver = Promise.withResolvers<void>()
             startResolver.resolve(this.stop)
           })
-          .catch(startResolver.reject)
+          .catch((error) => {
+            status = 'idle'
+            this.messages.clear()
+            emitter.off('message', onMessage)
+            startResolver.reject(error)
+          })
 
         return startResolver.promise
       },
       async stop() {
         if (status === 'stopping') return stopResolver.promise
         if (status !== 'started')
-          throw new Error(`Instance "${name}" has not started.`)
+          throw new Error(
+            `Instance "${name}" has not started. Status: ${status}`,
+          )
 
         if (typeof timeout === 'number') {
           const timer = setTimeout(() => {
@@ -171,20 +185,24 @@ export function defineInstance<parameters = undefined>(
           .then((...args) => {
             status = 'stopped'
             this.messages.clear()
-            emitter.removeAllListeners()
+            emitter.off('message', onMessage)
+            startResolver = Promise.withResolvers<() => void>()
             stopResolver.resolve(...args)
           })
-          .catch(stopResolver.reject)
+          .catch(() => {
+            status = 'started'
+            stopResolver.reject()
+          })
 
         return stopResolver.promise
       },
 
-      addListener: emitter.addListener,
-      off: emitter.off,
-      on: emitter.on,
-      once: emitter.once,
-      removeListener: emitter.removeListener,
-      removeAllListeners: emitter.removeAllListeners,
+      addListener: emitter.addListener.bind(emitter),
+      off: emitter.off.bind(emitter),
+      on: emitter.on.bind(emitter),
+      once: emitter.once.bind(emitter),
+      removeListener: emitter.removeListener.bind(emitter),
+      removeAllListeners: emitter.removeAllListeners.bind(emitter),
     }
   }
 }
