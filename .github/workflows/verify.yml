@@ -13,7 +13,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install dependencies
-        uses: wevm/actions/.github/actions/pnpm
+        uses: wevm/actions/.github/actions/pnpm@main
 
       - name: Lint code
         run: pnpm lint
@@ -35,7 +35,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install dependencies
-        uses: wevm/actions/.github/actions/pnpm
+        uses: wevm/actions/.github/actions/pnpm@main
 
       - name: Build
         run: pnpm build
@@ -51,7 +51,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install dependencies
-        uses: wevm/actions/.github/actions/pnpm
+        uses: wevm/actions/.github/actions/pnpm@main
 
       - name: Run tests
         run: pnpm test

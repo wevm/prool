@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { defineInstance } from './defineInstance.js'
+import { defineInstance } from './instance.js'
 
 test('default', async () => {
   let started = false

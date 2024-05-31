@@ -4,4 +4,4 @@ export {
   type InstanceOptions,
   type InstanceStartOptions,
   defineInstance,
-} from '../instances/defineInstance.js'
+} from '../instance.js'
