@@ -256,8 +256,8 @@ export type AnvilParameters = {
  * await instance.stop()
  * ```
  */
-export const anvil = defineInstance((parameters: AnvilParameters) => {
-  const { binary = 'anvil', ...args } = parameters
+export const anvil = defineInstance((parameters?: AnvilParameters) => {
+  const { binary = 'anvil', ...args } = parameters || {}
 
   let process: ResultPromise<{ cleanup: true; reject: false }>
 
