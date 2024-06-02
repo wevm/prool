@@ -50,7 +50,11 @@ export type Instance<
   /**
    * Creates an instance.
    */
-  create(): Omit<Instance<_internal>, 'create'>
+  create(
+    parameters?:
+      | { host?: string | undefined; port?: number | undefined }
+      | undefined,
+  ): Omit<Instance<_internal>, 'create'>
   /**
    * Name of the instance.
    *
@@ -141,11 +145,14 @@ export function defineInstance<
   fn: DefineInstanceFn<parameters, _internal>,
 ): DefineInstanceReturnType<_internal, parameters> {
   return (...[parametersOrOptions, options_]) => {
-    function create() {
+    function create(createParameters: Parameters<Instance['create']>[0] = {}) {
       const parameters = parametersOrOptions as parameters
       const options = options_ || parametersOrOptions || {}
 
-      const { _internal, host, name, port, start, stop } = fn(parameters)
+      const { _internal, host, name, port, start, stop } = {
+        ...fn(parameters),
+        ...createParameters,
+      }
       const { messageBuffer = 20, timeout = 10_000 } = options
 
       let startResolver = Promise.withResolvers<() => void>()
