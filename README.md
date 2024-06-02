@@ -3,10 +3,10 @@
 HTTP & WebSocket Proxy Pools.
 
 ```ts
-import { defineProol } from 'prool'
+import { defineProxyPool } from 'prool'
 import { alto, anvil } from 'prool/instances'
 
-const executionPool = defineProol({
+const executionPool = defineProxyPool({
   instance: anvil({ 
     // ...
     forkRpcUrl: 'https://cloudflare-eth.com'
@@ -21,7 +21,7 @@ await executionPool.start()
 // "http://localhost:8545/3"
 // "http://localhost:8545/n"
 
-const bundlerPool = defineProol({
+const bundlerPool = defineProxyPool({
   instance: ({ id }) => alto({
     // ...
     executionRpcUrl: `${executionPool.hostname}/${id}`
