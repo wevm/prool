@@ -1,5 +1,5 @@
 {
-  "name": "http-proxy-pool",
+  "name": "prool",
   "scripts": {
     "build": "pnpm clean && tsc --project ./tsconfig.build.json",
     "changeset": "changeset",

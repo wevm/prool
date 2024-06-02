@@ -2,10 +2,7 @@
   "$schema": "https://unpkg.com/@changesets/config@3.0.0/schema.json",
   "access": "public",
   "baseBranch": "main",
-  "changelog": [
-    "@changesets/changelog-github",
-    { "repo": "wevm/http-proxy-pool" }
-  ],
+  "changelog": ["@changesets/changelog-github", { "repo": "wevm/prool" }],
   "commit": false,
   "fixed": [],
   "ignore": ["site"],

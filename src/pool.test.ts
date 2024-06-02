@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { anvil } from './instances/ethereum/anvil.js'
+import { anvil } from './instances/anvil.js'
 import { definePool } from './pool.js'
 
 test('default', async () => {

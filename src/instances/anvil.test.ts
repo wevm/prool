@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from 'vitest'
-import type { Instance } from '../../instance.js'
+import type { Instance } from '../instance.js'
 import { type AnvilParameters, anvil } from './anvil.js'
 
 const instances: Instance[] = []

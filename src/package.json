@@ -1,5 +1,5 @@
 {
-  "name": "http-proxy-pool",
+  "name": "prool",
   "description": "",
   "version": "0.0.0",
   "type": "module",
@@ -12,9 +12,9 @@
       "types": "./_lib/exports/index.d.ts",
       "default": "./_lib/exports/index.js"
     },
-    "./instances/ethereum": {
-      "types": "./_lib/exports/instances/ethereum.d.ts",
-      "default": "./_lib/exports/instances/ethereum.js"
+    "./instances": {
+      "types": "./_lib/exports/instances.d.ts",
+      "default": "./_lib/exports/instances.js"
     }
   },
   "dependencies": {
@@ -23,7 +23,7 @@
   },
   "license": "MIT",
   "homepage": "https://wevm.dev",
-  "repository": "wevm/http-proxy-pool",
+  "repository": "wevm/prool",
   "authors": ["awkweb", "jxom"],
   "funding": [
     {

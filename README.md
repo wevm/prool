@@ -1,10 +1,12 @@
-# http-proxy-pool
+# prool
+
+HTTP & WebSocket Proxy Pools.
 
 ```ts
-import { defineProxyPool } from 'http-proxy-pool'
-import { alto, anvil, ponder } from 'http-proxy-pool/instances/ethereum'
+import { defineProol } from 'prool'
+import { alto, anvil, ponder } from 'prool/instances/ethereum'
 
-const executionPool = defineProxyPool({
+const executionPool = defineProol({
   instance: anvil({ 
     // ...
     forkRpcUrl: 'https://cloudflare-eth.com'
@@ -19,7 +21,7 @@ await executionPool.start()
 // "http://localhost:8545/3"
 // "http://localhost:8545/n"
 
-const bundlerPool = defineProxyPool({
+const bundlerPool = defineProol({
   instance: ({ id }) => alto({
     // ...
     executionRpcUrl: `${executionPool.hostname}/${id}`
@@ -34,7 +36,7 @@ await bundlerPool.start()
 // "http://localhost:4337/3" (executionRpcUrl: "http://localhost:8545/3")
 // "http://localhost:4337/n" (executionRpcUrl: "http://localhost:8545/n")
 
-const indexerPool = defineProxyPool({
+const indexerPool = defineProol({
   instance: ({ id }) => ponder({
     // ...
     executionRpcUrl: `${executionPool.hostname}/${id}`
