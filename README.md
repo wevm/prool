@@ -4,7 +4,7 @@ HTTP & WebSocket Proxy Pools.
 
 ```ts
 import { defineProol } from 'prool'
-import { alto, anvil, ponder } from 'prool/instances/ethereum'
+import { alto, anvil } from 'prool/instances'
 
 const executionPool = defineProol({
   instance: anvil({ 
