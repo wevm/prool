@@ -27,7 +27,7 @@ export type InstanceStartOptions = {
 export type DefineInstanceFn<
   parameters,
   _internal extends object | undefined = object | undefined,
-> = (parameters: parameters) => Pick<Instance, 'name'> & {
+> = (parameters: parameters) => Pick<Instance, 'host' | 'name' | 'port'> & {
   _internal?: _internal | undefined
   start(
     options: InstanceStartOptions & InstanceStartOptions_internal,
@@ -54,11 +54,19 @@ export type Instance<
     parameters?: { port?: number | undefined } | undefined,
   ): Omit<Instance<_internal>, 'create'>
   /**
+   * Host the instance is running on.
+   */
+  host: string
+  /**
    * Name of the instance.
    *
    * @example "anvil"
    */
   name: string
+  /**
+   * Port the instance is running on.
+   */
+  port: number
   /**
    * Set of messages emitted from the `"message"` event stored in-memory,
    * with length {@link InstanceOptions`messageBuffer`}.
@@ -135,7 +143,7 @@ export function defineInstance<
       const parameters = parametersOrOptions as parameters
       const options = options_ || parametersOrOptions || {}
 
-      const { _internal, name, port, start, stop } = {
+      const { _internal, host, name, port, start, stop } = {
         ...fn(parameters),
         ...createParameters,
       }
@@ -170,7 +178,9 @@ export function defineInstance<
             return messages
           },
         },
+        host,
         name,
+        port,
         get status() {
           return status
         },

@@ -17,6 +17,9 @@ importers:
       '@changesets/cli':
         specifier: ^2.27.3
         version: 2.27.3
+      '@types/http-proxy':
+        specifier: ^1.17.14
+        version: 1.17.14
       '@types/node':
         specifier: ^20.14.0
         version: 20.14.0
@@ -483,6 +486,9 @@ packages:
 
   '@types/estree@1.0.5':
     resolution: {integrity: sha512-/kYRxGDLWzHOB7q+wtSUQlFrtcdUccpfy+X+9iMBpHK8QLLhx2wIPYuS5DYtR9Wa/YlZAbIovy7qVdB1Aq6Lyw==}
+
+  '@types/http-proxy@1.17.14':
+    resolution: {integrity: sha512-SSrD0c1OQzlFX7pGu1eXxSEjemej64aaNPRhhVYUGqXh0BtldAAx37MG8btcumvpgKyZp1F5Gn3JkktdxiFv6w==}
 
   '@types/minimist@1.2.5':
     resolution: {integrity: sha512-hov8bUuiLiyFPGyFPE1lwWhmzYbirOXQNNo40+y3zow8aFVTeyn3VWL0VFFfdNddA8S4Vf0Tc062rzyNr7Paag==}
@@ -2359,6 +2365,10 @@ snapshots:
   '@sindresorhus/merge-streams@4.0.0': {}
 
   '@types/estree@1.0.5': {}
+
+  '@types/http-proxy@1.17.14':
+    dependencies:
+      '@types/node': 20.14.0
 
   '@types/minimist@1.2.5': {}
 

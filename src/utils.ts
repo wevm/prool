@@ -1,3 +1,34 @@
+export type ExtractPathReturnType = {
+  id: number | undefined
+  path: string
+}
+
+/**
+ * Parse a request url into an object containing the id and path.
+ *
+ * @param request The request url.
+ * @returns The parsed request context or undefined.
+ */
+export function extractPath(request: string): ExtractPathReturnType {
+  const host = 'http://localhost' // Dummy value for URL constructor
+  const url = new URL(`${host}${request ?? '/'}`)
+  const [idOrPath, ...pathname] = url.pathname
+    .split('/')
+    .filter((part) => part !== '')
+
+  const id =
+    !Number.isNaN(Number(idOrPath)) && Number(idOrPath) > 0
+      ? Number(idOrPath)
+      : undefined
+  const path = `/${
+    typeof id === 'number'
+      ? pathname.join('/')
+      : [idOrPath, ...pathname].join('/')
+  }`
+
+  return { id, path }
+}
+
 const ansiColorRegex =
   // biome-ignore lint/suspicious/noControlCharactersInRegex: <explanation>
   /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g

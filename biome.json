@@ -23,6 +23,12 @@
       "recommended": true,
       "complexity": {
         "noBannedTypes": "off"
+      },
+      "style": {
+        "noNonNullAssertion": "off"
+      },  
+      "suspicious": {
+        "noExplicitAny": "off"
       }
     }
   },

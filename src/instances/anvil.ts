@@ -274,7 +274,9 @@ export const anvil = defineInstance((parameters?: AnvilParameters) => {
         return process
       },
     },
+    host: args.host ?? 'localhost',
     name: 'anvil',
+    port: args.port ?? 8545,
     async start({ emitter, port = args.port, status }) {
       const { promise, resolve, reject } = Promise.withResolvers<void>()
 
