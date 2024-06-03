@@ -4,7 +4,7 @@
     "build": "pnpm clean && tsc --project ./tsconfig.build.json",
     "changeset": "changeset",
     "changeset:release": "pnpm build && changeset publish",
-    "changeset:version": "changeset version && pnpm install --lockfile-only && bun .scripts/postversion.ts",
+    "changeset:version": "changeset version && pnpm install --lockfile-only",
     "clean": "rimraf src/_lib src/tsconfig.build.tsbuildinfo",
     "lint": "biome check . --apply",
     "postinstall": "pnpm build",
