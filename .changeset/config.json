@@ -5,7 +5,7 @@
   "changelog": ["@changesets/changelog-github", { "repo": "wevm/prool" }],
   "commit": false,
   "fixed": [],
-  "ignore": ["site"],
+  "ignore": [],
   "linked": [],
   "updateInternalDependencies": "patch"
 }
