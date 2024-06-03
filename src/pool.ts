@@ -118,11 +118,12 @@ export function definePool<key = number>(
         const instance_ = instances.get(key) || instance.create({ port })
         await instance_.start()
 
-        promises.start.delete(key)
         instances.set(key, instance_)
         resolver.resolve(instance_)
       } catch (error) {
         resolver.reject(error)
+      } finally {
+        promises.start.delete(key)
       }
 
       return resolver.promise
@@ -144,10 +145,11 @@ export function definePool<key = number>(
 
         await instance_.stop()
 
-        promises.stop.delete(key)
         resolver.resolve()
       } catch (error) {
         resolver.reject(error)
+      } finally {
+        promises.stop.delete(key)
       }
     },
     async stopAll() {

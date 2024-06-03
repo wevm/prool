@@ -45,23 +45,74 @@ export function defineProxyPool(
   })
 
   const server = createServer(async (request, response) => {
+    try {
+      const url = request.url
+      if (!url) {
+        response.end()
+        return
+      }
+
+      const { id, path } = extractPath(url)
+
+      if (typeof id === 'number' && path === '/') {
+        const { host, port } = pool.get(id) || (await pool.start(id))
+        return proxy.web(request, response, {
+          target: `http://${host}:${port}`,
+        })
+      }
+      if (typeof id === 'number' && path === '/start') {
+        const { host, port } = await pool.start(id)
+        response
+          .writeHead(200, { 'Content-Type': 'application/json' })
+          .end(JSON.stringify({ host, port }))
+        return
+      }
+      if (typeof id === 'number' && path === '/stop') {
+        await pool.stop(id)
+        response.writeHead(200, { 'Content-Type': 'application/json' }).end()
+        return
+      }
+      if (typeof id === 'number' && path === '/messages') {
+        const messages = pool.get(id)?.messages.get() || []
+        response
+          .writeHead(200, { 'Content-Type': 'application/json' })
+          .end(JSON.stringify(messages))
+        return
+      }
+
+      if (path === '/healthcheck') {
+        response.writeHead(200, { 'Content-Type': 'application/json' }).end()
+        return
+      }
+
+      response.writeHead(404, { 'Content-Type': 'application/json' }).end()
+      return
+    } catch (error) {
+      response
+        .writeHead(400, { 'Content-Type': 'application/json' })
+        .end(JSON.stringify({ message: (error as Error).message }))
+      return
+    }
+  })
+
+  server.on('upgrade', async (request, socket, head) => {
     const url = request.url
     if (!url) {
-      response.end()
+      socket.destroy(new Error('Unsupported request'))
       return
     }
 
     const { id, path } = extractPath(url)
 
-    if (id && path === '/') {
+    if (typeof id === 'number' && path === '/') {
       const { host, port } = pool.get(id) || (await pool.start(id))
-      return proxy.web(request, response, {
-        target: `http://${host}:${port}`,
+      proxy.ws(request, socket, head, {
+        target: `ws://${host}:${port}`,
       })
+      return
     }
 
-    if (path === '/healthcheck') response.end(':-)')
-
+    socket.destroy(new Error('Unsupported request'))
     return
   })
 
@@ -72,10 +123,13 @@ export function defineProxyPool(
         else server.listen(() => resolve(this.stop))
       })
     },
-    stop() {
-      return new Promise<void>((resolve, reject) => {
-        server.close((error) => (error ? reject(error) : resolve()))
-      })
+    async stop() {
+      await Promise.allSettled([
+        new Promise<void>((resolve, reject) =>
+          server.close((error) => (error ? reject(error) : resolve())),
+        ),
+        pool.destroyAll(),
+      ])
     },
   })
 }

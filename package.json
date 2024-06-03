@@ -18,10 +18,12 @@
     "@changesets/cli": "^2.27.3",
     "@types/http-proxy": "^1.17.14",
     "@types/node": "^20.14.0",
+    "@types/ws": "^8.5.10",
     "@vitest/coverage-v8": "^1.6.0",
     "rimraf": "^5.0.7",
     "typescript": "^5.4.5",
-    "vitest": "^1.6.0"
+    "vitest": "^1.6.0",
+    "ws": "^8.17.0"
   },
   "packageManager": "pnpm@9.1.0"
 }
