@@ -29,10 +29,7 @@
   "license": "MIT",
   "homepage": "https://wevm.dev",
   "repository": "wevm/prool",
-  "authors": [
-    "awkweb",
-    "jxom"
-  ],
+  "authors": ["awkweb", "jxom"],
   "funding": [
     {
       "type": "github",
