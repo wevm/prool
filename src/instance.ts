@@ -76,15 +76,24 @@ export type Instance<
    */
   messages: { clear(): void; get(): string[] }
   /**
+   * Retarts the instance.
+   */
+  restart(): Promise<void>
+  /**
    * Status of the instance.
    *
    * @default "idle"
    */
-  status: 'idle' | 'stopped' | 'starting' | 'started' | 'stopping'
+  status:
+    | 'idle'
+    | 'restarting'
+    | 'stopped'
+    | 'starting'
+    | 'started'
+    | 'stopping'
   /**
    * Starts the instance.
    *
-   * @param options - Options for starting the instance.
    * @returns A function to stop the instance.
    */
   start(): Promise<() => void>
@@ -147,8 +156,9 @@ export function defineInstance<
         ...fn(parameters),
         ...createParameters,
       }
-      const { messageBuffer = 20, timeout = 10_000 } = options
+      const { messageBuffer = 20, timeout } = options
 
+      let restartResolver = Promise.withResolvers<void>()
       let startResolver = Promise.withResolvers<() => void>()
       let stopResolver = Promise.withResolvers<void>()
 
@@ -156,6 +166,7 @@ export function defineInstance<
 
       let messages: string[] = []
       let status: Instance['status'] = 'idle'
+      let restarting = false
 
       function onExit() {
         status = 'stopped'
@@ -182,6 +193,7 @@ export function defineInstance<
         name,
         port,
         get status() {
+          if (restarting) return 'restarting'
           return status
         },
         async start() {
@@ -261,6 +273,22 @@ export function defineInstance<
             })
 
           return stopResolver.promise
+        },
+        async restart() {
+          if (restarting) return restartResolver.promise
+
+          restarting = true
+
+          this.stop()
+            .then(() => this.start.bind(this)())
+            .then(() => restartResolver.resolve())
+            .catch(restartResolver.reject)
+            .finally(() => {
+              restartResolver = Promise.withResolvers<void>()
+              restarting = false
+            })
+
+          return restartResolver.promise
         },
 
         addListener: emitter.addListener.bind(emitter),

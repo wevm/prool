@@ -56,44 +56,46 @@ export function createServer(
 
       const { id, path } = extractPath(url)
 
-      if (typeof id === 'number' && path === '/') {
-        const { host, port } = pool.get(id) || (await pool.start(id))
-        return proxy.web(request, response, {
-          target: `http://${host}:${port}`,
-        })
-      }
-      if (typeof id === 'number' && path === '/start') {
-        const { host, port } = await pool.start(id)
-        response
-          .writeHead(200, { 'Content-Type': 'application/json' })
-          .end(JSON.stringify({ host, port }))
-        return
-      }
-      if (typeof id === 'number' && path === '/stop') {
-        await pool.stop(id)
-        response.writeHead(200, { 'Content-Type': 'application/json' }).end()
-        return
-      }
-      if (typeof id === 'number' && path === '/messages') {
-        const messages = pool.get(id)?.messages.get() || []
-        response
-          .writeHead(200, { 'Content-Type': 'application/json' })
-          .end(JSON.stringify(messages))
-        return
-      }
-
-      if (path === '/healthcheck') {
-        response.writeHead(200, { 'Content-Type': 'application/json' }).end()
-        return
+      if (typeof id === 'number') {
+        if (path === '/') {
+          const { host, port } = pool.get(id) || (await pool.start(id))
+          return proxy.web(request, response, {
+            target: `http://${host}:${port}`,
+          })
+        }
+        if (path === '/start') {
+          const { host, port } = await pool.start(id)
+          return done(response, 200, { host, port })
+        }
+        if (path === '/stop') {
+          await pool.stop(id)
+          return done(response, 200)
+        }
+        if (path === '/restart') {
+          await pool.restart(id)
+          return done(response, 200)
+        }
+        if (path === '/messages') {
+          const messages = pool.get(id)?.messages.get() || []
+          return done(response, 200, messages)
+        }
       }
 
-      response.writeHead(404, { 'Content-Type': 'application/json' }).end()
-      return
+      if (path === '/healthcheck') return done(response, 200)
+
+      return done(response, 404)
     } catch (error) {
-      response
-        .writeHead(400, { 'Content-Type': 'application/json' })
-        .end(JSON.stringify({ message: (error as Error).message }))
-      return
+      return done(response, 400, { message: (error as Error).message })
+    }
+  })
+
+  proxy.on('proxyReq', (proxyReq, req) => {
+    ;(req as any)._proxyReq = proxyReq
+  })
+
+  proxy.on('error', (err, req) => {
+    if (req.socket.destroyed && (err as any).code === 'ECONNRESET') {
+      ;(req as any)._proxyReq.abort()
     }
   })
 
@@ -134,4 +136,10 @@ export function createServer(
       ])
     },
   })
+}
+
+function done(res: ServerResponse, statusCode: number, json?: unknown) {
+  return res
+    .writeHead(statusCode, { 'Content-Type': 'application/json' })
+    .end(json ? JSON.stringify(json) : undefined)
 }

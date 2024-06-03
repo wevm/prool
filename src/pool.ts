@@ -13,6 +13,7 @@ export type Pool<key = number> = Pick<
   }
   destroy(key: key): Promise<void>
   destroyAll(): Promise<void>
+  restart(key: key): Promise<void>
   start(key: key, options?: { port?: number }): Promise<Instance_>
   stop(key: key): Promise<void>
   stopAll(): Promise<void>
@@ -56,6 +57,7 @@ export function definePool<key = number>(
   const promises = {
     destroy: new Map<key, Promise<void>>(),
     destroyAll: undefined as Promise<void> | undefined,
+    restart: new Map<key, Promise<void>>(),
     start: new Map<key, Promise<Instance_>>(),
     stop: new Map<key, Promise<void>>(),
     stopAll: undefined as Promise<void> | undefined,
@@ -71,16 +73,14 @@ export function definePool<key = number>(
 
       const resolver = Promise.withResolvers<void>()
 
-      try {
-        promises.destroy.set(key, resolver.promise)
+      promises.destroy.set(key, resolver.promise)
 
-        await this.stop(key)
-        instances.delete(key)
-
-        resolver.resolve()
-      } catch (error) {
-        resolver.reject(error)
-      }
+      this.stop(key)
+        .then(() => {
+          instances.delete(key)
+          resolver.resolve()
+        })
+        .catch(resolver.reject)
 
       return resolver.promise
     },
@@ -89,17 +89,35 @@ export function definePool<key = number>(
 
       const resolver = Promise.withResolvers<void>()
 
-      try {
-        promises.destroyAll = resolver.promise
+      promises.destroyAll = resolver.promise
 
-        await Promise.all([...instances.keys()].map((key) => this.destroy(key)))
+      Promise.all([...instances.keys()].map((key) => this.destroy(key)))
+        .then(() => {
+          promises.destroyAll = undefined
+          resolver.resolve()
+        })
+        .catch(resolver.reject)
 
-        promises.destroyAll = undefined
+      return resolver.promise
+    },
+    async restart(key) {
+      const restartPromise = promises.restart.get(key)
+      if (restartPromise) return restartPromise
 
-        resolver.resolve()
-      } catch (error) {
-        resolver.reject(error)
-      }
+      const resolver = Promise.withResolvers<void>()
+
+      const instance_ = instances.get(key)
+      if (!instance_) return
+
+      promises.restart.set(key, resolver.promise)
+
+      instance_
+        .restart()
+        .then(resolver.resolve)
+        .catch(resolver.reject)
+        .finally(() => promises.restart.delete(key))
+
+      return resolver.promise
     },
     async start(key, options = {}) {
       const startPromise = promises.start.get(key)
@@ -107,24 +125,21 @@ export function definePool<key = number>(
 
       const resolver = Promise.withResolvers<Instance_>()
 
-      try {
-        promises.start.set(key, resolver.promise)
+      if (limit && instances.size >= limit)
+        throw new Error(`Instance limit of ${limit} reached.`)
 
-        if (limit && instances.size >= limit)
-          throw new Error(`Instance limit of ${limit} reached.`)
+      promises.start.set(key, resolver.promise)
 
-        const { port = await getPort() } = options
-
-        const instance_ = instances.get(key) || instance.create({ port })
-        await instance_.start()
-
-        instances.set(key, instance_)
-        resolver.resolve(instance_)
-      } catch (error) {
-        resolver.reject(error)
-      } finally {
-        promises.start.delete(key)
-      }
+      const { port = await getPort() } = options
+      const instance_ = instances.get(key) || instance.create({ port })
+      instance_
+        .start()
+        .then(() => {
+          instances.set(key, instance_)
+          resolver.resolve(instance_)
+        })
+        .catch(resolver.reject)
+        .finally(() => promises.start.delete(key))
 
       return resolver.promise
     },
@@ -132,42 +147,35 @@ export function definePool<key = number>(
       const stopPromise = promises.stop.get(key)
       if (stopPromise) return stopPromise
 
+      const instance_ = instances.get(key)
+      if (!instance_) return
+
       const resolver = Promise.withResolvers<void>()
 
-      try {
-        promises.stop.set(key, resolver.promise)
+      promises.stop.set(key, resolver.promise)
+      instance_
+        .stop()
+        .then(resolver.resolve)
+        .catch(resolver.reject)
+        .finally(() => promises.stop.delete(key))
 
-        const instance_ = instances.get(key)
-        if (!instance_) {
-          resolver.resolve()
-          return
-        }
-
-        await instance_.stop()
-
-        resolver.resolve()
-      } catch (error) {
-        resolver.reject(error)
-      } finally {
-        promises.stop.delete(key)
-      }
+      return resolver.promise
     },
     async stopAll() {
       if (promises.stopAll) return promises.stopAll
 
       const resolver = Promise.withResolvers<void>()
 
-      try {
-        promises.stopAll = resolver.promise
+      promises.stopAll = resolver.promise
 
-        await Promise.all([...instances.keys()].map((key) => this.stop(key)))
+      Promise.all([...instances.keys()].map((key) => this.stop(key)))
+        .then(() => {
+          promises.stopAll = undefined
+          resolver.resolve()
+        })
+        .catch(resolver.reject)
 
-        promises.stopAll = undefined
-
-        resolver.resolve()
-      } catch (error) {
-        resolver.reject(error)
-      }
+      return resolver.promise
     },
 
     get size() {

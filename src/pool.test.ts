@@ -82,6 +82,26 @@ describe.each([{ instance: anvil() }])(
       expect(pool.size).toEqual(0)
     })
 
+    test('restart', async () => {
+      pool = definePool({
+        instance,
+      })
+
+      const instance_1 = await pool.start(1)
+      const instance_2 = await pool.start(2)
+      const instance_3 = await pool.start(3)
+
+      expect(instance_1.status).toBe('started')
+      expect(instance_2.status).toBe('started')
+      expect(instance_3.status).toBe('started')
+      expect(pool.size).toEqual(3)
+
+      const promise_1 = pool.restart(1)
+      expect(instance_1.status).toBe('restarting')
+      await promise_1
+      expect(instance_1.status).toBe('started')
+    })
+
     test('start > stop > start', async () => {
       pool = definePool({
         instance,
@@ -158,6 +178,27 @@ describe.each([{ instance: anvil() }])(
 
       await promise_1
       await promise_2
+    })
+
+    test('behavior: restart more than once', async () => {
+      pool = definePool({
+        instance,
+      })
+
+      const instance_1 = await pool.start(1)
+      expect(instance_1.status).toBe('started')
+
+      const promise_1 = pool.restart(1)
+      expect(instance_1.status).toBe('restarting')
+      const promise_2 = pool.restart(1)
+      expect(instance_1.status).toBe('restarting')
+
+      expect(promise_1).toStrictEqual(promise_2)
+
+      await promise_1
+      expect(instance_1.status).toBe('started')
+      await promise_2
+      expect(instance_1.status).toBe('started')
     })
 
     test('behavior: stop more than once', async () => {

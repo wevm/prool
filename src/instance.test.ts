@@ -173,6 +173,38 @@ test('behavior: stop (error)', async () => {
   expect(instance.status).toEqual('started')
 })
 
+test('behavior: restart', async () => {
+  let count = 0
+  const foo = defineInstance(() => {
+    return {
+      name: 'foo',
+      host: 'localhost',
+      port: 3000,
+      async start() {
+        count++
+      },
+      async stop() {},
+    }
+  })
+
+  const instance = foo()
+  await instance.start()
+
+  expect(instance.status).toEqual('started')
+  const promise_1 = instance.restart()
+  expect(instance.status).toEqual('restarting')
+  const promise_2 = instance.restart()
+  expect(instance.status).toEqual('restarting')
+
+  expect(promise_1).toStrictEqual(promise_2)
+
+  await promise_1
+  await promise_2
+
+  expect(instance.status).toEqual('started')
+  expect(count).toEqual(2)
+})
+
 test('behavior: events', async () => {
   const foo = defineInstance(() => {
     let count = 0

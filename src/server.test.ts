@@ -7,49 +7,49 @@ describe.each([{ instance: anvil() }])(
   'instance: $instance.name',
   ({ instance }) => {
     test('default', async () => {
-      const pool = createServer({
+      const server = createServer({
         instance,
       })
-      expect(pool).toBeDefined()
+      expect(server).toBeDefined()
 
-      await pool.start()
-      expect(pool.address()).toBeDefined()
+      await server.start()
+      expect(server.address()).toBeDefined()
 
       // Stop via instance method.
-      await pool.stop()
-      expect(pool.address()).toBeNull()
+      await server.stop()
+      expect(server.address()).toBeNull()
 
-      const stop = await pool.start()
-      expect(pool.address()).toBeDefined()
+      const stop = await server.start()
+      expect(server.address()).toBeDefined()
 
       // Stop via return value.
       await stop()
-      expect(pool.address()).toBeNull()
+      expect(server.address()).toBeNull()
     })
 
     test('args: port', async () => {
-      const pool = createServer({
+      const server = createServer({
         instance,
         port: 3000,
       })
-      expect(pool).toBeDefined()
+      expect(server).toBeDefined()
 
-      const stop = await pool.start()
-      expect(pool.address()?.port).toBe(3000)
+      const stop = await server.start()
+      expect(server.address()?.port).toBe(3000)
       await stop()
     })
 
     test('args: host', async () => {
-      const pool = createServer({
+      const server = createServer({
         instance,
         host: 'localhost',
         port: 3000,
       })
-      expect(pool).toBeDefined()
+      expect(server).toBeDefined()
 
-      const stop = await pool.start()
-      expect(pool.address()?.address).toBe('::1')
-      expect(pool.address()?.port).toBe(3000)
+      const stop = await server.start()
+      expect(server.address()?.address).toBe('::1')
+      expect(server.address()?.port).toBe(3000)
       await stop()
     })
 
@@ -91,6 +91,19 @@ describe.each([{ instance: anvil() }])(
 
       const response_2 = await fetch(`http://localhost:${port}/1/start`)
       expect(response_2.status).toBe(200)
+
+      await stop()
+    })
+
+    test('request: /restart', async () => {
+      const server = createServer({
+        instance,
+      })
+
+      const stop = await server.start()
+      const { port } = server.address()!
+      const response = await fetch(`http://localhost:${port}/1/restart`)
+      expect(response.status).toBe(200)
 
       await stop()
     })
@@ -203,6 +216,76 @@ describe("instance: 'anvil'", () => {
     `)
     expect(
       await fetch(`http://localhost:${port}/2`, {
+        body: JSON.stringify({
+          method: 'eth_blockNumber',
+          id: 0,
+          jsonrpc: '2.0',
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        method: 'POST',
+      }).then((x) => x.json()),
+    ).toMatchInlineSnapshot(`
+      {
+        "id": 0,
+        "jsonrpc": "2.0",
+        "result": "0x0",
+      }
+    `)
+
+    await stop()
+  })
+
+  test('request: /restart', async () => {
+    const server = createServer({
+      instance: anvil(),
+    })
+
+    const stop = await server.start()
+    const { port } = server.address()!
+
+    // Mine block number
+    await fetch(`http://localhost:${port}/1`, {
+      body: JSON.stringify({
+        method: 'anvil_mine',
+        params: ['0x69', '0x0'],
+        id: 0,
+        jsonrpc: '2.0',
+      }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
+    })
+
+    // Check block numbers
+    expect(
+      await fetch(`http://localhost:${port}/1`, {
+        body: JSON.stringify({
+          method: 'eth_blockNumber',
+          id: 0,
+          jsonrpc: '2.0',
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        method: 'POST',
+      }).then((x) => x.json()),
+    ).toMatchInlineSnapshot(`
+      {
+        "id": 0,
+        "jsonrpc": "2.0",
+        "result": "0x69",
+      }
+    `)
+
+    // Restart
+    await fetch(`http://localhost:${port}/1/restart`)
+
+    // Check block numbers
+    expect(
+      await fetch(`http://localhost:${port}/1`, {
         body: JSON.stringify({
           method: 'eth_blockNumber',
           id: 0,
