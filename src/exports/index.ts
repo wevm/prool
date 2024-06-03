@@ -12,3 +12,9 @@ export {
   type Pool,
   definePool,
 } from '../pool.js'
+
+export {
+  type DefineProxyPoolParameters,
+  type DefineProxyPoolReturnType,
+  defineProxyPool,
+} from '../proxy.js'

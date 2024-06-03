@@ -1,10 +1,25 @@
-import { createServer } from 'node:http'
+import {
+  type IncomingMessage,
+  type Server,
+  type ServerResponse,
+  createServer,
+} from 'node:http'
 
 import type { DefinePoolParameters } from './pool.js'
 
 export type DefineProxyPoolParameters = DefinePoolParameters
 
-export function defineProxyPool(_parameters: DefineProxyPoolParameters) {
+export type DefineProxyPoolReturnType = Server<
+  typeof IncomingMessage,
+  typeof ServerResponse
+> & {
+  start(): Promise<() => Promise<void>>
+  stop(): Promise<void>
+}
+
+export function defineProxyPool(
+  _parameters: DefineProxyPoolParameters,
+): DefineProxyPoolReturnType {
   const server = createServer()
 
   return Object.assign(server, {
