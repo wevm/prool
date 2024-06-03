@@ -5,10 +5,12 @@ import {
   createServer as createServer_,
 } from 'node:http'
 import type { AddressInfo } from 'node:net'
-import { createProxyServer } from 'http-proxy'
+import httpProxy from 'http-proxy'
 
 import { type DefinePoolParameters, definePool } from './pool.js'
 import { extractPath } from './utils.js'
+
+const { createProxyServer } = httpProxy
 
 export type createServerParameters = DefinePoolParameters &
   (
