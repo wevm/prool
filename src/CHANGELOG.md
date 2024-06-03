@@ -1,5 +1,12 @@
 # prool
 
+## 0.0.4
+
+### Patch Changes
+
+- [`c208423`](https://github.com/wevm/prool/commit/c2084231b277cecb840e4f9957cc4fc2e5b0b7a2) Thanks [@jxom](https://github.com/jxom)! - Added `/restart` endpoint to the Pool Server.
+  Added `restart` method to pool instances.
+
 ## 0.0.3
 
 ### Patch Changes
