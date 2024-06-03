@@ -2,7 +2,7 @@ import {
   type IncomingMessage,
   type Server,
   type ServerResponse,
-  createServer,
+  createServer as createServer_,
 } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { createProxyServer } from 'http-proxy'
@@ -10,7 +10,7 @@ import { createProxyServer } from 'http-proxy'
 import { type DefinePoolParameters, definePool } from './pool.js'
 import { extractPath } from './utils.js'
 
-export type DefineProxyPoolParameters = DefinePoolParameters &
+export type createServerParameters = DefinePoolParameters &
   (
     | {
         /** Host to run the server on. */
@@ -24,7 +24,7 @@ export type DefineProxyPoolParameters = DefinePoolParameters &
       }
   )
 
-export type DefineProxyPoolReturnType = Omit<
+export type createServerReturnType = Omit<
   Server<typeof IncomingMessage, typeof ServerResponse>,
   'address'
 > & {
@@ -33,9 +33,9 @@ export type DefineProxyPoolReturnType = Omit<
   stop(): Promise<void>
 }
 
-export function defineProxyPool(
-  parameters: DefineProxyPoolParameters,
-): DefineProxyPoolReturnType {
+export function createServer(
+  parameters: createServerParameters,
+): createServerReturnType {
   const { host = '::', instance, limit, port } = parameters
 
   const pool = definePool({ instance, limit })
@@ -44,7 +44,7 @@ export function defineProxyPool(
     ws: true,
   })
 
-  const server = createServer(async (request, response) => {
+  const server = createServer_(async (request, response) => {
     try {
       const url = request.url
       if (!url) {

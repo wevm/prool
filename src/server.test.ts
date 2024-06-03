@@ -1,13 +1,13 @@
 import { describe, expect, test } from 'vitest'
 import { type MessageEvent, WebSocket } from 'ws'
 import { anvil } from './instances/anvil.js'
-import { defineProxyPool } from './proxy.js'
+import { createServer } from './server.js'
 
 describe.each([{ instance: anvil() }])(
   'instance: $instance.name',
   ({ instance }) => {
     test('default', async () => {
-      const pool = defineProxyPool({
+      const pool = createServer({
         instance,
       })
       expect(pool).toBeDefined()
@@ -28,7 +28,7 @@ describe.each([{ instance: anvil() }])(
     })
 
     test('args: port', async () => {
-      const pool = defineProxyPool({
+      const pool = createServer({
         instance,
         port: 3000,
       })
@@ -40,7 +40,7 @@ describe.each([{ instance: anvil() }])(
     })
 
     test('args: host', async () => {
-      const pool = defineProxyPool({
+      const pool = createServer({
         instance,
         host: 'localhost',
         port: 3000,
@@ -54,7 +54,7 @@ describe.each([{ instance: anvil() }])(
     })
 
     test('request: /healthcheck', async () => {
-      const server = defineProxyPool({
+      const server = createServer({
         instance,
       })
 
@@ -67,7 +67,7 @@ describe.each([{ instance: anvil() }])(
     })
 
     test('request: /start + /stop', async () => {
-      const server = defineProxyPool({
+      const server = createServer({
         instance,
       })
 
@@ -96,7 +96,7 @@ describe.each([{ instance: anvil() }])(
     })
 
     test('ws', async () => {
-      const server = defineProxyPool({
+      const server = createServer({
         instance,
       })
 
@@ -114,7 +114,7 @@ describe.each([{ instance: anvil() }])(
 
 describe("instance: 'anvil'", () => {
   test('request: /{id}', async () => {
-    const server = defineProxyPool({
+    const server = createServer({
       instance: anvil(),
     })
 
@@ -225,7 +225,7 @@ describe("instance: 'anvil'", () => {
   })
 
   test('request: /messages', async () => {
-    const server = defineProxyPool({
+    const server = createServer({
       instance: anvil(),
     })
 
@@ -254,7 +254,7 @@ describe("instance: 'anvil'", () => {
   })
 
   test('ws', async () => {
-    const server = defineProxyPool({
+    const server = createServer({
       instance: anvil(),
     })
 
@@ -281,7 +281,7 @@ describe("instance: 'anvil'", () => {
 })
 
 test('404', async () => {
-  const server = defineProxyPool({
+  const server = createServer({
     instance: anvil(),
   })
 

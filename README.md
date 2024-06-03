@@ -3,13 +3,11 @@
 HTTP Proxy Pools.
 
 ```ts
-import { defineProxyPool } from 'prool'
+import { createServer } from 'prool'
 import { anvil } from 'prool/instances'
 
-const server = defineProxyPool({
-  instance: anvil({ 
-    forkRpcUrl: 'https://cloudflare-eth.com'
-  }),
+const server = createServer({
+  instance: anvil(),
 })
 
 await server.start() 
