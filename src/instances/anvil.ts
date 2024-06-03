@@ -307,7 +307,8 @@ export const anvil = defineInstance((parameters?: AnvilParameters) => {
 
         if (!code) {
           process.removeAllListeners()
-          if (status === 'starting') reject(new Error('Anvil exited.'))
+          if (status === 'starting')
+            reject(new Error('Failed to start anvil: exited.'))
         }
       })
 
