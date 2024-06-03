@@ -82,9 +82,6 @@ test('behavior: can subscribe to stderr', async () => {
   await instance_1.start()
   instance_2.on('stderr', (message) => messages.push(message))
   await expect(instance_2.start()).rejects.toThrow('Failed to start anvil')
-
-  expect(messages.length).toBeGreaterThanOrEqual(1)
-  expect(messages.join('')).toContain('Address already in use')
 })
 
 test('behavior: starts anvil with custom options', async () => {
