@@ -7,6 +7,9 @@
   "types": "_lib/exports/index.d.ts",
   "typings": "_lib/exports/index.d.ts",
   "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
   "exports": {
     ".": {
       "types": "./_lib/exports/index.d.ts",
