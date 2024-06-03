@@ -1,5 +1,11 @@
 # prool
 
+## 0.0.3
+
+### Patch Changes
+
+- [`0750b15`](https://github.com/wevm/prool/commit/0750b15aa06565002a75ea3333286a0d6c6d86bb) Thanks [@jxom](https://github.com/jxom)! - Fixed ESM interop.
+
 ## 0.0.2
 
 ### Patch Changes
