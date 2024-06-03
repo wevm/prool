@@ -1,7 +1,7 @@
 import { type ResultPromise, execa } from 'execa'
 import { defineInstance } from '../instance.js'
-import { stripColors } from '../utils/stripColors.js'
-import { toArgs } from '../utils/toArgs.js'
+import { stripColors } from '../utils.js'
+import { toArgs } from '../utils.js'
 
 export type AnvilParameters = {
   /**

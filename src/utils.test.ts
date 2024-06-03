@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest'
-import { toArgs } from './toArgs.js'
+
+import { toArgs, toFlagCase } from './utils.js'
 
 test.each([
   [{}, []],
@@ -14,4 +15,12 @@ test.each([
   [{ foo: 'bar', baz: 1 }, ['--foo', 'bar', '--baz', '1']],
 ])('toArgs(%o) -> %o', (input, expected) => {
   expect(toArgs(input)).toEqual(expected)
+})
+
+test.each([
+  ['foo', '--foo'],
+  ['fooBar', '--foo-bar'],
+  ['fooBarBaz', '--foo-bar-baz'],
+])('toFlagCase(%s) -> %s', (input, expected) => {
+  expect(toFlagCase(input)).toBe(expected)
 })

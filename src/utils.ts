@@ -1,4 +1,16 @@
-import { toFlagCase } from './toFlagCase.js'
+const ansiColorRegex =
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: <explanation>
+  /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g
+
+/**
+ * Strips ANSI color codes from a string.
+ *
+ * @param message The string to strip.
+ * @returns The stripped string.
+ */
+export function stripColors(message: string) {
+  return message.replace(ansiColorRegex, '')
+}
 
 /**
  * Converts an object of options to an array of command line arguments.
@@ -36,4 +48,14 @@ export function toArgs(options: {
 
     return [flag, stringified]
   })
+}
+
+/**
+ * Converts a camelCase string to a flag case string.
+ *
+ * @param key The camelCase string.
+ * @returns The flag case string.
+ */
+export function toFlagCase(key: string) {
+  return `--${key.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`)}`
 }
