@@ -125,6 +125,6 @@ test('behavior: exit when status is starting', async () => {
   instance._internal.process.kill()
 
   await expect(promise).rejects.toThrowErrorMatchingInlineSnapshot(
-    `[Error: Failed to start anvil: exited.]`,
+    '[Error: Failed to start anvil: exited.]',
   )
 })
