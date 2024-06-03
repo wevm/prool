@@ -269,13 +269,12 @@ export const anvil = defineInstance((parameters?: AnvilParameters) => {
 
   return {
     _internal: {
+      args,
       get process() {
         return process
       },
     },
     name: 'anvil',
-    host: args.host ?? '127.0.0.1',
-    port: args.port ?? 8545,
     async start({ emitter, port = args.port, status }) {
       const { promise, resolve, reject } = Promise.withResolvers<void>()
 

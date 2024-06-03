@@ -19,7 +19,8 @@
   },
   "dependencies": {
     "eventemitter3": "^5.0.1",
-    "execa": "^9.1.0"
+    "execa": "^9.1.0",
+    "get-port": "^7.1.0"
   },
   "license": "MIT",
   "homepage": "https://wevm.dev",

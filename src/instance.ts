@@ -27,7 +27,7 @@ export type InstanceStartOptions = {
 export type DefineInstanceFn<
   parameters,
   _internal extends object | undefined = object | undefined,
-> = (parameters: parameters) => Pick<Instance, 'host' | 'name' | 'port'> & {
+> = (parameters: parameters) => Pick<Instance, 'name'> & {
   _internal?: _internal | undefined
   start(
     options: InstanceStartOptions & InstanceStartOptions_internal,
@@ -51,9 +51,7 @@ export type Instance<
    * Creates an instance.
    */
   create(
-    parameters?:
-      | { host?: string | undefined; port?: number | undefined }
-      | undefined,
+    parameters?: { port?: number | undefined } | undefined,
   ): Omit<Instance<_internal>, 'create'>
   /**
    * Name of the instance.
@@ -62,12 +60,6 @@ export type Instance<
    */
   name: string
   /**
-   * Host of the instance.
-   *
-   * @example "127.0.0.1"
-   */
-  host: string
-  /**
    * Set of messages emitted from the `"message"` event stored in-memory,
    * with length {@link InstanceOptions`messageBuffer`}.
    * Useful for debugging.
@@ -75,12 +67,6 @@ export type Instance<
    * @example ["Listening on http://127.0.0.1", "Started successfully."]
    */
   messages: { clear(): void; get(): string[] }
-  /**
-   * Port of the instance.
-   *
-   * @example 8545
-   */
-  port: number
   /**
    * Status of the instance.
    *
@@ -149,7 +135,7 @@ export function defineInstance<
       const parameters = parametersOrOptions as parameters
       const options = options_ || parametersOrOptions || {}
 
-      const { _internal, host, name, port, start, stop } = {
+      const { _internal, name, port, start, stop } = {
         ...fn(parameters),
         ...createParameters,
       }
@@ -176,7 +162,6 @@ export function defineInstance<
 
       return {
         _internal: _internal as _internal,
-        host,
         messages: {
           clear() {
             messages = []
@@ -186,7 +171,6 @@ export function defineInstance<
           },
         },
         name,
-        port,
         get status() {
           return status
         },
@@ -233,10 +217,8 @@ export function defineInstance<
         },
         async stop() {
           if (status === 'stopping') return stopResolver.promise
-          if (status !== 'started')
-            throw new Error(
-              `Instance "${name}" has not started. Status: ${status}`,
-            )
+          if (status === 'starting')
+            throw new Error(`Instance "${name}" is starting.`)
 
           if (typeof timeout === 'number') {
             const timer = setTimeout(() => {

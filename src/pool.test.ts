@@ -1,61 +1,209 @@
-import { expect, test } from 'vitest'
+import getPort from 'get-port'
+import { afterEach, describe, expect, test } from 'vitest'
 import { anvil } from './instances/anvil.js'
 import { definePool } from './pool.js'
 
-test('default', async () => {
-  const pool = definePool({
-    instance: anvil(),
-  })
+let pool: ReturnType<typeof definePool>
 
-  expect(pool).toMatchInlineSnapshot(`
-    {
-      "_internal": {
-        "instance": {
-          "_internal": {
-            "process": undefined,
-          },
-          "addListener": [Function],
-          "create": [Function],
-          "host": "127.0.0.1",
-          "messages": {
-            "clear": [Function],
-            "get": [Function],
-          },
-          "name": "anvil",
-          "off": [Function],
-          "on": [Function],
-          "once": [Function],
-          "port": 8545,
-          "removeAllListeners": [Function],
-          "removeListener": [Function],
-          "start": [Function],
-          "status": "idle",
-          "stop": [Function],
-        },
-      },
-      "entries": [Function],
-      "forEach": [Function],
-      "get": [Function],
-      "has": [Function],
-      "keys": [Function],
-      "size": 0,
-      "start": [Function],
-      "values": [Function],
-    }
-  `)
+afterEach(async () => {
+  try {
+    await pool.stopAll()
+  } catch (err) {
+    console.error(err)
+  }
 })
 
-test.skip('start', async () => {
-  const pool = definePool({
-    instance: anvil(),
-  })
+describe.each([{ instance: anvil() }])(
+  'instance: $instance.name',
+  ({ instance }) => {
+    test('default', async () => {
+      pool = definePool({
+        instance,
+      })
 
-  expect(pool.size).toEqual(0)
+      expect(pool).toBeDefined()
+    })
 
-  const instance_1 = await pool.start(1)
-  expect(instance_1).toMatchInlineSnapshot(``)
-  expect(pool.size).toEqual(1)
+    test('start', async () => {
+      pool = definePool({
+        instance,
+      })
 
-  const instance_2 = await pool.start(2)
-  expect(pool.size).toEqual(2)
-})
+      expect(pool.size).toEqual(0)
+
+      const instance_1 = await pool.start(1)
+      expect(instance_1.status).toBe('started')
+      expect(pool.size).toEqual(1)
+
+      const instance_2 = await pool.start(2)
+      expect(instance_2.status).toBe('started')
+      expect(pool.size).toEqual(2)
+
+      const instance_3 = await pool.start(1337)
+      expect(instance_3.status).toBe('started')
+      expect(pool.size).toEqual(3)
+    })
+
+    test('stop / destroy', async () => {
+      pool = definePool({
+        instance,
+      })
+
+      const instance_1 = await pool.start(1)
+      const instance_2 = await pool.start(2)
+      const instance_3 = await pool.start(3)
+
+      expect(instance_1.status).toBe('started')
+      expect(instance_2.status).toBe('started')
+      expect(instance_3.status).toBe('started')
+      expect(pool.size).toEqual(3)
+
+      await pool.stop(1)
+      expect(instance_1.status).toBe('stopped')
+
+      await pool.stop(2)
+      expect(instance_2.status).toBe('stopped')
+
+      await pool.stop(3)
+      expect(instance_3.status).toBe('stopped')
+
+      await pool.stop(1)
+      await pool.stop(2)
+      await pool.stop(3)
+      await pool.stop(4)
+
+      expect(pool.size).toEqual(3)
+
+      await pool.destroy(1)
+      expect(pool.size).toEqual(2)
+      await pool.destroy(2)
+      expect(pool.size).toEqual(1)
+      await pool.destroy(3)
+      expect(pool.size).toEqual(0)
+    })
+
+    test('start > stop > start', async () => {
+      pool = definePool({
+        instance,
+      })
+
+      const instance_1 = await pool.start(1)
+      expect(instance_1.status).toBe('started')
+
+      await pool.stop(1)
+      expect(instance_1.status).toBe('stopped')
+
+      await pool.start(1)
+      expect(instance_1.status).toBe('started')
+    })
+
+    test('stopAll / destroyAll', async () => {
+      pool = definePool({
+        instance,
+      })
+
+      await pool.start(1)
+      await pool.start(2)
+      await pool.start(3)
+
+      expect(pool.size).toEqual(3)
+
+      await pool.stopAll()
+      expect(pool.size).toEqual(3)
+
+      await pool.destroyAll()
+      expect(pool.size).toEqual(0)
+    })
+
+    test('get', async () => {
+      pool = definePool({
+        instance,
+      })
+
+      const instance_1 = await pool.start(1)
+      const instance_2 = await pool.start(2)
+      const instance_3 = await pool.start(3)
+
+      expect(pool.get(1)).toStrictEqual(instance_1)
+      expect(pool.get(2)).toStrictEqual(instance_2)
+      expect(pool.get(3)).toStrictEqual(instance_3)
+    })
+
+    test('behavior: start more than once', async () => {
+      pool = definePool({
+        instance,
+      })
+
+      const promise_1 = pool.start(1)
+      const promise_2 = pool.start(1)
+      expect(promise_1).toStrictEqual(promise_2)
+
+      const instance_1 = await promise_1
+      const instance_2 = await promise_2
+      expect(instance_1).toStrictEqual(instance_2)
+    })
+
+    test('behavior: clear more than once', async () => {
+      pool = definePool({
+        instance,
+      })
+
+      await pool.start(1)
+      await pool.start(2)
+      await pool.start(3)
+
+      const promise_1 = pool.stopAll()
+      const promise_2 = pool.stopAll()
+      expect(promise_1).toStrictEqual(promise_2)
+
+      await promise_1
+      await promise_2
+    })
+
+    test('behavior: stop more than once', async () => {
+      pool = definePool({
+        instance,
+      })
+
+      await pool.start(1)
+
+      const promise_1 = pool.stop(1)
+      const promise_2 = pool.stop(1)
+      expect(promise_1).toStrictEqual(promise_2)
+
+      await promise_1
+      await promise_2
+    })
+
+    test('error: start more than once on same port', async () => {
+      const port = await getPort()
+
+      pool = definePool({
+        instance,
+      })
+
+      await pool.start(1, { port })
+
+      const promise_1 = pool.start(2, { port })
+      const promise_2 = pool.start(2, { port })
+      expect(promise_1).toStrictEqual(promise_2)
+
+      await expect(() => promise_1).rejects.toThrowError()
+      await expect(() => promise_2).rejects.toThrowError()
+    })
+
+    test('error: instance limit reached', async () => {
+      pool = definePool({
+        instance,
+        limit: 2,
+      })
+
+      await pool.start(1)
+      await pool.start(2)
+
+      await expect(() => pool.start(3)).rejects.toThrowError(
+        'Instance limit of 2 reached.',
+      )
+    })
+  },
+)

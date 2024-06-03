@@ -145,7 +145,7 @@ test('behavior: stop', async () => {
   expect(instance.status).toEqual('starting')
 
   expect(() => instance.stop()).rejects.toThrowErrorMatchingInlineSnapshot(
-    `[Error: Instance "foo" has not started. Status: starting]`,
+    `[Error: Instance "foo" is starting.]`,
   )
 })
 
