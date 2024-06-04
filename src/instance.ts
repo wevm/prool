@@ -8,11 +8,11 @@ type EventTypes = {
   stdout: [message: string]
 }
 
-type InstanceStartOptions_internal = {
+export type InstanceStartOptions_internal = {
   emitter: EventEmitter<EventTypes>
   status: Instance['status']
 }
-type InstanceStopOptions_internal = {
+export type InstanceStopOptions_internal = {
   emitter: EventEmitter<EventTypes>
   status: Instance['status']
 }
@@ -30,9 +30,10 @@ export type DefineInstanceFn<
 > = (parameters: parameters) => Pick<Instance, 'host' | 'name' | 'port'> & {
   _internal?: _internal | undefined
   start(
-    options: InstanceStartOptions & InstanceStartOptions_internal,
+    options: InstanceStartOptions,
+    options_internal: InstanceStartOptions_internal,
   ): Promise<void>
-  stop(options: InstanceStopOptions_internal): Promise<void>
+  stop(options_internal: InstanceStopOptions_internal): Promise<void>
 }
 
 export type Instance<
@@ -217,11 +218,15 @@ export function defineInstance<
           emitter.on('exit', onExit)
 
           status = 'starting'
-          start({
-            emitter,
-            port,
-            status: this.status,
-          })
+          start(
+            {
+              port,
+            },
+            {
+              emitter,
+              status: this.status,
+            },
+          )
             .then(() => {
               status = 'started'
 

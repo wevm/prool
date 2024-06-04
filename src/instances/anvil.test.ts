@@ -47,7 +47,7 @@ test('behavior: instance errored (duplicate ports)', async () => {
 
   await instance_1.start()
   await expect(() => instance_2.start()).rejects.toThrowError(
-    'Failed to start anvil',
+    'Failed to start process "anvil"',
   )
 })
 
@@ -81,7 +81,9 @@ test('behavior: can subscribe to stderr', async () => {
 
   await instance_1.start()
   instance_2.on('stderr', (message) => messages.push(message))
-  await expect(instance_2.start()).rejects.toThrow('Failed to start anvil')
+  await expect(instance_2.start()).rejects.toThrow(
+    'Failed to start process "anvil"',
+  )
 })
 
 test('behavior: starts anvil with custom options', async () => {
@@ -122,6 +124,6 @@ test('behavior: exit when status is starting', async () => {
   instance._internal.process.kill()
 
   await expect(promise).rejects.toThrowErrorMatchingInlineSnapshot(
-    '[Error: Failed to start anvil: exited.]',
+    '[Error: Failed to start process "anvil": exited.]',
   )
 })

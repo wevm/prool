@@ -212,7 +212,7 @@ test('behavior: events', async () => {
       name: 'foo',
       host: 'localhost',
       port: 3000,
-      async start({ emitter }) {
+      async start(_, { emitter }) {
         emitter.emit('message', count.toString())
         emitter.emit('listening')
         if (count > 0) emitter.emit('stderr', 'stderr')
@@ -268,7 +268,7 @@ test('behavior: messages', async () => {
       name: 'foo',
       host: 'localhost',
       port: 3000,
-      async start({ emitter }) {
+      async start(_, { emitter }) {
         for (let i = 0; i < 50; i++) emitter.emit('message', i.toString())
       },
       async stop() {},

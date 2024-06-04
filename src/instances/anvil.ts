@@ -1,6 +1,5 @@
-import { type ResultPromise, execa } from 'execa'
 import { defineInstance } from '../instance.js'
-import { stripColors } from '../utils.js'
+import { execa } from '../processes/execa.js'
 import { toArgs } from '../utils.js'
 
 export type AnvilParameters = {
@@ -259,64 +258,36 @@ export type AnvilParameters = {
 export const anvil = defineInstance((parameters?: AnvilParameters) => {
   const { binary = 'anvil', ...args } = parameters || {}
 
-  let process: ResultPromise<{ cleanup: true; reject: false }>
-
-  async function stop() {
-    const killed = process.kill()
-    if (!killed) throw new Error('Failed to stop anvil')
-    return new Promise((resolve) => process.on('close', resolve))
-  }
+  const name = 'anvil'
+  const process = execa({ name })
 
   return {
     _internal: {
       args,
       get process() {
-        return process
+        return process._internal.process
       },
     },
     host: args.host ?? 'localhost',
-    name: 'anvil',
+    name,
     port: args.port ?? 8545,
-    async start({ emitter, port = args.port, status }) {
-      const { promise, resolve, reject } = Promise.withResolvers<void>()
-
-      process = execa(binary, toArgs({ ...args, port }), {
-        cleanup: true,
-        reject: false,
-      })
-
-      process.stdout.on('data', (data) => {
-        const message = stripColors(data.toString())
-        emitter.emit('message', message)
-        emitter.emit('stdout', message)
-        if (message.includes('Listening on')) {
-          emitter.emit('listening')
-          resolve()
-        }
-      })
-      process.stderr.on('data', async (data) => {
-        const message = stripColors(data.toString())
-        emitter.emit('message', message)
-        emitter.emit('stderr', message)
-        await stop()
-        reject(new Error(`Failed to start anvil: ${data.toString()}`))
-      })
-      process.on('close', () => process.removeAllListeners())
-      process.on('exit', (code, signal) => {
-        emitter.emit('exit', code, signal)
-
-        if (!code) {
-          process.removeAllListeners()
-          if (status === 'starting')
-            reject(new Error('Failed to start anvil: exited.'))
-        }
-      })
-
-      return promise
+    async start({ port = args.port }, options) {
+      return await process.start(
+        ($) => $`${binary} ${toArgs({ ...args, port })}`,
+        {
+          ...options,
+          // Resolve when the process is listening via a "Listening on" message.
+          resolver({ process, resolve }) {
+            process.stdout.on('data', (data) => {
+              const message = data.toString()
+              if (message.includes('Listening on')) resolve()
+            })
+          },
+        },
+      )
     },
     async stop() {
-      process.removeAllListeners()
-      await stop()
+      await process.stop()
     },
   }
 })

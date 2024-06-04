@@ -43,13 +43,7 @@ export function stripColors(message: string) {
   return message.replace(ansiColorRegex, '')
 }
 
-/**
- * Converts an object of options to an array of command line arguments.
- *
- * @param options The options object.
- * @returns The command line arguments.
- */
-export function toArgs(options: {
+export type ToArgsParameters = {
   [key: string]:
     | Record<string, string>
     | string
@@ -57,8 +51,16 @@ export function toArgs(options: {
     | number
     | bigint
     | undefined
-}) {
-  return Object.entries(options).flatMap(([key, value]) => {
+}
+
+/**
+ * Converts an object of options to an array of command line arguments.
+ *
+ * @param options The options object.
+ * @returns The command line arguments.
+ */
+export function toArgs(parameters: ToArgsParameters) {
+  return Object.entries(parameters).flatMap(([key, value]) => {
     if (value === undefined) return []
 
     if (typeof value === 'object' && value !== null)
