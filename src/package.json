@@ -1,6 +1,6 @@
 {
   "name": "prool",
-  "description": "",
+  "description": "HTTP testing instances for Ethereum",
   "version": "0.0.4",
   "type": "module",
   "module": "_lib/exports/index.mjs",
