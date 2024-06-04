@@ -14,7 +14,7 @@ export {
 } from '../pool.js'
 
 export {
-  type createServerParameters,
-  type createServerReturnType,
+  type CreateServerParameters,
+  type CreateServerReturnType,
   createServer,
 } from '../server.js'

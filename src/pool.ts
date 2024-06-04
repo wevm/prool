@@ -4,12 +4,12 @@ import type { Instance } from './instance.js'
 
 type Instance_ = Omit<Instance, 'create'>
 
-export type Pool<key = number> = Pick<
+export type Pool<key extends number | string = number | string> = Pick<
   Map<key, Instance_>,
   'entries' | 'keys' | 'forEach' | 'get' | 'has' | 'size' | 'values'
 > & {
   _internal: {
-    instance: Instance_
+    instance: Instance_ | ((key: key) => Instance_)
   }
   destroy(key: key): Promise<void>
   destroyAll(): Promise<void>
@@ -19,14 +19,18 @@ export type Pool<key = number> = Pick<
   stopAll(): Promise<void>
 }
 
-export type DefinePoolParameters = {
+export type DefinePoolParameters<
+  key extends number | string = number | string,
+> = {
   /** Instance for the pool. */
-  instance: Instance
+  instance: Instance | ((key: key) => Instance)
   /** The maximum number of instances that can be started. */
   limit?: number | number
 }
 
-export type DefinePoolReturnType<key = number> = Pool<key>
+export type DefinePoolReturnType<
+  key extends number | string = number | string,
+> = Pool<key>
 
 /**
  * Defines an instance pool. Instances can be started, cached, and stopped against an identifier.
@@ -42,10 +46,10 @@ export type DefinePoolReturnType<key = number> = Pool<key>
  * const instance_3 = await pool.start(3)
  * ```
  */
-export function definePool<key = number>(
-  parameters: DefinePoolParameters,
+export function definePool<key extends number | string = number>(
+  parameters: DefinePoolParameters<key>,
 ): DefinePoolReturnType<key> {
-  const { instance, limit } = parameters
+  const { limit } = parameters
 
   type Instance_ = Omit<Instance, 'create'>
   const instances = new Map<key, Instance_>()
@@ -65,7 +69,7 @@ export function definePool<key = number>(
 
   return {
     _internal: {
-      instance,
+      instance: parameters.instance,
     },
     async destroy(key) {
       const destroyPromise = promises.destroy.get(key)
@@ -130,7 +134,12 @@ export function definePool<key = number>(
 
       promises.start.set(key, resolver.promise)
 
+      const instance =
+        typeof parameters.instance === 'function'
+          ? parameters.instance(key)
+          : parameters.instance
       const { port = await getPort() } = options
+
       const instance_ = instances.get(key) || instance.create({ port })
       instance_
         .start()

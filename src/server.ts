@@ -12,7 +12,7 @@ import { extractPath } from './utils.js'
 
 const { createProxyServer } = httpProxy
 
-export type createServerParameters = DefinePoolParameters &
+export type CreateServerParameters = DefinePoolParameters<number> &
   (
     | {
         /** Host to run the server on. */
@@ -26,7 +26,7 @@ export type createServerParameters = DefinePoolParameters &
       }
   )
 
-export type createServerReturnType = Omit<
+export type CreateServerReturnType = Omit<
   Server<typeof IncomingMessage, typeof ServerResponse>,
   'address'
 > & {
@@ -36,8 +36,8 @@ export type createServerReturnType = Omit<
 }
 
 export function createServer(
-  parameters: createServerParameters,
-): createServerReturnType {
+  parameters: CreateServerParameters,
+): CreateServerReturnType {
   const { host = '::', instance, limit, port } = parameters
 
   const pool = definePool({ instance, limit })

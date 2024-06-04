@@ -15,6 +15,10 @@
       "types": "./_lib/exports/index.d.ts",
       "default": "./_lib/exports/index.js"
     },
+    "./processes": {
+      "types": "./_lib/exports/processes.d.ts",
+      "default": "./_lib/exports/processes.js"
+    },
     "./instances": {
       "types": "./_lib/exports/instances.d.ts",
       "default": "./_lib/exports/instances.js"

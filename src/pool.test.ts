@@ -44,6 +44,22 @@ describe.each([{ instance: anvil() }])(
       expect(pool.size).toEqual(3)
     })
 
+    test('callback instance', async () => {
+      const keys: (number | string)[] = []
+      pool = definePool({
+        instance(key) {
+          keys.push(key)
+          return instance
+        },
+      })
+
+      await pool.start(1)
+      await pool.start(2)
+      await pool.start(1337)
+
+      expect(keys).toStrictEqual([1, 2, 1337])
+    })
+
     test('stop / destroy', async () => {
       pool = definePool({
         instance,
