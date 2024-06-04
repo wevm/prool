@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  HTTP Proxy Pools for Ethereum</a>
+  HTTP testing instances for Ethereum</a>
 <p>
 
 ## Usage
