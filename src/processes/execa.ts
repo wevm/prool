@@ -2,7 +2,7 @@ import { type ResultPromise, execa as exec } from 'execa'
 import type { InstanceStartOptions_internal } from '../instance.js'
 import { stripColors } from '../utils.js'
 
-type Process_internal = ResultPromise<{ cleanup: true; reject: false }>
+export type Process_internal = ResultPromise<{ cleanup: true; reject: false }>
 
 export type ExecaStartOptions = InstanceStartOptions_internal & {
   resolver(options: {
