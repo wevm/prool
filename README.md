@@ -1,6 +1,17 @@
-# prool
+<br/>
 
-HTTP Proxy Pools.
+<p align="center">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/wevm/prool/blob/main/.github/prool-dark.svg">
+      <img alt="mipd logo" src="https://github.com/wevm/prool/blob/main/.github/prool-light.svg" width="auto" height="60">
+    </picture>
+</p>
+
+<p align="center">
+  HTTP Proxy Pools for Ethereum</a>
+<p>
+
+## Usage
 
 ```ts
 import { createServer } from 'prool'
