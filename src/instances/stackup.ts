@@ -100,8 +100,10 @@ export const stackup = defineInstance((parameters?: StackupParameters) => {
     host,
     name,
     port: args.port ?? 4337,
-    async start({ port = args.port ?? 4337 }, options) {
+    async start({ port = args.port }, options) {
       const args_ = [
+        '--add-host',
+        'host.docker.internal:host-gateway',
         '-p',
         `${port}:${port}`,
         '-e',
@@ -130,27 +132,17 @@ export const stackup = defineInstance((parameters?: StackupParameters) => {
         '--mode',
         'private',
       ]
-
-      const up = await ping({ host, port })
-      if (up)
-        throw new Error(`Instance already instantiated on port ${host}:${port}`)
-
       return await process.start(($) => $`docker run ${args_}`, {
         ...options,
         resolver({ process, resolve, reject }) {
-          const interval = setInterval(async () => {
-            const up = await ping({ host, port })
-            if (up) {
-              clearInterval(interval)
-              resolve()
-            }
-          }, 100)
-
           process.stderr.on('data', async (data) => {
-            setTimeout(() => {
-              clearInterval(interval)
+            const message = data.toString()
+            if (message.includes('Set nextTxnTs to'))
+              // For some reason, stackup-bundler logs to stderr. So after we receive a message back
+              // from the server, we will wait to make sure an error didn't occur after connection.
+              setTimeout(() => resolve(), 100)
+            if (message.toLowerCase().match(/panic|error|connection refused/))
               reject(data)
-            }, 1000)
           })
         },
       })
@@ -160,20 +152,3 @@ export const stackup = defineInstance((parameters?: StackupParameters) => {
     },
   }
 })
-
-async function ping({ host, port }: { host: string; port: number }) {
-  return await fetch(`http://${host}:${port}`, {
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      method: 'eth_chainId',
-      params: [],
-      id: 1,
-    }),
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    method: 'POST',
-  })
-    .then(() => true)
-    .catch(() => false)
-}

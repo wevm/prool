@@ -61,11 +61,11 @@ test('behavior: instance errored (duplicate ports)', async () => {
 
   await instance_1.start()
   await expect(() => instance_2.start()).rejects.toThrowError(
-    'Instance already instantiated',
+    'port is already allocated',
   )
 })
 
-test.skip('behavior: start and stop multiple times', async () => {
+test('behavior: start and stop multiple times', async () => {
   const instance = defineInstance()
 
   await instance.start()
@@ -86,9 +86,7 @@ test('behavior: can subscribe to stderr', async () => {
 
   await instance_1.start()
   instance_2.on('stderr', (message) => messages.push(message))
-  await expect(instance_2.start()).rejects.toThrow(
-    'Instance already instantiated on port localhost:1337',
-  )
+  await expect(instance_2.start()).rejects.toThrow('port is already allocated.')
 })
 
 test('behavior: exit', async () => {
