@@ -357,6 +357,45 @@ describe("instance: 'anvil'", () => {
   })
 })
 
+describe("instance: 'stackup'", () => {
+  test(
+    'request: /{id}',
+    async () => {
+      const server = createServer({
+        instance: stackup(stackupOptions({ port })),
+      })
+
+      const stop = await server.start()
+      const { port: port_2 } = server.address()!
+      const response = await fetch(`http://localhost:${port_2}/1`, {
+        body: JSON.stringify({
+          method: 'eth_supportedEntryPoints',
+          params: [],
+          id: 0,
+          jsonrpc: '2.0',
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        method: 'POST',
+      })
+      expect(response.status).toBe(200)
+      expect(await response.json()).toMatchInlineSnapshot(`
+        {
+          "id": 0,
+          "jsonrpc": "2.0",
+          "result": [
+            "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
+          ],
+        }
+      `)
+
+      await stop()
+    },
+    { timeout: 600000 },
+  )
+})
+
 test('404', async () => {
   const server = createServer({
     instance: anvil(),
