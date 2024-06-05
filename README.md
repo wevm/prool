@@ -84,7 +84,7 @@ await executionServer.start()
 
 const bundlerServer = createServer({
   instance: (key) => stackup({
-    executionNode: `http://localhost:8545/${key}`,
+    ethClientUrl: `http://localhost:8545/${key}`,
     privateKey: '0x...',
   })
 })
