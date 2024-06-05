@@ -1,5 +1,11 @@
 # prool
 
+## 0.0.9
+
+### Patch Changes
+
+- [#10](https://github.com/wevm/prool/pull/10) [`b7a4c95`](https://github.com/wevm/prool/commit/b7a4c9595bde2e4568e41d204f310540d0a16e3d) Thanks [@jxom](https://github.com/jxom)! - Added `alto` instance.
+
 ## 0.0.8
 
 ### Patch Changes
