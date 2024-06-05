@@ -59,8 +59,14 @@ jobs:
         with: 
           node-version: 22
 
-      - name: Set up foundry
+      - name: Set up Foundry
         uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Set up Docker
+        uses: docker-practice/actions-setup-docker@master
+        
+      - name: Pull Stackup
+        run: docker pull stackupwallet/stackup-bundler:latest
 
       - name: Run tests
         run: pnpm test
