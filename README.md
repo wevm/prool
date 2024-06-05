@@ -45,7 +45,7 @@ bun i prool
 
 #### Requirements
 
-- [Anvil](https://getfoundry.sh/)
+- [Foundry](https://getfoundry.sh/): `curl -L https://foundry.paradigm.xyz | bash`
 
 #### Usage
 
