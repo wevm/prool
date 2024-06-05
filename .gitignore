@@ -6,3 +6,6 @@ coverage
 node_modules
 tsconfig.*.tsbuildinfo
 tsconfig.tsbuildinfo
+
+.tool-versions
+bin
