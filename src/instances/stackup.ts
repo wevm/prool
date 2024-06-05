@@ -1,3 +1,4 @@
+import { platform } from 'node:os'
 import { defineInstance } from '../instance.js'
 import { execa } from '../processes/execa.js'
 
@@ -102,8 +103,7 @@ export const stackup = defineInstance((parameters?: StackupParameters) => {
     port: args.port ?? 4337,
     async start({ port = args.port }, options) {
       const args_ = [
-        '--net',
-        'host',
+        ...(platform() === 'linux' ? ['--net', 'host'] : []),
         '--add-host',
         'host.docker.internal:host-gateway',
         '--add-host',
