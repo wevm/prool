@@ -17,8 +17,8 @@ Prool is a library that provides programmatic HTTP testing instances for Ethereu
 
 Prool contains a set of pre-configured instances that can be used to simulate Ethereum server environments, being:
 
-- **Local Execution Nodes:** [`anvil`](#TODO)
-- **Bundler Nodes:** `alto`⚠️, `rundler`⚠️, `silius`⚠️, [`stackup`](#TODO)
+- **Local Execution Nodes:** [`anvil`](#anvil-execution-node)
+- **Bundler Nodes:** [`alto`](#alto-bundler-node), `rundler`⚠️, `silius`⚠️, [`stackup`](#stackup-bundler-node)
 - **Indexer Nodes:** `ponder`⚠️
 
 ⚠️ = soon
@@ -43,8 +43,11 @@ bun i prool
 
 ### Anvil (Execution Node)
 
-> [!WARNING]
-> This instance requires [Anvil](https://getfoundry.sh/) to be installed on your machine.
+#### Requirements
+
+- [Anvil](https://getfoundry.sh/)
+
+#### Usage
 
 ```ts
 import { createServer } from 'prool'
@@ -62,10 +65,45 @@ await server.start()
 // "http://localhost:8545/n"
 ```
 
+### Alto (Bundler Node)
+
+```ts
+import { createServer } from 'prool'
+import { anvil, alto } from 'prool/instances'
+
+const executionServer = createServer({
+  instance: anvil(),
+  port: 8545
+})
+await executionServer.start() 
+// Instances accessible at:
+// "http://localhost:8545/1"
+// "http://localhost:8545/2"
+// "http://localhost:8545/3"
+// "http://localhost:8545/n"
+
+const bundlerServer = createServer({
+  instance: (key) => alto({
+    entrypoints: ['0x0000000071727De22E5E9d8BAf0edAc6f37da032'],
+    rpcUrl: `http://localhost:8545/${key}`,
+    executorPrivateKeys: ['0x...'],
+  })
+})
+// Instances accessible at:
+// "http://localhost:3000/1" (→ http://localhost:8545/1)
+// "http://localhost:3000/2" (→ http://localhost:8545/2)
+// "http://localhost:3000/3" (→ http://localhost:8545/3)
+// "http://localhost:3000/n" (→ http://localhost:8545/n)
+```
+
 ### Stackup (Bundler Node)
 
-> [!WARNING]
-> This instance requires [Docker](https://docs.docker.com/get-docker/) to be installed on your machine.
+#### Requirements
+
+- [Docker](https://docs.docker.com/get-docker/)
+- Stackup Docker Image: `docker pull stackupwallet/stackup-bundler:latest`
+
+#### Usage
 
 ```ts
 import { createServer } from 'prool'

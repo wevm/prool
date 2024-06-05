@@ -25,6 +25,7 @@
     }
   },
   "dependencies": {
+    "@pimlico/alto": "0.0.0-alto-package.20240605T105414",
     "eventemitter3": "^5.0.1",
     "execa": "^9.1.0",
     "get-port": "^7.1.0",
