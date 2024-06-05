@@ -15,11 +15,11 @@
 
 Prool is a library that provides programmatic HTTP testing instances for Ethereum. It is designed to be used in testing environments (e.g. [Vitest](https://vitest.dev/)) where you need to interact with an Ethereum server instance (e.g. Execution Node, 4337 Bundler, Indexer, etc) over HTTP or WebSocket.
 
-Prool contains a set of pre-configured instances that can be used to simulate Ethereum server environments, such as:
+Prool contains a set of pre-configured instances that can be used to simulate Ethereum server environments, being:
 
-- [`anvil`](#TODO): Local execution node.
-- `alto`⚠️, `rundler`⚠️, `silius`⚠️, [`stackup`](#TODO): Bundler nodes.
-- `ponder`⚠️: Indexer node.
+- **Local Execution Nodes:** [`anvil`](#TODO)
+- **Bundler Nodes:** `alto`⚠️, `rundler`⚠️, `silius`⚠️, [`stackup`](#TODO)
+- **Indexer Nodes:** `ponder`⚠️
 
 ⚠️ = soon
 
