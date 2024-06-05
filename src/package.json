@@ -1,7 +1,7 @@
 {
   "name": "prool",
   "description": "HTTP testing instances for Ethereum",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "type": "module",
   "module": "_lib/exports/index.mjs",
   "types": "_lib/exports/index.d.ts",
@@ -41,7 +41,10 @@
   "license": "MIT",
   "homepage": "https://wevm.dev",
   "repository": "wevm/prool",
-  "authors": ["awkweb", "jxom"],
+  "authors": [
+    "awkweb",
+    "jxom"
+  ],
   "funding": [
     {
       "type": "github",

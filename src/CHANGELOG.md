@@ -1,5 +1,11 @@
 # prool
 
+## 0.0.10
+
+### Patch Changes
+
+- [`55fb258`](https://github.com/wevm/prool/commit/55fb25899f2e7ace291bf897c92b688740b27206) Thanks [@jxom](https://github.com/jxom)! - Fixed module resolution in `alto` instance.
+
 ## 0.0.9
 
 ### Patch Changes
