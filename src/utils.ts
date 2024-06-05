@@ -47,6 +47,7 @@ export type ToArgsParameters = {
   [key: string]:
     | Record<string, string>
     | string
+    | readonly string[]
     | boolean
     | number
     | bigint
@@ -62,6 +63,8 @@ export type ToArgsParameters = {
 export function toArgs(parameters: ToArgsParameters) {
   return Object.entries(parameters).flatMap(([key, value]) => {
     if (value === undefined) return []
+
+    if (Array.isArray(value)) return [toFlagCase(key), value.join(',')]
 
     if (typeof value === 'object' && value !== null)
       return Object.entries(value).flatMap(([subKey, subValue]) => {

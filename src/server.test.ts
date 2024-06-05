@@ -1,7 +1,8 @@
 import getPort from 'get-port'
 import { beforeAll, describe, expect, test } from 'vitest'
 import { type MessageEvent, WebSocket } from 'ws'
-import { stackupOptions } from '../test/utils.js'
+import { altoOptions, stackupOptions } from '../test/utils.js'
+import { alto } from './instances/alto.js'
 import { anvil } from './instances/anvil.js'
 import { stackup } from './instances/stackup.js'
 import { createServer } from './server.js'
@@ -12,6 +13,9 @@ beforeAll(() => anvil({ port }).start())
 
 describe.each([
   { instance: anvil() },
+  {
+    instance: alto(altoOptions({ port })),
+  },
   {
     instance: stackup(stackupOptions({ port })),
   },

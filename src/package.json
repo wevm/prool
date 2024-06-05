@@ -30,6 +30,14 @@
     "get-port": "^7.1.0",
     "http-proxy": "^1.18.1"
   },
+  "peerDependencies": {
+    "@pimlico/alto": "*"
+  },
+  "peerDependenciesMeta": {
+    "@pimlico/alto": {
+      "optional": true
+    }
+  },
   "license": "MIT",
   "homepage": "https://wevm.dev",
   "repository": "wevm/prool",

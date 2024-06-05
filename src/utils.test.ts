@@ -31,6 +31,7 @@ test.each([
   [{ foo: 1 }, ['--foo', '1']],
   [{ foo: 1n }, ['--foo', '1']],
   [{ foo: 'bar', baz: 1 }, ['--foo', 'bar', '--baz', '1']],
+  [{ foo: ['bar', 'baz'] }, ['--foo', 'bar,baz']],
 ])('toArgs(%o) -> %o', (input, expected) => {
   expect(toArgs(input)).toEqual(expected)
 })

@@ -1,15 +1,25 @@
-import { afterEach, expect, test } from 'vitest'
+import getPort from 'get-port'
+import { afterEach, beforeAll, expect, test } from 'vitest'
+
+import { altoOptions } from '../../test/utils.js'
 import type { Instance } from '../instance.js'
-import { type AnvilParameters, anvil } from './anvil.js'
+import { type AltoParameters, alto } from './alto.js'
+import { anvil } from './anvil.js'
 
 const instances: Instance[] = []
-const timestamp = 1717114065
 
-const defineInstance = (parameters: AnvilParameters = {}) => {
-  const instance = anvil(parameters)
+const port = await getPort()
+
+const defineInstance = (parameters: Partial<AltoParameters> = {}) => {
+  const instance = alto({
+    ...altoOptions({ port }),
+    ...parameters,
+  })
   instances.push(instance)
   return instance
 }
+
+beforeAll(() => anvil({ port }).start())
 
 afterEach(async () => {
   for (const instance of instances) await instance.stop().catch(() => {})
@@ -19,7 +29,7 @@ test('default', async () => {
   const messages: string[] = []
   const stdouts: string[] = []
 
-  const instance = defineInstance({ timestamp })
+  const instance = defineInstance()
 
   instance.on('message', (m) => messages.push(m))
   instance.on('stdout', (m) => stdouts.push(m))
@@ -42,13 +52,11 @@ test('default', async () => {
 })
 
 test('behavior: instance errored (duplicate ports)', async () => {
-  const instance_1 = defineInstance({ timestamp, port: 8545 })
-  const instance_2 = defineInstance({ timestamp, port: 8545 })
+  const instance_1 = defineInstance({ port: 8545 })
+  const instance_2 = defineInstance({ port: 8545 })
 
   await instance_1.start()
-  await expect(() => instance_2.start()).rejects.toThrowError(
-    'Failed to start process "anvil"',
-  )
+  await expect(() => instance_2.start()).rejects.toThrowError('EADDRINUSE')
 })
 
 test('behavior: start and stop multiple times', async () => {
@@ -66,7 +74,7 @@ test('behavior: start and stop multiple times', async () => {
 
 test('behavior: can subscribe to stdout', async () => {
   const messages: string[] = []
-  const instance = defineInstance({ timestamp })
+  const instance = defineInstance()
   instance.on('stdout', (message) => messages.push(message))
 
   await instance.start()
@@ -76,29 +84,16 @@ test('behavior: can subscribe to stdout', async () => {
 test('behavior: can subscribe to stderr', async () => {
   const messages: string[] = []
 
-  const instance_1 = defineInstance({ timestamp, port: 8545 })
-  const instance_2 = defineInstance({ timestamp, port: 8545 })
+  const instance_1 = defineInstance({ port: 8545 })
+  const instance_2 = defineInstance({ port: 8545 })
 
   await instance_1.start()
   instance_2.on('stderr', (message) => messages.push(message))
-  await expect(instance_2.start()).rejects.toThrow(
-    'Failed to start process "anvil"',
-  )
-})
-
-test('behavior: starts anvil with custom options', async () => {
-  const instance = defineInstance({
-    timestamp,
-    chainId: 123,
-    forkBlockNumber: 69420,
-    forkUrl: 'https://cloudflare-eth.com',
-  })
-
-  await instance.start()
+  await expect(instance_2.start()).rejects.toThrow('EADDRINUSE')
 })
 
 test('behavior: exit', async () => {
-  const instance = defineInstance({ timestamp })
+  const instance = defineInstance()
 
   let exitCode: number | null | undefined = undefined
   instance.on('exit', (code) => {
@@ -110,13 +105,13 @@ test('behavior: exit', async () => {
 
   instance._internal.process.kill()
 
-  await new Promise<void>((res) => setTimeout(res, 100))
+  await new Promise<void>((res) => setTimeout(res, 500))
   expect(instance.status).toEqual('stopped')
   expect(typeof exitCode !== 'undefined').toBeTruthy()
 })
 
 test('behavior: exit when status is starting', async () => {
-  const instance = defineInstance({ timestamp })
+  const instance = defineInstance()
 
   const promise = instance.start()
   expect(instance.status).toEqual('starting')
@@ -124,6 +119,6 @@ test('behavior: exit when status is starting', async () => {
   instance._internal.process.kill()
 
   await expect(promise).rejects.toThrowErrorMatchingInlineSnapshot(
-    `[Error: Failed to start process "anvil": exited]`,
+    `[Error: Failed to start process "alto": exited]`,
   )
 })

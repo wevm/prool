@@ -15,14 +15,6 @@ export {
 } from '../pool.js'
 
 export {
-  type ExecaParameters,
-  type ExecaProcess,
-  type ExecaReturnType,
-  type ExecaStartOptions,
-  execa,
-} from '../processes/execa.js'
-
-export {
   type CreateServerParameters,
   type CreateServerReturnType,
   createServer,

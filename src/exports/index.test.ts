@@ -6,7 +6,6 @@ test('exports', () => {
     [
       "defineInstance",
       "definePool",
-      "execa",
       "createServer",
     ]
   `)

@@ -30,6 +30,7 @@ export type ExecaReturnType = ExecaProcess
 export function execa(parameters: ExecaParameters): ExecaReturnType {
   const { name } = parameters
 
+  const errorMessages: string[] = []
   let process: Process_internal
 
   async function stop() {
@@ -76,6 +77,10 @@ export function execa(parameters: ExecaParameters): ExecaReturnType {
       })
       process.stderr.on('data', async (data) => {
         const message = stripColors(data.toString())
+
+        errorMessages.push(message)
+        if (errorMessages.length > 20) errorMessages.shift()
+
         emitter.emit('message', message)
         emitter.emit('stderr', message)
       })
@@ -86,7 +91,15 @@ export function execa(parameters: ExecaParameters): ExecaReturnType {
         if (!code) {
           process.removeAllListeners()
           if (status === 'starting')
-            reject(new Error(`Failed to start process "${name}": exited.`))
+            reject(
+              new Error(
+                `Failed to start process "${name}": ${
+                  errorMessages.length > 0
+                    ? `\n\n${errorMessages.join('\n')}`
+                    : 'exited'
+                }`,
+              ),
+            )
         }
       })
 

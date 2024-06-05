@@ -1,7 +1,8 @@
 import getPort from 'get-port'
 import { afterEach, beforeAll, describe, expect, test } from 'vitest'
 
-import { stackupOptions } from '../test/utils.js'
+import { altoOptions, stackupOptions } from '../test/utils.js'
+import { alto } from './instances/alto.js'
 import { anvil } from './instances/anvil.js'
 import { stackup } from './instances/stackup.js'
 import { definePool } from './pool.js'
@@ -21,6 +22,9 @@ afterEach(async () => {
 
 describe.each([
   { instance: anvil() },
+  {
+    instance: alto(altoOptions({ port })),
+  },
   {
     instance: stackup(stackupOptions({ port })),
   },
