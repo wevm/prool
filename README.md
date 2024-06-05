@@ -25,7 +25,26 @@ Prool contains a set of pre-configured instances that can be used to simulate Et
 
 You can also create your own custom instances by using the [`defineInstance` function](#TODO).
 
+## Install
+
+```bash
+npm i prool
+```
+
+```bash
+pnpm add prool
+```
+
+```bash
+bun i prool
+```
+
 ## Usage
+
+### Anvil (Execution Node)
+
+> [!WARNING]
+> This instance requires [Anvil](https://getfoundry.sh/) to be installed on your machine.
 
 ```ts
 import { createServer } from 'prool'
@@ -42,3 +61,45 @@ await server.start()
 // "http://localhost:8545/3"
 // "http://localhost:8545/n"
 ```
+
+### Stackup (Bundler Node)
+
+> [!WARNING]
+> This instance requires [Docker](https://docs.docker.com/get-docker/) to be installed on your machine.
+
+```ts
+import { createServer } from 'prool'
+import { anvil, stackup } from 'prool/instances'
+
+const executionServer = createServer({
+  instance: anvil(),
+  port: 8545
+})
+await executionServer.start() 
+// Instances accessible at:
+// "http://localhost:8545/1"
+// "http://localhost:8545/2"
+// "http://localhost:8545/3"
+// "http://localhost:8545/n"
+
+const bundlerServer = createServer({
+  instance: (key) => stackup({
+    executionNode: `http://localhost:8545/${key}`,
+    privateKey: '0x...',
+  })
+})
+// Instances accessible at:
+// "http://localhost:4337/1" (→ http://localhost:8545/1)
+// "http://localhost:4337/2" (→ http://localhost:8545/2)
+// "http://localhost:4337/3" (→ http://localhost:8545/3)
+// "http://localhost:4337/n" (→ http://localhost:8545/n)
+```
+
+## Authors
+
+- [@jxom](https://github.com/jxom) (jxom.eth, [Twitter](https://twitter.com/jakemoxey))
+- [@tmm](https://github.com/tmm) (awkweb.eth, [Twitter](https://twitter.com/awkweb))
+
+## License
+
+[MIT](/LICENSE) License
