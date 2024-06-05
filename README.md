@@ -95,6 +95,7 @@ const bundlerServer = createServer({
     executorPrivateKeys: ['0x...'],
   })
 })
+await bundlerServer.start()
 // Instances accessible at:
 // "http://localhost:3000/1" (→ http://localhost:8545/1)
 // "http://localhost:3000/2" (→ http://localhost:8545/2)
@@ -132,6 +133,7 @@ const bundlerServer = createServer({
     privateKey: '0x...',
   })
 })
+await bundlerServer.start()
 // Instances accessible at:
 // "http://localhost:4337/1" (→ http://localhost:8545/1)
 // "http://localhost:4337/2" (→ http://localhost:8545/2)
