@@ -1,5 +1,11 @@
 # prool
 
+## 0.0.8
+
+### Patch Changes
+
+- [`cfc07ae`](https://github.com/wevm/prool/commit/cfc07ae5f8aa975155b1c9746d04eacbcd349366) Thanks [@jxom](https://github.com/jxom)! - Exported types.
+
 ## 0.0.7
 
 ### Patch Changes
