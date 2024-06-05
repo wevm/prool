@@ -102,8 +102,12 @@ export const stackup = defineInstance((parameters?: StackupParameters) => {
     port: args.port ?? 4337,
     async start({ port = args.port }, options) {
       const args_ = [
+        '--net',
+        'host',
         '--add-host',
         'host.docker.internal:host-gateway',
+        '--add-host',
+        'localhost:host-gateway',
         '-p',
         `${port}:${port}`,
         '-e',
@@ -114,7 +118,7 @@ export const stackup = defineInstance((parameters?: StackupParameters) => {
 
           if (key === 'ethClientUrl')
             value = (value as string).replaceAll(
-              /localhost|127\.0\.0\.1|0\.0\.0\.0/g,
+              /127\.0\.0\.1|0\.0\.0\.0/g,
               'host.docker.internal',
             )
           if (key === 'privateKey') value = (value as string).replace('0x', '')
@@ -137,11 +141,15 @@ export const stackup = defineInstance((parameters?: StackupParameters) => {
         resolver({ process, resolve, reject }) {
           process.stderr.on('data', async (data) => {
             const message = data.toString()
+            // For some reason, `stackup-bundler` logs to stderr. So we have to try
+            // and dissect what is an error, and what is not. 😅
             if (message.includes('Set nextTxnTs to'))
-              // For some reason, stackup-bundler logs to stderr. So after we receive a message back
-              // from the server, we will wait to make sure an error didn't occur after connection.
               setTimeout(() => resolve(), 100)
-            if (message.toLowerCase().match(/panic|error|connection refused/))
+            else if (
+              message
+                .toLowerCase()
+                .match(/panic|error|connection refused|address already in use/)
+            )
               reject(data)
           })
         },
