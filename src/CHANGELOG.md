@@ -1,5 +1,13 @@
 # prool
 
+## 0.0.5
+
+### Patch Changes
+
+- [`cb371f6`](https://github.com/wevm/prool/commit/cb371f64ddd50d3611aa959f618506f18688f46d) Thanks [@jxom](https://github.com/jxom)! - Added `stackup` instance.
+
+- [`c7348a3`](https://github.com/wevm/prool/commit/c7348a3e6b54881b45e5ce0caf25198dacfb2a7c) Thanks [@jxom](https://github.com/jxom)! - Added support for a callback `instance`.
+
 ## 0.0.4
 
 ### Patch Changes
