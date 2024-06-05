@@ -221,11 +221,15 @@ export type AltoParameters = {
 }
 
 /**
- * Defines an Anvil instance.
+ * Defines an Alto instance.
  *
  * @example
  * ```ts
- * const instance = anvil({ forkRpcUrl: 'https://cloudflare-eth.com', port: 8546 })
+ * const instance = alto({
+ *  entrypoints: ['0x0000000071727De22E5E9d8BAf0edAc6f37da032'],
+ *  rpcUrl: `http://localhost:8545`,
+ *  executorPrivateKeys: ['0x...'],
+ * })
  * await instance.start()
  * // ...
  * await instance.stop()
