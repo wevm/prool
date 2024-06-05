@@ -361,30 +361,63 @@ describe("instance: 'anvil'", () => {
   })
 })
 
-describe("instance: 'stackup'", () => {
-  test(
-    'request: /{id}',
-    async () => {
-      const server = createServer({
-        instance: stackup(stackupOptions({ port })),
-      })
+describe("instance: 'alto'", () => {
+  test('request: /{id}', async () => {
+    const server = createServer({
+      instance: alto(altoOptions({ port })),
+    })
 
-      const stop = await server.start()
-      const { port: port_2 } = server.address()!
-      const response = await fetch(`http://localhost:${port_2}/1`, {
-        body: JSON.stringify({
-          method: 'eth_supportedEntryPoints',
-          params: [],
-          id: 0,
-          jsonrpc: '2.0',
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        method: 'POST',
-      })
-      expect(response.status).toBe(200)
-      expect(await response.json()).toMatchInlineSnapshot(`
+    const stop = await server.start()
+    const { port: port_2 } = server.address()!
+    const response = await fetch(`http://localhost:${port_2}/1`, {
+      body: JSON.stringify({
+        method: 'eth_supportedEntryPoints',
+        params: [],
+        id: 0,
+        jsonrpc: '2.0',
+      }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
+    })
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchInlineSnapshot(`
+        {
+          "id": 0,
+          "jsonrpc": "2.0",
+          "result": [
+            "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
+          ],
+        }
+      `)
+
+    await stop()
+  })
+})
+
+describe("instance: 'stackup'", () => {
+  test('request: /{id}', async () => {
+    const server = createServer({
+      instance: stackup(stackupOptions({ port })),
+    })
+
+    const stop = await server.start()
+    const { port: port_2 } = server.address()!
+    const response = await fetch(`http://localhost:${port_2}/1`, {
+      body: JSON.stringify({
+        method: 'eth_supportedEntryPoints',
+        params: [],
+        id: 0,
+        jsonrpc: '2.0',
+      }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
+    })
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchInlineSnapshot(`
         {
           "id": 0,
           "jsonrpc": "2.0",
@@ -394,10 +427,8 @@ describe("instance: 'stackup'", () => {
         }
       `)
 
-      await stop()
-    },
-    { timeout: 600000 },
-  )
+    await stop()
+  })
 })
 
 test('404', async () => {

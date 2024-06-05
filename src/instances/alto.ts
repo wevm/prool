@@ -254,7 +254,11 @@ export const alto = defineInstance((parameters?: AltoParameters) => {
     async start({ port = args.port ?? 3000 }, options) {
       const binary = (() => {
         if (args.binary) return [args.binary]
-        const libPath = require.resolve('@pimlico/alto')
+        const libPath = (
+          'resolve' in import.meta
+            ? import.meta.resolve('@pimlico/alto').split('file:')[1]
+            : require.resolve('@pimlico/alto')
+        )!
 
         // Remove the `type` field from the package.json file.
         // `@pimlico/alto`'s CLI is packaged as a CJS module.
