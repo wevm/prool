@@ -7,7 +7,7 @@ export type Process_internal = ResultPromise<{ cleanup: true; reject: false }>
 export type ExecaStartOptions = InstanceStartOptions_internal & {
   resolver(options: {
     process: Process_internal
-    reject(error: Error): void
+    reject(data: string): Promise<void>
     resolve(): void
   }): void
 }
@@ -34,7 +34,7 @@ export function execa(parameters: ExecaParameters): ExecaReturnType {
 
   async function stop() {
     const killed = process.kill()
-    if (!killed) throw new Error(`Failed to stop process "${name}".`)
+    if (!killed) return
     return new Promise((resolve) => process.on('close', resolve))
   }
 
@@ -57,7 +57,12 @@ export function execa(parameters: ExecaParameters): ExecaReturnType {
 
       resolver({
         process,
-        reject,
+        async reject(data) {
+          await stop()
+          reject(
+            new Error(`Failed to start process "${name}": ${data.toString()}`),
+          )
+        },
         resolve() {
           emitter.emit('listening')
           return resolve()
@@ -73,10 +78,6 @@ export function execa(parameters: ExecaParameters): ExecaReturnType {
         const message = stripColors(data.toString())
         emitter.emit('message', message)
         emitter.emit('stderr', message)
-        await stop()
-        reject(
-          new Error(`Failed to start process "${name}": ${data.toString()}`),
-        )
       })
       process.on('close', () => process.removeAllListeners())
       process.on('exit', (code, signal) => {

@@ -74,11 +74,12 @@ test('start (error)', async () => {
     process.start(($) => $`anvil --lol`, {
       emitter,
       status: 'idle',
-      resolver({ process, resolve }) {
+      resolver({ process, reject, resolve }) {
         process.stdout.on('data', (data) => {
           const message = data.toString()
           if (message.includes('Listening on')) resolve()
         })
+        process.stderr.on('data', reject)
       },
     }),
   ).rejects.toThrowErrorMatchingInlineSnapshot(`

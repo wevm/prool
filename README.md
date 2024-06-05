@@ -17,7 +17,11 @@ Prool is a library that provides programmatic HTTP testing instances for Ethereu
 
 Prool contains a set of pre-configured instances that can be used to simulate Ethereum server environments, such as:
 
-- [`anvil`](#TODO): A local Ethereum execution node.
+- [`anvil`](#TODO): Local execution node.
+- `alto`⚠️, `rundler`⚠️, `silius`⚠️, [`stackup`](#TODO): Bundler nodes.
+- `ponder`⚠️: Indexer node.
+
+⚠️ = soon
 
 You can also create your own custom instances by using the [`defineInstance` function](#TODO).
 

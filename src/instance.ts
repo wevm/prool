@@ -231,7 +231,7 @@ export function defineInstance<
               status = 'started'
 
               stopResolver = Promise.withResolvers<void>()
-              startResolver.resolve(this.stop)
+              startResolver.resolve(this.stop.bind(this))
             })
             .catch((error) => {
               status = 'idle'

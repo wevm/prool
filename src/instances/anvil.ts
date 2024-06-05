@@ -277,11 +277,12 @@ export const anvil = defineInstance((parameters?: AnvilParameters) => {
         {
           ...options,
           // Resolve when the process is listening via a "Listening on" message.
-          resolver({ process, resolve }) {
+          resolver({ process, reject, resolve }) {
             process.stdout.on('data', (data) => {
               const message = data.toString()
               if (message.includes('Listening on')) resolve()
             })
+            process.stderr.on('data', reject)
           },
         },
       )
