@@ -69,7 +69,7 @@ await server.start()
 
 #### Requirements
 
-- [`@pimlico/alto`]: `npm i @pimlico/alto`
+- [`@pimlico/alto`](npm.im/@pimlico/alto): `npm i @pimlico/alto`
 
 #### Usage
 
