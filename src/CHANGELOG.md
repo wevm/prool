@@ -1,5 +1,11 @@
 # prool
 
+## 0.0.6
+
+### Patch Changes
+
+- [`75382d1`](https://github.com/wevm/prool/commit/75382d155ab18d231d58d74510c3ce4a4da56aea) Thanks [@jxom](https://github.com/jxom)! - Exported `stackup`.
+
 ## 0.0.5
 
 ### Patch Changes
