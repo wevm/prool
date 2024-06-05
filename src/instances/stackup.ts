@@ -131,7 +131,7 @@ export const stackup = defineInstance((parameters?: StackupParameters) => {
         'private',
       ]
 
-      const up = await healthcheck({ host, port })
+      const up = await ping({ host, port })
       if (up)
         throw new Error(`Instance already instantiated on port ${host}:${port}`)
 
@@ -139,7 +139,7 @@ export const stackup = defineInstance((parameters?: StackupParameters) => {
         ...options,
         resolver({ process, resolve, reject }) {
           const interval = setInterval(async () => {
-            const up = await healthcheck({ host, port })
+            const up = await ping({ host, port })
             if (up) {
               clearInterval(interval)
               resolve()
@@ -161,8 +161,8 @@ export const stackup = defineInstance((parameters?: StackupParameters) => {
   }
 })
 
-async function healthcheck({ host, port }: { host: string; port: number }) {
-  const res = await fetch(`http://${host}:${port}`, {
+async function ping({ host, port }: { host: string; port: number }) {
+  return await fetch(`http://${host}:${port}`, {
     body: JSON.stringify({
       jsonrpc: '2.0',
       method: 'eth_chainId',
@@ -173,6 +173,7 @@ async function healthcheck({ host, port }: { host: string; port: number }) {
       'Content-Type': 'application/json',
     },
     method: 'POST',
-  }).catch(() => undefined)
-  return res?.status === 200
+  })
+    .then(() => true)
+    .catch(() => false)
 }
