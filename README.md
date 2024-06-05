@@ -67,6 +67,12 @@ await server.start()
 
 ### Alto (Bundler Node)
 
+#### Requirements
+
+- [`@pimlico/alto`]: `npm i @pimlico/alto`
+
+#### Usage
+
 ```ts
 import { createServer } from 'prool'
 import { anvil, alto } from 'prool/instances'

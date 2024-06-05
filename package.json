@@ -17,6 +17,7 @@
     "@biomejs/biome": "^1.7.3",
     "@changesets/changelog-github": "^0.5.0",
     "@changesets/cli": "^2.27.3",
+    "@pimlico/alto": "0.0.0-alto-package.20240605T105414",
     "@types/http-proxy": "^1.17.14",
     "@types/node": "^20.14.0",
     "@types/ws": "^8.5.10",
