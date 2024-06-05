@@ -1,5 +1,11 @@
 # prool
 
+## 0.0.7
+
+### Patch Changes
+
+- [`366a4ec`](https://github.com/wevm/prool/commit/366a4ecf23535c50b79fc15304a945af6e400d1f) Thanks [@jxom](https://github.com/jxom)! - Fixed `stackup` docker args.
+
 ## 0.0.6
 
 ### Patch Changes
