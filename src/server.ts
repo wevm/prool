@@ -35,6 +35,30 @@ export type CreateServerReturnType = Omit<
   stop(): Promise<void>
 }
 
+/**
+ * Creates a server that manages a pool of instances via a proxy.
+ *
+ * @example
+ * ```
+ * import { createServer } from 'prool'
+ * import { anvil } from 'prool/instances'
+ *
+ * const server = createServer({
+ *  instance: anvil(),
+ * })
+ *
+ * const server = await server.start()
+ * // Instances accessible at:
+ * // "http://localhost:8545/1"
+ * // "http://localhost:8545/2"
+ * // "http://localhost:8545/3"
+ * // "http://localhost:8545/n"
+ * // "http://localhost:8545/n/start"
+ * // "http://localhost:8545/n/stop"
+ * // "http://localhost:8545/n/restart"
+ * // "http://localhost:8545/healthcheck"
+ * ```
+ */
 export function createServer(
   parameters: CreateServerParameters,
 ): CreateServerReturnType {

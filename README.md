@@ -65,6 +65,10 @@ await server.start()
 // "http://localhost:8545/n"
 ```
 
+#### Parameters
+
+See [`AnvilParameters`](https://github.com/wevm/prool/blob/801ede06ded8b2cb2d59c95294aae795e548897c/src/instances/anvil.ts#L5).
+
 ### Alto (Bundler Node)
 
 #### Requirements
@@ -103,6 +107,10 @@ await bundlerServer.start()
 // "http://localhost:3000/n" (→ http://localhost:8545/n)
 ```
 
+#### Parameters
+
+See [`AltoParameters`](https://github.com/wevm/prool/blob/801ede06ded8b2cb2d59c95294aae795e548897c/src/instances/alto.ts#L7).
+
 ### Stackup (Bundler Node)
 
 #### Requirements
@@ -140,6 +148,106 @@ await bundlerServer.start()
 // "http://localhost:4337/3" (→ http://localhost:8545/3)
 // "http://localhost:4337/n" (→ http://localhost:8545/n)
 ```
+
+### Parameters
+
+See [`StackupParameters`](https://github.com/wevm/prool/blob/801ede06ded8b2cb2d59c95294aae795e548897c/src/instances/stackup.ts#L5).
+
+## Reference
+
+### `createServer`
+
+Creates a server that manages a pool of instances via a proxy.
+
+#### Usage
+
+```ts
+import { createServer } from 'prool'
+import { anvil } from 'prool/instances'
+
+const executionServer = createServer({
+  instance: anvil(),
+})
+await executionServer.start() 
+// Instances accessible at:
+// "http://localhost:8545/1"
+// "http://localhost:8545/2"
+// "http://localhost:8545/3"
+// "http://localhost:8545/n"
+// "http://localhost:8545/n/start"
+// "http://localhost:8545/n/stop"
+// "http://localhost:8545/n/restart"
+// "http://localhost:8545/healthcheck"
+```
+
+**Endpoints:**
+- `/:key`: Proxy to instance at `key`. 
+- `/:key/start`: Start instance at `key`.
+- `/:key/stop`: Stop instance at `key`.
+- `/:key/restart`: Restart instance at `key`.
+- `/healthcheck`: Healthcheck endpoint.
+
+#### API
+
+| Name       | Description                                              | Type                                    |
+| ---------- | -------------------------------------------------------- | --------------------------------------- |
+| `instance` | Instance for the server.                                 | `Instance \| (key: number) => Instance` |
+| `limit`    | Number of instances that can be instantiated in the pool | `number`                                |
+| `host`     | Host for the server.                                     | `string`                                |
+| `port`     | Port for the server.                                     | `number`                                |
+| returns    | Server                                                   | `CreateServerReturnType`                |
+
+### `defineInstance`
+
+Creates an instance definition, that can be used with [`createServer`](#createserver) or [`definePool`](#definepool).
+
+#### Usage
+
+```ts
+const foo = defineInstance((parameters: FooParameters) => {
+ return {
+   name: 'foo',
+   host: 'localhost',
+   port: 3000,
+   async start() {
+     // ...
+   },
+   async stop() {
+     // ...
+   },
+ }
+})
+```
+
+#### API
+
+| Name    | Description          | Type               |
+| ------- | -------------------- | ------------------ |
+| `fn`    | Instance definition. | `DefineInstanceFn` |
+| returns | Instance.            | `Instance`         |
+
+### `definePool`
+
+Defines a pool of instances. Instances can be started, cached, and stopped against an identifier.
+
+#### Usage
+
+```ts
+const pool = definePool({
+ instance: anvil(),
+})
+const instance_1 = await pool.start(1)
+const instance_2 = await pool.start(2)
+const instance_3 = await pool.start(3)
+```
+
+#### API
+
+| Name       | Description                                              | Type       |
+| ---------- | -------------------------------------------------------- | ---------- |
+| `instance` | Instance for the pool.                                   | `Instance` |
+| `limit`    | Number of instances that can be instantiated in the pool | `number`   |
+| returns    | Pool.                                                    | `Pool`     |
 
 ## Authors
 
