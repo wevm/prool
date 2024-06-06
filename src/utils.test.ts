@@ -23,7 +23,7 @@ test.each([
 test.each([
   [{}, []],
   [{ foo: undefined }, []],
-  [{ foo: false }, []],
+  [{ foo: false }, ['--foo', 'false']],
   [{ foo: true }, ['--foo']],
   [{ foo: '' }, ['--foo']],
   [{ foo: 'bar' }, ['--foo', 'bar']],

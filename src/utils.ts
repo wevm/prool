@@ -76,7 +76,7 @@ export function toArgs(parameters: ToArgsParameters) {
 
     const flag = toFlagCase(key)
 
-    if (value === false) return []
+    if (value === false) return [flag, 'false']
     if (value === true) return [flag]
 
     const stringified = value.toString()
