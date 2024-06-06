@@ -45,29 +45,12 @@ You can also create your own custom instances by using the [`defineInstance` fun
 - [Install](#install)
 - [Overview](#overview)
   - [Anvil (Execution Node)](#anvil-execution-node)
-    - [Requirements](#requirements)
-    - [Usage](#usage)
-    - [Parameters](#parameters)
   - [Alto (Bundler Node)](#alto-bundler-node)
-    - [Requirements](#requirements-1)
-    - [Usage](#usage-1)
-    - [Parameters](#parameters-1)
   - [Stackup (Bundler Node)](#stackup-bundler-node)
-    - [Requirements](#requirements-2)
-    - [Usage](#usage-2)
-  - [Parameters](#parameters-2)
 - [Reference](#reference)
   - [`createServer`](#createserver)
-    - [Usage](#usage-3)
-    - [API](#api)
   - [`defineInstance`](#defineinstance)
-    - [Usage](#usage-4)
-    - [API](#api-1)
   - [`definePool`](#definepool)
-    - [Usage](#usage-5)
-    - [API](#api-2)
-- [Authors](#authors)
-- [License](#license)
 
 
 ## Install
@@ -194,7 +177,7 @@ await bundlerServer.start()
 // "http://localhost:4337/n" (→ http://localhost:8545/n)
 ```
 
-### Parameters
+#### Parameters
 
 See [`StackupParameters`](https://github.com/wevm/prool/blob/801ede06ded8b2cb2d59c95294aae795e548897c/src/instances/stackup.ts#L5).
 
