@@ -43,7 +43,7 @@ You can also create your own custom instances by using the [`defineInstance` fun
 ## Table of Contents
 
 - [Install](#install)
-- [Overview](#overview)
+- [Getting Started](#getting-started)
   - [Anvil (Execution Node)](#anvil-execution-node)
   - [Alto (Bundler Node)](#alto-bundler-node)
   - [Stackup (Bundler Node)](#stackup-bundler-node)
@@ -67,7 +67,7 @@ pnpm add prool
 bun i prool
 ```
 
-## Overview
+## Getting Started
 
 ### Anvil (Execution Node)
 
