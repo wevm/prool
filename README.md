@@ -11,6 +11,21 @@
   HTTP testing instances for Ethereum</a>
 <p>
 
+<p align="center">
+  <a href="https://www.npmjs.com/package/prool">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/npm/v/prool?colorA=21262d&colorB=21262d&style=flat">
+      <img src="https://img.shields.io/npm/v/prool?colorA=f6f8fa&colorB=f6f8fa&style=flat" alt="Version">
+    </picture>
+  </a>
+  <a href="https://github.com/wevm/prool/blob/main/LICENSE">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/npm/l/prool?colorA=21262d&colorB=21262d&style=flat">
+      <img src="https://img.shields.io/npm/l/prool?colorA=f6f8fa&colorB=f6f8fa&style=flat" alt="MIT License">
+    </picture>
+  </a>
+</p>
+
 ## Introduction
 
 Prool is a library that provides programmatic HTTP testing instances for Ethereum. It is designed to be used in testing environments (e.g. [Vitest](https://vitest.dev/)) where you need to interact with an Ethereum server instance (e.g. Execution Node, 4337 Bundler, Indexer, etc) over HTTP or WebSocket.
@@ -24,6 +39,36 @@ Prool contains a set of pre-configured instances that can be used to simulate Et
 ⚠️ = soon
 
 You can also create your own custom instances by using the [`defineInstance` function](#TODO).
+
+## Table of Contents
+
+- [Install](#install)
+- [Overview](#overview)
+  - [Anvil (Execution Node)](#anvil-execution-node)
+    - [Requirements](#requirements)
+    - [Usage](#usage)
+    - [Parameters](#parameters)
+  - [Alto (Bundler Node)](#alto-bundler-node)
+    - [Requirements](#requirements-1)
+    - [Usage](#usage-1)
+    - [Parameters](#parameters-1)
+  - [Stackup (Bundler Node)](#stackup-bundler-node)
+    - [Requirements](#requirements-2)
+    - [Usage](#usage-2)
+  - [Parameters](#parameters-2)
+- [Reference](#reference)
+  - [`createServer`](#createserver)
+    - [Usage](#usage-3)
+    - [API](#api)
+  - [`defineInstance`](#defineinstance)
+    - [Usage](#usage-4)
+    - [API](#api-1)
+  - [`definePool`](#definepool)
+    - [Usage](#usage-5)
+    - [API](#api-2)
+- [Authors](#authors)
+- [License](#license)
+
 
 ## Install
 
@@ -204,6 +249,8 @@ Creates an instance definition, that can be used with [`createServer`](#createse
 #### Usage
 
 ```ts
+import { defineInstance } from 'prool'
+
 const foo = defineInstance((parameters: FooParameters) => {
  return {
    name: 'foo',
@@ -233,6 +280,9 @@ Defines a pool of instances. Instances can be started, cached, and stopped again
 #### Usage
 
 ```ts
+import { definePool } from 'prool'
+import { anvil } from 'prool/instances'
+
 const pool = definePool({
  instance: anvil(),
 })
