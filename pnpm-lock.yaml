@@ -18,8 +18,8 @@ importers:
         specifier: ^2.27.3
         version: 2.27.3
       '@pimlico/alto':
-        specifier: 0.0.0-alto-package.20240605T105414
-        version: 0.0.0-alto-package.20240605T105414(typescript@5.4.5)
+        specifier: latest
+        version: 0.0.0-alto-package.20240604T154418(typescript@5.4.5)
       '@types/http-proxy':
         specifier: ^1.17.14
         version: 1.17.14
@@ -619,8 +619,8 @@ packages:
     resolution: {integrity: sha512-M+kkXKRAIAiAP6qYyesfrC5TOmDpDVtsxuGfPcqd9B/iBrac+E14jYwrgm0yZBUIbIP2OnqC3j+UgkXLm1vxUQ==}
     engines: {node: '>=14'}
 
-  '@pimlico/alto@0.0.0-alto-package.20240605T105414':
-    resolution: {integrity: sha512-iuQuA135J7Gfk3A7RYlnWlhHcF16tPx0vtgnTCgQdb1/npC8pObJGr0nuLCPAqRFiYpuoo3VktOWI7jSNmfx0w==}
+  '@pimlico/alto@0.0.0-alto-package.20240604T154418':
+    resolution: {integrity: sha512-Z5OWTzxSH5FFkan2BpBhYtngAz+baTdH/rRR12eqXFXLpwRm4iPaZKV2Ozm2sNSbwnCBp/AhBbc82Sw86gYj+A==}
 
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
@@ -2012,8 +2012,8 @@ packages:
     resolution: {integrity: sha512-sF308EhTenb/pDRPakm+WgiN+VdM/T1RaHj1x+MvAuT8UiQP8JmOEbxVqtkbfR4LrvOg5n7ic01kRBDGXjYikA==}
     engines: {node: '>=10'}
 
-  prool@0.0.8:
-    resolution: {integrity: sha512-Dhy0HxSncqVLX4rcOgqpUUSPVnLE5IwcSXuIR4udRk0jSrPg85qhtmE5xglHHomZrvmlxAIqc/W2K015b3Oulw==}
+  prool@0.0.4:
+    resolution: {integrity: sha512-9jRsEPMn1Y+MLOrIws1gcGoCB3yo6LlBkmIt9ENCYp+wf0j678khnm6UzJeTPg1vqipsHXUx9eFpng7UaZawcQ==}
     engines: {node: '>=22'}
 
   protobufjs@7.3.0:
@@ -3290,7 +3290,7 @@ snapshots:
 
   '@opentelemetry/semantic-conventions@1.25.0': {}
 
-  '@pimlico/alto@0.0.0-alto-package.20240605T105414(typescript@5.4.5)':
+  '@pimlico/alto@0.0.0-alto-package.20240604T154418(typescript@5.4.5)':
     dependencies:
       '@fastify/websocket': 10.0.1
       '@opentelemetry/api': 1.9.0
@@ -3309,7 +3309,6 @@ snapshots:
       abitype: 0.8.11(typescript@5.4.5)(zod@3.23.8)
       async-mutex: 0.4.1
       dotenv: 16.4.5
-      execa: 9.1.0
       fastify: 4.27.0
       fastify-cors: 3.0.3
       opentelemetry-instrumentation-fetch-node: 1.2.0
@@ -3317,7 +3316,7 @@ snapshots:
       pino-http: 8.6.1
       pino-pretty: 10.3.1
       prom-client: 14.2.0
-      prool: 0.0.8
+      prool: 0.0.4
       viem: 2.13.6(typescript@5.4.5)(zod@3.23.8)
       yargs: 17.7.2
       zod: 3.23.8
@@ -4820,7 +4819,7 @@ snapshots:
     dependencies:
       tdigest: 0.1.2
 
-  prool@0.0.8:
+  prool@0.0.4:
     dependencies:
       eventemitter3: 5.0.1
       execa: 9.1.0

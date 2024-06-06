@@ -1,4 +1,3 @@
-import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { defineInstance } from '../instance.js'
 import { execa } from '../processes/execa.js'
@@ -259,18 +258,6 @@ export const alto = defineInstance((parameters?: AltoParameters) => {
             ? import.meta.resolve('@pimlico/alto').split('file:')[1]
             : require.resolve('@pimlico/alto')
         )!
-
-        // Remove the `type` field from the package.json file.
-        // `@pimlico/alto`'s CLI is packaged as a CJS module.
-        // TODO: Fix upstream in `@pimlico/alto`.
-        const { type: _, ...packageJson } = JSON.parse(
-          readFileSync(resolve(libPath, '../../package.json'), 'utf-8'),
-        )
-        writeFileSync(
-          resolve(libPath, '../../package.json'),
-          JSON.stringify(packageJson),
-        )
-
         return ['node', resolve(libPath, '../cli/alto.js')]
       })()
 
