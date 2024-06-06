@@ -1,5 +1,11 @@
 # prool
 
+## 0.0.11
+
+### Patch Changes
+
+- [`ccef6a7`](https://github.com/wevm/prool/commit/ccef6a797a65e948e7d98b7df5064bd33d6a62e7) Thanks [@jxom](https://github.com/jxom)! - Fixed falsy flags.
+
 ## 0.0.10
 
 ### Patch Changes
