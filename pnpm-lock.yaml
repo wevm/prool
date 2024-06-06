@@ -18,8 +18,8 @@ importers:
         specifier: ^2.27.3
         version: 2.27.3
       '@pimlico/alto':
-        specifier: latest
-        version: 0.0.0-alto-package.20240604T154418(typescript@5.4.5)
+        specifier: 0.0.0-main.20240606T154257
+        version: 0.0.0-main.20240606T154257(typescript@5.4.5)
       '@types/http-proxy':
         specifier: ^1.17.14
         version: 1.17.14
@@ -357,6 +357,9 @@ packages:
   '@fastify/ajv-compiler@3.5.0':
     resolution: {integrity: sha512-ebbEtlI7dxXF5ziNdr05mOY8NnDiPB1XvAlLHctRt/Rc+C3LCOVW5imUVX+mhvUhnNzmPBHewUkOFgGlCxgdAA==}
 
+  '@fastify/cors@9.0.1':
+    resolution: {integrity: sha512-YY9Ho3ovI+QHIL2hW+9X4XqQjXLjJqsU+sMV/xFsxZkE8p3GNnYVFpoOxF7SsP5ZL76gwvbo3V9L+FIekBGU4Q==}
+
   '@fastify/error@3.4.1':
     resolution: {integrity: sha512-wWSvph+29GR783IhmvdwWnN4bUxTD01Vm5Xad4i7i1VuAOItLvbPAb69sb0IQ2N57yprvhNIwAP5B6xfKTmjmQ==}
 
@@ -619,8 +622,8 @@ packages:
     resolution: {integrity: sha512-M+kkXKRAIAiAP6qYyesfrC5TOmDpDVtsxuGfPcqd9B/iBrac+E14jYwrgm0yZBUIbIP2OnqC3j+UgkXLm1vxUQ==}
     engines: {node: '>=14'}
 
-  '@pimlico/alto@0.0.0-alto-package.20240604T154418':
-    resolution: {integrity: sha512-Z5OWTzxSH5FFkan2BpBhYtngAz+baTdH/rRR12eqXFXLpwRm4iPaZKV2Ozm2sNSbwnCBp/AhBbc82Sw86gYj+A==}
+  '@pimlico/alto@0.0.0-main.20240606T154257':
+    resolution: {integrity: sha512-86bICDWWPeOFVpHKSVN7IfUPefgtbEoI4uluheiYNUH2av/ePhIm1cC22r6HRLMi3c6NDxJbe0rx11i7U/BSjg==}
 
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
@@ -1278,12 +1281,6 @@ packages:
   fast-uri@2.3.1:
     resolution: {integrity: sha512-iC7SLdMJx2KGdBkhJ6UulbNfpeIGTMS3/OIJpPa1JkZu9DKVQmPtBBme9Esoa4XP2eLGaHBv4vzRqlolXKo9cg==}
 
-  fastify-cors@3.0.3:
-    resolution: {integrity: sha512-SDMa+GtyTTAU7pWZwY4fukb/VwCZ4c30p0oEaE7/d/+VCvceB1+NzW2udp2dSZZfWR7J1kUookCpw2dLmtAsSw==}
-
-  fastify-plugin@1.6.1:
-    resolution: {integrity: sha512-APBcb27s+MjaBIerFirYmBLatoPCgmHZM6XP0K+nDL9k0yX8NJPWDY1RAC3bh6z+AB5ULS2j31BUfLMT3uaZ4A==}
-
   fastify-plugin@4.5.1:
     resolution: {integrity: sha512-stRHYGeuqpEZTL1Ef0Ovr2ltazUT9g844X5z/zEBFLG8RYlpDiOCIG+ATvYEp+/zmc7sN29mcIMp8gvYplYPIQ==}
 
@@ -1801,6 +1798,9 @@ packages:
   mlly@1.7.0:
     resolution: {integrity: sha512-U9SDaXGEREBYQgfejV97coK0UL1r+qnF2SyO9A3qcI8MzKnsIFKHNVEkrDyNncQTKQQumsasmeq84eNMdBfsNQ==}
 
+  mnemonist@0.39.6:
+    resolution: {integrity: sha512-A/0v5Z59y63US00cRSLiloEIw3t5G+MiKz4BhX21FI+YBJXBOGW0ohFxTxO08dsOYlzxo87T7vGfZKYp2bcAWA==}
+
   module-details-from-path@1.0.3:
     resolution: {integrity: sha512-ySViT69/76t8VhE1xXHK6Ch4NcDd26gx0MzKXLO+F7NOtnqH68d9zF94nT8ZWSxXh8ELOERsnJO/sWt1xZYw5A==}
 
@@ -1838,6 +1838,9 @@ packages:
   object.assign@4.1.5:
     resolution: {integrity: sha512-byy+U7gp+FVwmyzKPYhW2h5l3crpmGsxl7X2s8y43IgxvG4g3QZ6CffDtsNQy1WsmZpQbO+ybo0AlW7TY6DcBQ==}
     engines: {node: '>= 0.4'}
+
+  obliterator@2.0.4:
+    resolution: {integrity: sha512-lgHwxlxV1qIg1Eap7LgIeoBWIMFibOjbrYPIPJZcI1mmGAI2m3lNYpK12Y+GBdPQ0U1hRwSord7GIaawz962qQ==}
 
   on-exit-leak-free@2.1.2:
     resolution: {integrity: sha512-0eJJY6hXLGf1udHwfNftBqH+g73EU4B504nZeKpz1sYRKafAghwxEJunB2O7rDZkL4PGfsMVnTXZ2EjibbqcsA==}
@@ -2012,10 +2015,6 @@ packages:
     resolution: {integrity: sha512-sF308EhTenb/pDRPakm+WgiN+VdM/T1RaHj1x+MvAuT8UiQP8JmOEbxVqtkbfR4LrvOg5n7ic01kRBDGXjYikA==}
     engines: {node: '>=10'}
 
-  prool@0.0.4:
-    resolution: {integrity: sha512-9jRsEPMn1Y+MLOrIws1gcGoCB3yo6LlBkmIt9ENCYp+wf0j678khnm6UzJeTPg1vqipsHXUx9eFpng7UaZawcQ==}
-    engines: {node: '>=22'}
-
   protobufjs@7.3.0:
     resolution: {integrity: sha512-YWD03n3shzV9ImZRX3ccbjqLxj7NokGN0V/ESiBV5xWqrommYHYiihuIyavq03pWSGqlyvYUFmfoMKd+1rPA/g==}
     engines: {node: '>=12.0.0'}
@@ -2158,10 +2157,6 @@ packages:
 
   semver@5.7.2:
     resolution: {integrity: sha512-cBznnQ9KjJqU67B52RMC65CMarK2600WFnbkcaiwWq3xy/5haFJlshgnpjovMVJ+Hff49d8GEn0b87C5pDQ10g==}
-    hasBin: true
-
-  semver@6.3.1:
-    resolution: {integrity: sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==}
     hasBin: true
 
   semver@7.6.2:
@@ -2451,10 +2446,6 @@ packages:
 
   validate-npm-package-license@3.0.4:
     resolution: {integrity: sha512-DpKm2Ui/xN7/HQKCtpZxoRWBhZ9Z0kqtygG8XCgNQ8ZlDnxuQmWhj566j8fN4Cu3/JmbhsDo7fcAJq4s9h27Ew==}
-
-  vary@1.1.2:
-    resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
-    engines: {node: '>= 0.8'}
 
   viem@2.13.6:
     resolution: {integrity: sha512-BhvYhLrExC9P4AH9Gu/2A3VPUFkJT/ayH+A9anco2Ja/D0h3NStq+2uF4htcly1e68/U7IOrlCyX3Jz9zqeEJA==}
@@ -2961,6 +2952,11 @@ snapshots:
       ajv-formats: 2.1.1
       fast-uri: 2.3.1
 
+  '@fastify/cors@9.0.1':
+    dependencies:
+      fastify-plugin: 4.5.1
+      mnemonist: 0.39.6
+
   '@fastify/error@3.4.1': {}
 
   '@fastify/fast-json-stringify-compiler@4.3.0':
@@ -3290,8 +3286,9 @@ snapshots:
 
   '@opentelemetry/semantic-conventions@1.25.0': {}
 
-  '@pimlico/alto@0.0.0-alto-package.20240604T154418(typescript@5.4.5)':
+  '@pimlico/alto@0.0.0-main.20240606T154257(typescript@5.4.5)':
     dependencies:
+      '@fastify/cors': 9.0.1
       '@fastify/websocket': 10.0.1
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/core': 1.25.0(@opentelemetry/api@1.9.0)
@@ -3310,20 +3307,17 @@ snapshots:
       async-mutex: 0.4.1
       dotenv: 16.4.5
       fastify: 4.27.0
-      fastify-cors: 3.0.3
       opentelemetry-instrumentation-fetch-node: 1.2.0
       pino: 8.21.0
       pino-http: 8.6.1
       pino-pretty: 10.3.1
       prom-client: 14.2.0
-      prool: 0.0.4
       viem: 2.13.6(typescript@5.4.5)(zod@3.23.8)
       yargs: 17.7.2
       zod: 3.23.8
       zod-validation-error: 1.5.0(zod@3.23.8)
     transitivePeerDependencies:
       - bufferutil
-      - debug
       - supports-color
       - typescript
       - utf-8-validate
@@ -4060,15 +4054,6 @@ snapshots:
 
   fast-uri@2.3.1: {}
 
-  fastify-cors@3.0.3:
-    dependencies:
-      fastify-plugin: 1.6.1
-      vary: 1.1.2
-
-  fastify-plugin@1.6.1:
-    dependencies:
-      semver: 6.3.1
-
   fastify-plugin@4.5.1: {}
 
   fastify@4.27.0:
@@ -4595,6 +4580,10 @@ snapshots:
       pkg-types: 1.1.1
       ufo: 1.5.3
 
+  mnemonist@0.39.6:
+    dependencies:
+      obliterator: 2.0.4
+
   module-details-from-path@1.0.3: {}
 
   ms@2.1.2: {}
@@ -4626,6 +4615,8 @@ snapshots:
       define-properties: 1.2.1
       has-symbols: 1.0.3
       object-keys: 1.1.1
+
+  obliterator@2.0.4: {}
 
   on-exit-leak-free@2.1.2: {}
 
@@ -4819,15 +4810,6 @@ snapshots:
     dependencies:
       tdigest: 0.1.2
 
-  prool@0.0.4:
-    dependencies:
-      eventemitter3: 5.0.1
-      execa: 9.1.0
-      get-port: 7.1.0
-      http-proxy: 1.18.1
-    transitivePeerDependencies:
-      - debug
-
   protobufjs@7.3.0:
     dependencies:
       '@protobufjs/aspromise': 1.1.2
@@ -5001,8 +4983,6 @@ snapshots:
   secure-json-parse@2.7.0: {}
 
   semver@5.7.2: {}
-
-  semver@6.3.1: {}
 
   semver@7.6.2: {}
 
@@ -5295,8 +5275,6 @@ snapshots:
     dependencies:
       spdx-correct: 3.2.0
       spdx-expression-parse: 3.0.1
-
-  vary@1.1.2: {}
 
   viem@2.13.6(typescript@5.4.5)(zod@3.23.8):
     dependencies:
