@@ -38,7 +38,7 @@ Prool contains a set of pre-configured instances that can be used to simulate Et
 
 ⚠️ = soon
 
-You can also create your own custom instances by using the [`defineInstance` function](#TODO).
+You can also create your own custom instances by using the [`defineInstance` function](#defineinstance).
 
 ## Table of Contents
 
