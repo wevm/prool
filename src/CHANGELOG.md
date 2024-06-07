@@ -1,5 +1,11 @@
 # prool
 
+## 0.0.12
+
+### Patch Changes
+
+- [`e516006`](https://github.com/wevm/prool/commit/e516006a6c858108bcec40c1006725c586e7a569) Thanks [@jxom](https://github.com/jxom)! - Removed \`package.json\` modification in \`alto\` instance.
+
 ## 0.0.11
 
 ### Patch Changes
