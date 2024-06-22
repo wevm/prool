@@ -1,7 +1,6 @@
 import { afterEach, expect, test } from 'vitest'
-import type { Instance } from '../../instance.js'
-import { rundler } from './instance.js'
-import type { RundlerParameters } from './types.js'
+import type { Instance } from '../instance.js'
+import { type RundlerParameters, rundler } from './rundler.js'
 
 const instances: Instance[] = []
 
