@@ -1,5 +1,11 @@
 # prool
 
+## 0.0.13
+
+### Patch Changes
+
+- [`a879039`](https://github.com/wevm/prool/commit/a879039aeec7e0018f51b8b7fcc11c314eba94db) Thanks [@jxom](https://github.com/jxom)! - Added proxy packages for entrypoints.
+
 ## 0.0.12
 
 ### Patch Changes
