@@ -21,25 +21,40 @@ test.each([
 })
 
 test.each([
-  [{}, []],
-  [{ foo: undefined }, []],
-  [{ foo: false }, ['--foo', 'false']],
-  [{ foo: true }, ['--foo']],
-  [{ foo: '' }, ['--foo']],
-  [{ foo: 'bar' }, ['--foo', 'bar']],
-  [{ foo: 0 }, ['--foo', '0']],
-  [{ foo: 1 }, ['--foo', '1']],
-  [{ foo: 1n }, ['--foo', '1']],
-  [{ foo: 'bar', baz: 1 }, ['--foo', 'bar', '--baz', '1']],
-  [{ foo: ['bar', 'baz'] }, ['--foo', 'bar,baz']],
-])('toArgs(%o) -> %o', (input, expected) => {
-  expect(toArgs(input)).toEqual(expected)
-})
+  [[{}], []],
+  [[{ foo: undefined }], []],
+  [[{ foo: false }], ['--foo', 'false']],
+  [[{ foo: true }], ['--foo']],
+  [[{ foo: '' }], ['--foo']],
+  [[{ foo: 'bar' }], ['--foo', 'bar']],
+  [[{ foo: 0 }], ['--foo', '0']],
+  [[{ foo: 1 }], ['--foo', '1']],
+  [[{ foo: 1n }], ['--foo', '1']],
+  [[{ foo: 'bar', baz: 1 }], ['--foo', 'bar', '--baz', '1']],
+  [[{ fooBar: 'test' }], ['--foo-bar', 'test']],
+  [[{ foo: ['bar', 'baz'] }], ['--foo', 'bar,baz']],
+  [[{ foo: { barBaz: 'test' } }], ['--foo.bar-baz', 'test']],
+  [
+    [{ fooBar: 'test' }, { casing: 'snake' }],
+    ['--foo_bar', 'test'],
+  ],
+  [
+    [{ foo: { barBaz: 'test' } }, { casing: 'snake' }],
+    ['--foo.bar_baz', 'test'],
+  ],
+] as [Parameters<typeof toArgs>, string[]][])(
+  'toArgs(%o) -> %o',
+  ([input, options], expected) => {
+    expect(toArgs(input, options)).toEqual(expected)
+  },
+)
 
 test.each([
   ['foo', '--foo'],
+  ['Foo', '--foo'],
   ['fooBar', '--foo-bar'],
   ['fooBarBaz', '--foo-bar-baz'],
+  ['foo.BarBaz', '--foo.bar-baz'],
 ])('toFlagCase(%s) -> %s', (input, expected) => {
   expect(toFlagCase(input)).toBe(expected)
 })

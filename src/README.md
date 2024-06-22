@@ -39,7 +39,7 @@ Prool is a library that provides programmatic HTTP testing instances for Ethereu
 Prool contains a set of pre-configured instances that can be used to simulate Ethereum server environments, being:
 
 - **Local Execution Nodes:** [`anvil`](#anvil-execution-node)
-- **Bundler Nodes:** [`alto`](#alto-bundler-node), `rundler`⚠️, `silius`⚠️, [`stackup`](#stackup-bundler-node)
+- **Bundler Nodes:** [`alto`](#alto-bundler-node), [`rundler`](#rundler), `silius`⚠️, [`stackup`](#stackup-bundler-node)
 - **Indexer Nodes:** `ponder`⚠️
 
 ⚠️ = soon
@@ -52,6 +52,7 @@ You can also create your own custom instances by using the [`defineInstance` fun
 - [Getting Started](#getting-started)
   - [Anvil (Execution Node)](#anvil-execution-node)
   - [Alto (Bundler Node)](#alto-bundler-node)
+  - [Rundler (Bundler Node)](#rundler-bundler-node)
   - [Stackup (Bundler Node)](#stackup-bundler-node)
 - [Reference](#reference)
   - [`createServer`](#createserver)
@@ -79,7 +80,8 @@ bun i prool
 
 #### Requirements
 
-- [Foundry](https://getfoundry.sh/): `curl -L https://foundry.paradigm.xyz | bash`
+- [Foundry](https://getfoundry.sh/) binary installed
+  - Download: `curl -L https://foundry.paradigm.xyz | bash`
 
 #### Usage
 
@@ -144,6 +146,47 @@ await bundlerServer.start()
 #### Parameters
 
 See [`AltoParameters`](https://github.com/wevm/prool/blob/801ede06ded8b2cb2d59c95294aae795e548897c/src/instances/alto.ts#L7).
+
+### Rundler (Bundler Node)
+
+#### Requirements
+
+- [Rundler](https://github.com/alchemyplatform/rundler) binary installed
+  - [Download](https://github.com/alchemyplatform/rundler/releases)
+
+#### Usage
+
+```ts
+import { createServer } from 'prool'
+import { anvil, rundler } from 'prool/instances'
+
+const executionServer = createServer({
+  instance: anvil(),
+  port: 8545
+})
+await executionServer.start() 
+// Instances accessible at:
+// "http://localhost:8545/1"
+// "http://localhost:8545/2"
+// "http://localhost:8545/3"
+// "http://localhost:8545/n"
+
+const bundlerServer = createServer({
+  instance: (key) => rundler({
+    nodeHttp: `http://localhost:8545/${key}`,
+  })
+})
+await bundlerServer.start()
+// Instances accessible at:
+// "http://localhost:3000/1" (→ http://localhost:8545/1)
+// "http://localhost:3000/2" (→ http://localhost:8545/2)
+// "http://localhost:3000/3" (→ http://localhost:8545/3)
+// "http://localhost:3000/n" (→ http://localhost:8545/n)
+```
+
+#### Parameters
+
+See [RundlerParameters]().
 
 ### Stackup (Bundler Node)
 
