@@ -1,0 +1,5 @@
+{
+  "type": "module",
+  "types": "../_lib/exports/instances/index.d.ts",
+  "module": "../_lib/exports/instances/index.js"
+}
