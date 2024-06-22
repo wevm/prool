@@ -1,7 +1,8 @@
 import getPort from 'get-port'
 import { afterEach, beforeAll, describe, expect, test } from 'vitest'
 
-import { altoOptions, stackupOptions } from '../test/utils.js'
+import { altoOptions, rundlerOptions, stackupOptions } from '../test/utils.js'
+import { rundler } from './exports/instances.js'
 import { alto } from './instances/alto.js'
 import { anvil } from './instances/anvil.js'
 import { stackup } from './instances/stackup.js'
@@ -27,6 +28,9 @@ describe.each([
   },
   {
     instance: stackup(stackupOptions({ port })),
+  },
+  {
+    instance: rundler(rundlerOptions({ port })),
   },
 ])('instance: $instance.name', ({ instance }) => {
   test('default', async () => {

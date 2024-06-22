@@ -80,7 +80,8 @@ bun i prool
 
 #### Requirements
 
-- [Foundry](https://getfoundry.sh/): `curl -L https://foundry.paradigm.xyz | bash`
+- [Foundry](https://getfoundry.sh/) binary installed
+  - Download: `curl -L https://foundry.paradigm.xyz | bash`
 
 #### Usage
 
@@ -149,18 +150,15 @@ See [`AltoParameters`](https://github.com/wevm/prool/blob/801ede06ded8b2cb2d59c9
 ### Rundler (Bundler Node)
 
 #### Requirements
-- Either have the rundler binary downloaded and add `rundler` to your PATH ([releases](https://github.com/alchemyplatform/rundler/releases))
-- OR use the `downloadLatestRundlerRelease` method export from `prool/instances`
+
+- [Rundler](https://github.com/alchemyplatform/rundler) binary installed
+  - [Download](https://github.com/alchemyplatform/rundler/releases)
 
 #### Usage
+
 ```ts
 import { createServer } from 'prool'
-import { 
-  anvil, 
-  rundler, 
-  downloadLatestRundlerRelease, 
-  isRundlerInstalled 
-} from 'prool/instances'
+import { anvil, rundler } from 'prool/instances'
 
 const executionServer = createServer({
   instance: anvil(),
@@ -173,15 +171,8 @@ await executionServer.start()
 // "http://localhost:8545/3"
 // "http://localhost:8545/n"
 
-// If you want to download the release locally
-const binary = "./bin/rundler"
-if (!(await isRundlerInstalled(binary))) {
-  await downloadLatestRundlerRelease(binary)
-}
-
 const bundlerServer = createServer({
   instance: (key) => rundler({
-    binary,
     nodeHttp: `http://localhost:8545/${key}`,
   })
 })
@@ -192,7 +183,9 @@ await bundlerServer.start()
 // "http://localhost:3000/3" (→ http://localhost:8545/3)
 // "http://localhost:3000/n" (→ http://localhost:8545/n)
 ```
+
 #### Parameters
+
 See [RundlerParameters]().
 
 ### Stackup (Bundler Node)

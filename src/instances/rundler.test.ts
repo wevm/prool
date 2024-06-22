@@ -1,47 +1,18 @@
-import getPort from 'get-port'
-import { afterAll, afterEach, beforeAll, expect, test } from 'vitest'
+import { afterEach, expect, test } from 'vitest'
 import type { Instance } from '../../instance.js'
-import { anvil } from '../anvil.js'
-import {
-  cleanupRundler,
-  downloadLatestRundlerRelease,
-  isRundlerInstalled,
-  rundler,
-} from './instance.js'
+import { rundler } from './instance.js'
 import type { RundlerParameters } from './types.js'
 
 const instances: Instance[] = []
-const port = await getPort()
-const anvilInstance = anvil({ port })
-const binary = './bin/rundler'
 
-const defineInstance = (parameters?: Partial<RundlerParameters>) => {
-  const instance = rundler({
-    binary,
-    nodeHttp: `http://localhost:${port}`,
-    ...parameters,
-  })
+const defineInstance = (parameters: RundlerParameters = {}) => {
+  const instance = rundler(parameters)
   instances.push(instance)
   return instance
 }
 
-beforeAll(async () => {
-  if (!(await isRundlerInstalled(binary))) {
-    await downloadLatestRundlerRelease(binary)
-  }
-
-  anvilInstance.start()
-})
-
 afterEach(async () => {
-  for (const instance of instances) {
-    await instance.stop()
-  }
-})
-
-afterAll(async () => {
-  await anvilInstance.stop()
-  await cleanupRundler(binary)
+  for (const instance of instances) await instance.stop()
 })
 
 test('default', async () => {

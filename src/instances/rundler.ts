@@ -1,6 +1,9 @@
-/**
- * Rundler CLI Options Interface
- */
+import getPort from 'get-port'
+
+import { defineInstance } from '../instance.js'
+import { execa } from '../processes/execa.js'
+import { toArgs } from '../utils.js'
+
 export type RundlerParameters = {
   /**
    * The path to the rundler binary
@@ -351,3 +354,98 @@ export type RundlerParameters = {
     indexOffset?: number
   }
 }
+
+/**
+ * Defines a Rundler instance.
+ *
+ * @example
+ * ```ts
+ * const instance = rundler({
+ *  nodeHttp: 'http://localhost:8545',
+ * });
+ *
+ * await instance.start()
+ * // ...
+ * await instance.stop()
+ * ```
+ */
+export const rundler = defineInstance((parameters?: RundlerParameters) => {
+  const { binary = 'rundler', ...args } = (parameters ??
+    {}) as RundlerParameters
+
+  const host = '127.0.0.1'
+  const name = 'rundler'
+  const process = execa({ name })
+
+  return {
+    _internal: {
+      args,
+      get process() {
+        return process._internal.process
+      },
+    },
+    host,
+    port: args.rpc?.port ?? 3000,
+    name,
+    async start({ port = args.rpc?.port ?? 3000 }, options) {
+      const args_ = {
+        ...args,
+        builder: {
+          ...args.builder,
+          privateKey:
+            args.builder?.privateKey ??
+            '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+        },
+        entryPointVersion: undefined,
+        maxVerificationGas: args.maxVerificationGas ?? 10000000,
+        network: args.network ?? 'dev',
+        nodeHttp: args.nodeHttp ?? 'http://localhost:8545',
+        metrics: {
+          ...args.metrics,
+          port: await getPort(),
+        },
+        rpc: {
+          ...args.rpc,
+          port,
+        },
+        unsafe: args.unsafe ?? true,
+        userOperationEventBlockDistance:
+          args.userOperationEventBlockDistance ?? 100,
+      } satisfies RundlerParameters
+
+      const entrypointArgs = (() => {
+        if (args.entryPointVersion === '0.6.0')
+          return ['--disable_entry_point_v0_7']
+        return ['--disable_entry_point_v0_6']
+      })()
+
+      return await process.start(
+        ($) =>
+          $(
+            binary,
+            ['node', ...toArgs(args_, { casing: 'snake' }), ...entrypointArgs],
+            {
+              env: {
+                RUST_LOG: 'debug',
+              },
+            },
+          ),
+        {
+          ...options,
+          resolver({ process, reject, resolve }) {
+            process.stdout.on('data', (data) => {
+              const message = data.toString()
+              if (message.includes('Started RPC server')) resolve()
+            })
+            process.stderr.on('data', (data) => {
+              reject(data.toString())
+            })
+          },
+        },
+      )
+    },
+    async stop() {
+      await process.stop()
+    },
+  }
+})
