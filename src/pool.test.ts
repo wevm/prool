@@ -1,13 +1,8 @@
 import getPort from 'get-port'
 import { afterEach, beforeAll, describe, expect, test } from 'vitest'
 
-import {
-  altoOptions,
-  rundlerOptions,
-  siliusOptions,
-  stackupOptions,
-} from '../test/utils.js'
-import { rundler, silius } from './exports/instances.js'
+import { altoOptions, rundlerOptions, stackupOptions } from '../test/utils.js'
+import { rundler } from './exports/instances.js'
 import { alto } from './instances/alto.js'
 import { anvil } from './instances/anvil.js'
 import { stackup } from './instances/stackup.js'
