@@ -71,6 +71,9 @@ jobs:
 
       - name: Set up Docker
         uses: docker-practice/actions-setup-docker@master
+      
+      - name: Pull Silius
+        run: docker pull silius-rs/silius:latest
         
       - name: Pull Stackup
         run: docker pull stackupwallet/stackup-bundler:latest
