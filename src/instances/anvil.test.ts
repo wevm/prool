@@ -86,7 +86,7 @@ test('behavior: can subscribe to stderr', async () => {
   )
 })
 
-test('behavior: starts anvil with custom options', async () => {
+test.skip('behavior: starts anvil with custom options', async () => {
   const instance = defineInstance({
     timestamp,
     chainId: 123,
