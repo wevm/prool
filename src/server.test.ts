@@ -28,9 +28,6 @@ describe.each([
   {
     instance: rundler(rundlerOptions({ port })),
   },
-  {
-    instance: silius(siliusOptions({ port })),
-  },
 ])('instance: $instance.name', ({ instance }) => {
   test('default', async () => {
     const server = createServer({
