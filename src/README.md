@@ -39,7 +39,7 @@ Prool is a library that provides programmatic HTTP testing instances for Ethereu
 Prool contains a set of pre-configured instances that can be used to simulate Ethereum server environments, being:
 
 - **Local Execution Nodes:** [`anvil`](#anvil-execution-node)
-- **Bundler Nodes:** [`alto`](#alto-bundler-node), [`rundler`](#rundler), `silius`⚠️, [`stackup`](#stackup-bundler-node)
+- **Bundler Nodes:** [`alto`](#alto-bundler-node), [`rundler`](#rundler-bundler-node), [`silius`](#silius-bundler-node), [`stackup`](#stackup-bundler-node)
 - **Indexer Nodes:** `ponder`⚠️
 
 ⚠️ = soon
@@ -187,6 +187,48 @@ await bundlerServer.start()
 #### Parameters
 
 See [RundlerParameters]().
+
+### Silius (Bundler Node)
+
+#### Requirements
+
+- [Docker](https://docs.docker.com/get-docker/)
+- Silius Docker Image: `docker pull silius-rs/silius`
+
+#### Usage
+
+```ts
+import { createServer } from 'prool'
+import { anvil, silius } from 'prool/instances'
+
+const executionServer = createServer({
+  instance: anvil(),
+  port: 8545
+})
+await executionServer.start() 
+// Instances accessible at:
+// "http://localhost:8545/1"
+// "http://localhost:8545/2"
+// "http://localhost:8545/3"
+// "http://localhost:8545/n"
+
+const bundlerServer = createServer({
+  instance: (key) => silius({
+    ethClientAddress: `http://localhost:8545/${key}`,
+    mnemonicPath: './keys/0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  })
+})
+await bundlerServer.start()
+// Instances accessible at:
+// "http://localhost:4000/1" (→ http://localhost:8545/1)
+// "http://localhost:4000/2" (→ http://localhost:8545/2)
+// "http://localhost:4000/3" (→ http://localhost:8545/3)
+// "http://localhost:4000/n" (→ http://localhost:8545/n)
+```
+
+#### Parameters
+
+See [`SiliusParameters`]().
 
 ### Stackup (Bundler Node)
 
