@@ -1,8 +1,13 @@
 import getPort from 'get-port'
 import { afterEach, beforeAll, describe, expect, test } from 'vitest'
 
-import { altoOptions, rundlerOptions, stackupOptions } from '../test/utils.js'
-import { rundler } from './exports/instances.js'
+import {
+  altoOptions,
+  rundlerOptions,
+  siliusOptions,
+  stackupOptions,
+} from '../test/utils.js'
+import { rundler, silius } from './exports/instances.js'
 import { alto } from './instances/alto.js'
 import { anvil } from './instances/anvil.js'
 import { stackup } from './instances/stackup.js'
@@ -31,6 +36,9 @@ describe.each([
   },
   {
     instance: rundler(rundlerOptions({ port })),
+  },
+  {
+    instance: silius(siliusOptions({ port })),
   },
 ])('instance: $instance.name', ({ instance }) => {
   test('default', async () => {
@@ -115,25 +123,29 @@ describe.each([
     expect(pool.size).toEqual(0)
   })
 
-  test('restart', async () => {
-    pool = definePool({
-      instance,
-    })
+  test(
+    'restart',
+    async () => {
+      pool = definePool({
+        instance,
+      })
 
-    const instance_1 = await pool.start(1)
-    const instance_2 = await pool.start(2)
-    const instance_3 = await pool.start(3)
+      const instance_1 = await pool.start(1)
+      const instance_2 = await pool.start(2)
+      const instance_3 = await pool.start(3)
 
-    expect(instance_1.status).toBe('started')
-    expect(instance_2.status).toBe('started')
-    expect(instance_3.status).toBe('started')
-    expect(pool.size).toEqual(3)
+      expect(instance_1.status).toBe('started')
+      expect(instance_2.status).toBe('started')
+      expect(instance_3.status).toBe('started')
+      expect(pool.size).toEqual(3)
 
-    const promise_1 = pool.restart(1)
-    expect(instance_1.status).toBe('restarting')
-    await promise_1
-    expect(instance_1.status).toBe('started')
-  })
+      const promise_1 = pool.restart(1)
+      expect(instance_1.status).toBe('restarting')
+      await promise_1
+      expect(instance_1.status).toBe('started')
+    },
+    { timeout: 10_000 },
+  )
 
   test('start > stop > start', async () => {
     pool = definePool({

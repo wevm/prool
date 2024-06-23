@@ -34,6 +34,7 @@ test.each([
   [[{ fooBar: 'test' }], ['--foo-bar', 'test']],
   [[{ foo: ['bar', 'baz'] }], ['--foo', 'bar,baz']],
   [[{ foo: { barBaz: 'test' } }], ['--foo.bar-baz', 'test']],
+  [[{ foo: { barBaz: ['test', 'test2'] } }], ['--foo.bar-baz', 'test,test2']],
   [
     [{ fooBar: 'test' }, { casing: 'snake' }],
     ['--foo_bar', 'test'],

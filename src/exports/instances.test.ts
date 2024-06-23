@@ -7,6 +7,7 @@ test('exports', () => {
       "alto",
       "anvil",
       "rundler",
+      "silius",
       "stackup",
     ]
   `)

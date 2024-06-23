@@ -75,7 +75,7 @@ export function toArgs(
           `${key}.${subKey}`,
           casing === 'kebab' ? '-' : '_',
         )
-        return [flag, subValue]
+        return [flag, Array.isArray(subValue) ? subValue.join(',') : subValue]
       })
     }
 

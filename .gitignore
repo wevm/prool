@@ -1,11 +1,9 @@
 *.map
 .DS_Store
 .env
+.local
 _lib
 coverage
 node_modules
 tsconfig.*.tsbuildinfo
 tsconfig.tsbuildinfo
-
-.tool-versions
-bin
