@@ -1,5 +1,11 @@
 # prool
 
+## 0.0.14
+
+### Patch Changes
+
+- [`0187ef8`](https://github.com/wevm/prool/commit/0187ef8a00ea4b25367b8427ed00d217388f3d65) Thanks [@jxom](https://github.com/jxom)! - Added Rundler instance.
+
 ## 0.0.13
 
 ### Patch Changes
