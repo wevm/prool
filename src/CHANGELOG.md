@@ -1,5 +1,11 @@
 # prool
 
+## 0.0.15
+
+### Patch Changes
+
+- [#20](https://github.com/wevm/prool/pull/20) [`e1ebc61`](https://github.com/wevm/prool/commit/e1ebc61a888751298526f7126fe69d042551da7b) Thanks [@jxom](https://github.com/jxom)! - Added Silius instance.
+
 ## 0.0.14
 
 ### Patch Changes
