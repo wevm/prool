@@ -53,6 +53,7 @@ You can also create your own custom instances by using the [`defineInstance` fun
   - [Anvil (Execution Node)](#anvil-execution-node)
   - [Alto (Bundler Node)](#alto-bundler-node)
   - [Rundler (Bundler Node)](#rundler-bundler-node)
+  - [Silius (Bundler Node)](#silius-bundler-node)
   - [Stackup (Bundler Node)](#stackup-bundler-node)
 - [Reference](#reference)
   - [`createServer`](#createserver)
