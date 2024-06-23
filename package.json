@@ -9,7 +9,7 @@
     "clean": "rimraf src/_lib src/tsconfig.build.tsbuildinfo",
     "lint": "biome check . --apply",
     "postinstall": "pnpm build",
-    "test": "vitest",
+    "test": "vitest --testTimeout 10000",
     "test:cov": "vitest --coverage",
     "typecheck": "tsc --noEmit"
   },

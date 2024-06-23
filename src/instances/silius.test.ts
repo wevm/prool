@@ -63,28 +63,24 @@ test('behavior: instance errored (duplicate ports)', async () => {
   await expect(() => instance_2.start()).rejects.toThrowError()
 })
 
-test(
-  'behavior: start and stop multiple times',
-  async () => {
-    const instance = defineInstance()
+test('behavior: start and stop multiple times', async () => {
+  const instance = defineInstance()
 
-    await instance.start()
-    await instance.stop()
-    await instance.start()
-    await instance.stop()
-    await instance.start()
-    await instance.stop()
-    await instance.start()
-    await instance.stop()
-  },
-  { timeout: 10_000 },
-)
+  await instance.start()
+  await instance.stop()
+  await instance.start()
+  await instance.stop()
+  await instance.start()
+  await instance.stop()
+  await instance.start()
+  await instance.stop()
+})
 
 test('behavior: can subscribe to stderr', async () => {
   const messages: string[] = []
 
-  const instance_1 = defineInstance({ port: 1337 })
-  const instance_2 = defineInstance({ port: 1337 })
+  const instance_1 = defineInstance({ port: 1338 })
+  const instance_2 = defineInstance({ port: 1338 })
 
   await instance_1.start()
   instance_2.on('stderr', (message) => messages.push(message))

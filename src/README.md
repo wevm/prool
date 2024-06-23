@@ -39,7 +39,7 @@ Prool is a library that provides programmatic HTTP testing instances for Ethereu
 Prool contains a set of pre-configured instances that can be used to simulate Ethereum server environments, being:
 
 - **Local Execution Nodes:** [`anvil`](#anvil-execution-node)
-- **Bundler Nodes:** [`alto`](#alto-bundler-node), [`rundler`](#rundler), `silius`⚠️, [`stackup`](#stackup-bundler-node)
+- **Bundler Nodes:** [`alto`](#alto-bundler-node), [`rundler`](#rundler-bundler-node), [`silius`](#silius-bundler-node), [`stackup`](#stackup-bundler-node)
 - **Indexer Nodes:** `ponder`⚠️
 
 ⚠️ = soon

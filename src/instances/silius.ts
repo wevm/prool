@@ -330,12 +330,17 @@ export const silius = defineInstance((parameters?: SiliusParameters) => {
             const message = data.toString()
             if (message.includes('Started bundler JSON-RPC server')) resolve()
           })
-          process.stderr.on('data', reject)
+          process.stderr.on('data', (data) => {
+            if (data.toString().includes('WARNING')) return
+            reject(data)
+          })
         },
       })
     },
     async stop() {
-      rmSync(`${dataDir}/${port}`, { recursive: true, force: true })
+      try {
+        rmSync(`${dataDir}/${port}`, { recursive: true, force: true })
+      } catch {}
       await process.stop()
     },
   }
