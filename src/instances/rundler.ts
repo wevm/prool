@@ -13,13 +13,6 @@ export type RundlerParameters = {
   binary?: string
 
   /**
-   * The version of the entrypoint to use
-   *
-   * @default 0.6.0
-   */
-  entryPointVersion?: '0.6.0' | '0.7.0'
-
-  /**
    * Network to look up a hardcoded chain spec.
    * @default dev
    */
@@ -29,6 +22,13 @@ export type RundlerParameters = {
    * Path to a chain spec TOML file.
    */
   chainSpec?: string
+
+  /**
+   * Allows overriding the chain id for a given chain spec
+   *
+   * @default unset
+   */
+  chainId?: number | undefined
 
   /**
    * EVM Node HTTP URL to use.
@@ -90,7 +90,10 @@ export type RundlerParameters = {
    * Possible values are base_fee_percent and priority_fee_increase_percent.
    * @default priority_fee_increase_percent
    */
-  priorityFeeModeKind?: 'base_fee_percent' | 'priority_fee_increase_percent'
+  priorityFeeModeKind?:
+    | 'base_fee_percent'
+    | 'priority_fee_increase_percent'
+    | undefined
 
   /**
    * Priority fee mode value.
@@ -128,6 +131,31 @@ export type RundlerParameters = {
    * This path can either be a local file path or an S3 url.
    */
   mempoolConfigPath?: string
+
+  /**
+   * Disables entry point version v0.6.
+   * @default false
+   */
+  disableEntryPointV0_6?: boolean
+
+  /**
+   * The number of builder accounts to use for entry point version v0.6.
+   *
+   * @default 1
+   */
+  numBuildersV0_6?: number
+
+  /**
+   * Disables entry point version v0.7.
+   * @default false
+   */
+  disableEntryPointV0_7?: boolean
+
+  /**
+   * The number of builder accounts to use for entry point version v0.7.
+   * @default 1
+   */
+  numBuildersV0_7?: number
 
   metrics?: {
     /**
@@ -261,18 +289,20 @@ export type RundlerParameters = {
 
   builder?: {
     /**
-     * Private key to use for signing transactions.
+     * Private keys to use for signing transactions.
      * If used with awsKmsKeyIds, then explicitly pass in `null` here.
      *
-     * @default 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+     * @default ['0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80','0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d']
      */
-    privateKey?: string
+    privateKeys?: string[]
 
     /**
-     * AWS KMS key IDs to use for signing transactions (comma-separated).
-     * Only required if privateKey is not provided.
+     * AWS KMS key IDs to use for signing transactions.
+     * Only required if privateKeys is not provided.
+     *
+     * @default null
      */
-    awsKmsKeyIds?: string
+    awsKmsKeyIds?: string[]
 
     /**
      * Redis URI to use for KMS leasing.
@@ -304,9 +334,21 @@ export type RundlerParameters = {
     /**
      * Choice of what sender type to use for transaction submission.
      * @default raw
-     * options: raw, conditional, flashbots, polygon_bloxroute
+     * options: raw, flashbots, polygon_bloxroute
      */
-    sender?: 'raw' | 'conditional' | 'flashbots' | 'polygonBloxroute'
+    sender?: 'raw' | 'flashbots' | 'polygonBloxroute' | undefined
+
+    /**
+     * Use the submit URL for transaction status checks.
+     * @default false
+     */
+    useSubmitForStatus?: boolean | undefined
+
+    /**
+     * If the sender supports the 'dropped' status. Many senders do not support this status, and only support 'pending' or 'mined'.
+     * @default false
+     */
+    droppedStatusUnsupported?: boolean | undefined
 
     /**
      * After submitting a bundle transaction, the maximum number of blocks to wait for that transaction to mine before trying to resend with higher gas fees.
@@ -321,11 +363,16 @@ export type RundlerParameters = {
     replacementFeePercentIncrease?: number
 
     /**
-     * Maximum number of fee increases to attempt.
-     * Seven increases of 10% is roughly 2x the initial fees.
-     * @default 7
+     * Maximum number of fee increases to attempt during a cancellation.
+     * @default 15
      */
-    maxFeeIncreases?: number
+    maxCancellationFeeIncreases?: number | undefined
+
+    /**
+     * The maximum number of blocks to spend in a replacement underpriced state before issuing a transaction cancellation.
+     * @default 20
+     */
+    maxReplacementUnderpricedBlocks?: number | undefined
 
     /**
      * Additional builders to send bundles to through the Flashbots relay RPC (comma-separated).
@@ -353,6 +400,13 @@ export type RundlerParameters = {
      */
     indexOffset?: number
   }
+
+  /**
+   * Log level for the Rundler binary.
+   *
+   * @default "debug"
+   */
+  logLevel?: 'error' | 'warn' | 'info' | 'debug' | 'trace' | 'off' | undefined
 }
 
 /**
@@ -370,8 +424,12 @@ export type RundlerParameters = {
  * ```
  */
 export const rundler = defineInstance((parameters?: RundlerParameters) => {
-  const { binary = 'rundler', ...args } = (parameters ??
-    {}) as RundlerParameters
+  const {
+    binary = 'rundler',
+    logLevel = 'debug',
+    chainId,
+    ...args
+  } = (parameters ?? {}) as RundlerParameters
 
   const host = '127.0.0.1'
   const name = 'rundler'
@@ -392,11 +450,11 @@ export const rundler = defineInstance((parameters?: RundlerParameters) => {
         ...args,
         builder: {
           ...args.builder,
-          privateKey:
-            args.builder?.privateKey ??
+          privateKeys: args.builder?.privateKeys ?? [
             '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+            '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d',
+          ],
         },
-        entryPointVersion: undefined,
         maxVerificationGas: args.maxVerificationGas ?? 10000000,
         network: args.network ?? 'dev',
         nodeHttp: args.nodeHttp ?? 'http://localhost:8545',
@@ -413,23 +471,15 @@ export const rundler = defineInstance((parameters?: RundlerParameters) => {
           args.userOperationEventBlockDistance ?? 100,
       } satisfies RundlerParameters
 
-      const entrypointArgs = (() => {
-        if (args.entryPointVersion === '0.6.0')
-          return ['--disable_entry_point_v0_7']
-        return ['--disable_entry_point_v0_6']
-      })()
-
       return await process.start(
         ($) =>
-          $(
-            binary,
-            ['node', ...toArgs(args_, { casing: 'snake' }), ...entrypointArgs],
-            {
-              env: {
-                RUST_LOG: 'debug',
-              },
+          $(binary, ['node', ...toArgs(args_, { casing: 'snake' })], {
+            env: {
+              RUST_LOG: logLevel,
+              // CHAIN_* overrides for a chain spec can only be set via env vars
+              ...(chainId != null ? { CHAIN_ID: chainId.toString() } : {}),
             },
-          ),
+          }),
         {
           ...options,
           resolver({ process, reject, resolve }) {
