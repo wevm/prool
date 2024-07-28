@@ -7,7 +7,7 @@
     "changeset:release": "pnpm build && changeset publish",
     "changeset:version": "changeset version && pnpm install --lockfile-only && pnpm format",
     "clean": "rimraf src/_lib src/tsconfig.build.tsbuildinfo",
-    "format": "biome format --write",
+    "format": "biome format . --write",
     "lint": "biome check . --apply",
     "postinstall": "pnpm build",
     "test": "vitest --testTimeout 10000",
