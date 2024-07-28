@@ -134,6 +134,7 @@ export type AnvilParameters = {
     | 'Paris'
     | 'Shanghai'
     | 'Cancun'
+    | 'Prague'
     | 'Latest'
     | undefined
   /**
