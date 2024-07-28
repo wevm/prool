@@ -1,5 +1,11 @@
 # prool
 
+## 0.0.16
+
+### Patch Changes
+
+- [`c7ab4a5`](https://github.com/wevm/prool/commit/c7ab4a524c8f3761b3fca6ea35cfa18ee39fb442) Thanks [@jxom](https://github.com/jxom)! - Added `"Prague"` to Anvil `hardfork` union.
+
 ## 0.0.15
 
 ### Patch Changes
