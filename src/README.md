@@ -153,7 +153,8 @@ See [`AltoParameters`](https://github.com/wevm/prool/blob/801ede06ded8b2cb2d59c9
 #### Requirements
 
 - [Rundler](https://github.com/alchemyplatform/rundler) binary installed
-  - [Download](https://github.com/alchemyplatform/rundler/releases)
+  - [Download v0.3.x](https://github.com/alchemyplatform/rundler/releases/tag/v0.3.0)
+  - Add to `PATH`
 
 #### Usage
 
