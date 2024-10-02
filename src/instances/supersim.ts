@@ -50,13 +50,6 @@ export const supersim = defineInstance((parameters?: SupersimParameters) => {
   const name = 'supersim'
   const process = execa({ name })
 
-  const supersimArgs = {
-    l1Port: parameters?.l1Port,
-    l2StartingPort: parameters?.l2StartingPort,
-    interop: parameters?.interop ? { ...parameters.interop } : undefined,
-    ...parameters?.fork,
-  }
-
   const args = toArgs({
     // ports
     'l1.port': parameters?.l1Port,
@@ -84,7 +77,7 @@ export const supersim = defineInstance((parameters?: SupersimParameters) => {
     },
     host: parameters?.host ?? DEFAULT_HOST,
     name,
-    port: supersimArgs.l1Port ?? DEFAULT_PORT,
+    port: parameters?.l1Port ?? DEFAULT_PORT,
     async start(_, options) {
       return await process.start(($) => $(binary, args), {
         ...options,
