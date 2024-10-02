@@ -63,6 +63,12 @@ jobs:
       - name: Set up Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
+      - name: Set up Supersim
+        uses: jaxxstorm/action-install-gh-release@v1.12.0
+        with:
+          repo: ethereum-optimism/supersim
+          platform: linux
+
       - name: Set up Rundler
         uses: jaxxstorm/action-install-gh-release@v1.12.0
         with:
