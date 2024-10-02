@@ -38,7 +38,7 @@ Prool is a library that provides programmatic HTTP testing instances for Ethereu
 
 Prool contains a set of pre-configured instances that can be used to simulate Ethereum server environments, being:
 
-- **Local Execution Nodes:** [`anvil`](#anvil-execution-node)
+- **Local Execution Nodes:** [`anvil`](#anvil-execution-node), [`supersim`](#supersim-op-execution-nodes)
 - **Bundler Nodes:** [`alto`](#alto-bundler-node), [`rundler`](#rundler-bundler-node), [`silius`](#silius-bundler-node), [`stackup`](#stackup-bundler-node)
 - **Indexer Nodes:** `ponder`⚠️
 
@@ -51,6 +51,7 @@ You can also create your own custom instances by using the [`defineInstance` fun
 - [Install](#install)
 - [Getting Started](#getting-started)
   - [Anvil (Execution Node)](#anvil-execution-node)
+  - [Supersim (OP Execution Nodes)](#supersim-op-execution-nodes)
   - [Alto (Bundler Node)](#alto-bundler-node)
   - [Rundler (Bundler Node)](#rundler-bundler-node)
   - [Silius (Bundler Node)](#silius-bundler-node)
@@ -105,6 +106,36 @@ await server.start()
 #### Parameters
 
 See [`AnvilParameters`](https://github.com/wevm/prool/blob/801ede06ded8b2cb2d59c95294aae795e548897c/src/instances/anvil.ts#L5).
+
+### Supersim (OP Execution Nodes)
+
+#### Requirements
+
+- [Foundry](https://getfoundry.sh/) binary installed
+  - Download: `curl -L https://foundry.paradigm.xyz | bash`
+- [Supersim](https://github.com/ethereum-optimism/supersim?tab=readme-ov-file#2-install-supersim) binary installed
+
+#### Usage
+
+```ts
+import { createServer } from 'prool'
+import { supersim } from 'prool/instances'
+
+const server = createServer({
+  instance: supersim(),
+})
+
+await server.start() 
+// Instances accessible at:
+// "http://localhost:8545/1"
+// "http://localhost:8545/2"
+// "http://localhost:8545/3"
+// "http://localhost:8545/n"
+```
+
+#### Parameters
+
+See [`SupersimParameters`](https://github.com/wevm/prool/blob/ae34711701d3f4316a5e85442ae618a6506f55e1/src/instances/supersim.ts#L5).
 
 ### Alto (Bundler Node)
 
