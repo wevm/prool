@@ -70,7 +70,7 @@ jobs:
           platform: linux
 
       - name: Set up Docker
-        uses: docker-practice/actions-setup-docker@master
+        uses: docker/setup-docker-action@v4
       
       - name: Pull Silius
         run: docker pull ghcr.io/silius-rs/silius:latest
