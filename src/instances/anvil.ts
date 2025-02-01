@@ -283,7 +283,11 @@ export const anvil = defineInstance((parameters?: AnvilParameters) => {
               const message = data.toString()
               if (message.includes('Listening on')) resolve()
             })
-            process.stderr.on('data', reject)
+            process.stderr.on('data', (data) => {
+              const message = data.toString()
+              if (message.includes('Warning:')) return
+              reject(message)
+            })
           },
         },
       )
