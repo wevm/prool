@@ -53,9 +53,9 @@ test('behavior: instance errored (duplicate ports)', async () => {
   })
 
   await instance_1.start()
-  await expect(() =>
-    instance_2.start(),
-  ).rejects.toThrowError('Failed to start process "rundler"')
+  await expect(() => instance_2.start()).rejects.toThrowError(
+    'Failed to start process "rundler"',
+  )
 })
 
 test('behavior: start and stop multiple times', async () => {
@@ -87,9 +87,9 @@ test('behavior: can subscribe to stderr', async () => {
 
   await instance_1.start()
   instance_2.on('stderr', (message) => messages.push(message))
-  await expect(() =>
-    instance_2.start(),
-  ).rejects.toThrowError('Failed to start process "rundler"')
+  await expect(() => instance_2.start()).rejects.toThrowError(
+    'Failed to start process "rundler"',
+  )
 })
 
 test('behavior: exit', async () => {

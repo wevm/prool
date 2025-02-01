@@ -1,5 +1,11 @@
 # prool
 
+## 0.0.17
+
+### Patch Changes
+
+- [`7afec3b`](https://github.com/wevm/prool/commit/7afec3ba7cf0c8aa9ede914dce9043e89664f889) Thanks [@jxom](https://github.com/jxom)! - Fixed Anvil nightly instances crashing due to warnings being piped to stderr.
+
 ## 0.0.16
 
 ### Patch Changes
