@@ -56,7 +56,7 @@ test('behavior: instance errored (duplicate ports)', async () => {
   await expect(() =>
     instance_2.start(),
   ).rejects.toThrowErrorMatchingInlineSnapshot(
-    `[Error: Failed to start process "rundler": exited]`,
+    `[Error: Failed to start process "rundler": Error: Address already in use (os error 98)]`,
   )
 })
 
@@ -92,7 +92,7 @@ test('behavior: can subscribe to stderr', async () => {
   await expect(() =>
     instance_2.start(),
   ).rejects.toThrowErrorMatchingInlineSnapshot(
-    `[Error: Failed to start process "rundler": exited]`,
+    `[Error: Failed to start process "rundler": Error: Address already in use (os error 98)]`,
   )
 })
 
