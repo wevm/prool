@@ -81,12 +81,6 @@ export function createServer(
       const { id, path } = extractPath(url)
 
       if (typeof id === 'number') {
-        if (path === '/') {
-          const { host, port } = pool.get(id) || (await pool.start(id))
-          return proxy.web(request, response, {
-            target: `http://${host}:${port}`,
-          })
-        }
         if (path === '/start') {
           const { host, port } = await pool.start(id)
           return done(response, 200, { host, port })
@@ -103,6 +97,11 @@ export function createServer(
           const messages = pool.get(id)?.messages.get() || []
           return done(response, 200, messages)
         }
+
+        const { host, port } = pool.get(id) || (await pool.start(id))
+        return proxy.web(request, response, {
+          target: `http://${host}:${port}/${path}`,
+        })
       }
 
       if (path === '/healthcheck') return done(response, 200)
