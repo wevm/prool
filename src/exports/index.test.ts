@@ -7,6 +7,10 @@ test('exports', () => {
       "defineInstance",
       "definePool",
       "createServer",
+      "extractPath",
+      "stripColors",
+      "toArgs",
+      "toFlagCase",
     ]
   `)
 })

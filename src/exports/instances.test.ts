@@ -9,6 +9,7 @@ test('exports', () => {
       "rundler",
       "silius",
       "stackup",
+      "defineInstance",
     ]
   `)
 })
