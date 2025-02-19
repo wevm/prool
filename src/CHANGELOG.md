@@ -1,5 +1,11 @@
 # prool
 
+## 0.0.18
+
+### Patch Changes
+
+- [`64e1cb7`](https://github.com/wevm/prool/commit/64e1cb75f69f50ed50da9f9ec50c4a2e59e9450f) Thanks [@jxom](https://github.com/jxom)! - Added `defineInstance` and utils exports.
+
 ## 0.0.17
 
 ### Patch Changes
