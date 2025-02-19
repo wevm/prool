@@ -19,3 +19,11 @@ export {
   type CreateServerReturnType,
   createServer,
 } from '../server.js'
+
+export {
+  type ExtractPathReturnType,
+  extractPath,
+  stripColors,
+  toArgs,
+  toFlagCase,
+} from '../utils.js'
