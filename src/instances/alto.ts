@@ -274,7 +274,7 @@ export const alto = defineInstance((parameters?: AltoParameters) => {
       })
     },
     async stop() {
-      await process.stop('SIGKILL')
+      await process.stop()
     },
   }
 })

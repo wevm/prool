@@ -293,7 +293,7 @@ export const anvil = defineInstance((parameters?: AnvilParameters) => {
       )
     },
     async stop() {
-      await process.stop('SIGKILL')
+      await process.stop()
     },
   }
 })
