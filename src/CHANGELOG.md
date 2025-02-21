@@ -1,5 +1,11 @@
 # prool
 
+## 0.0.19
+
+### Patch Changes
+
+- [`88946fe`](https://github.com/wevm/prool/commit/88946fe5cc611d2847ccb912a0ee41675d335e7b) Thanks [@jxom](https://github.com/jxom)! - Updated to kill process via `SIGKILL`.
+
 ## 0.0.18
 
 ### Patch Changes
