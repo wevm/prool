@@ -1,5 +1,11 @@
 # prool
 
+## 0.0.21
+
+### Patch Changes
+
+- [`7552ac7`](https://github.com/wevm/prool/commit/7552ac70a0182039b6f8dac3a704f2939ead5185) Thanks [@jxom](https://github.com/jxom)! - Reverted `SIGKILL` changes.
+
 ## 0.0.20
 
 ### Patch Changes
