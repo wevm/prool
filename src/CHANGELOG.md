@@ -1,5 +1,11 @@
 # prool
 
+## 0.0.20
+
+### Patch Changes
+
+- [`39cdcbd`](https://github.com/wevm/prool/commit/39cdcbd4286fa1bb3728a0c7679d12931d4d44bb) Thanks [@jxom](https://github.com/jxom)! - Added `/destroy` endpoint.
+
 ## 0.0.19
 
 ### Patch Changes
