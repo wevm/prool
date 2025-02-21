@@ -87,6 +87,10 @@ export function createServer(
             target: `http://${host}:${port}`,
           })
         }
+        if (path === '/destroy') {
+          await pool.destroy(id)
+          return done(response, 200)
+        }
         if (path === '/start') {
           const { host, port } = await pool.start(id)
           return done(response, 200, { host, port })
