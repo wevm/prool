@@ -34,7 +34,7 @@ export function execa(parameters: ExecaParameters): ExecaReturnType {
   let process: Process_internal
 
   async function stop() {
-    const killed = process.kill()
+    const killed = process.kill('SIGKILL')
     if (!killed) return
     return new Promise((resolve) => process.on('close', resolve))
   }
