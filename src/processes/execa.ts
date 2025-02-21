@@ -1,3 +1,4 @@
+import type { SignalConstants } from 'node:os'
 import { type ResultPromise, execa as exec } from 'execa'
 import type { InstanceStartOptions_internal } from '../instance.js'
 import { stripColors } from '../utils.js'
@@ -23,7 +24,7 @@ export type ExecaProcess = {
     command: (x: typeof exec) => void,
     options: ExecaStartOptions,
   ): Promise<void>
-  stop(): Promise<void>
+  stop(signal?: keyof SignalConstants | number): Promise<void>
 }
 export type ExecaReturnType = ExecaProcess
 
@@ -33,8 +34,8 @@ export function execa(parameters: ExecaParameters): ExecaReturnType {
   const errorMessages: string[] = []
   let process: Process_internal
 
-  async function stop() {
-    const killed = process.kill('SIGKILL')
+  async function stop(signal?: keyof SignalConstants | number) {
+    const killed = process.kill(signal)
     if (!killed) return
     return new Promise((resolve) => process.on('close', resolve))
   }
