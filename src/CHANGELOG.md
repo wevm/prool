@@ -1,5 +1,11 @@
 # prool
 
+## 0.0.23
+
+### Patch Changes
+
+- [`af68957`](https://github.com/wevm/prool/commit/af68957fdae33421a55757aafbc7a29accea2479) Thanks [@jxom](https://github.com/jxom)! - Added `FOUNDRY_DISABLE_NIGHTLY_WARNING` env var to Anvil instance.
+
 ## 0.0.22
 
 ### Patch Changes
