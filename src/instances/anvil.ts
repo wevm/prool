@@ -285,7 +285,7 @@ export const anvil = defineInstance((parameters?: AnvilParameters) => {
             })
             process.stderr.on('data', (data) => {
               const message = data.toString()
-              if (message.includes('Warning:')) return
+              if (message.includes('Warning')) return
               reject(message)
             })
           },
