@@ -1,5 +1,11 @@
 # prool
 
+## 0.0.22
+
+### Patch Changes
+
+- [`6354fcb`](https://github.com/wevm/prool/commit/6354fcbefddada249fb9a3abaaa7fe69bd04f1b2) Thanks [@jxom](https://github.com/jxom)! - Fixed Anvil warning.
+
 ## 0.0.21
 
 ### Patch Changes
