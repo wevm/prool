@@ -28,13 +28,13 @@ beforeAll(async () => {
 describe.each([
   { instance: anvil() },
   {
-    instance: alto(altoOptions({ port })),
+    instance: alto(altoOptions({ port, pool: true })),
   },
   {
-    instance: stackup(stackupOptions({ port })),
+    instance: stackup(stackupOptions({ port, pool: true })),
   },
   {
-    instance: rundler(rundlerOptions({ port })),
+    instance: rundler(rundlerOptions({ port, pool: true })),
   },
 ])('instance: $instance.name', ({ instance }) => {
   test('default', async () => {
@@ -381,7 +381,7 @@ describe("instance: 'anvil'", () => {
 describe("instance: 'alto'", () => {
   test('request: /{id}', async () => {
     const server = createServer({
-      instance: alto(altoOptions({ port })),
+      instance: alto(altoOptions({ port, pool: true })),
     })
 
     const stop = await server.start()
@@ -416,7 +416,7 @@ describe("instance: 'alto'", () => {
 describe("instance: 'stackup'", () => {
   test('request: /{id}', async () => {
     const server = createServer({
-      instance: stackup(stackupOptions({ port })),
+      instance: stackup(stackupOptions({ port, pool: true })),
     })
 
     const stop = await server.start()
@@ -451,7 +451,7 @@ describe("instance: 'stackup'", () => {
 describe("instance: 'rundler'", () => {
   test('request: /{id}', async () => {
     const server = createServer({
-      instance: rundler(rundlerOptions({ port })),
+      instance: rundler(rundlerOptions({ port, pool: true })),
     })
 
     const stop = await server.start()
@@ -488,7 +488,7 @@ describe("instance: 'silius'", () => {
     'request: /{id}',
     async () => {
       const server = createServer({
-        instance: silius(siliusOptions({ port })),
+        instance: silius(siliusOptions({ port, pool: true })),
       })
 
       const stop = await server.start()

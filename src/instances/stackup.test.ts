@@ -12,7 +12,7 @@ const port = await getPort()
 
 const defineInstance = (parameters?: Partial<StackupParameters>) => {
   const instance = stackup({
-    ...stackupOptions({ port }),
+    ...stackupOptions({ port, pool: false }),
     ...parameters,
   })
   instances.push(instance)

@@ -31,15 +31,15 @@ afterEach(async () => {
 })
 
 describe.each([
-  { instance: anvil() },
+  { instance: anvil({ port: await getPort() }) },
   {
-    instance: alto(altoOptions({ port })),
+    instance: alto(altoOptions({ port, pool: true })),
   },
   {
-    instance: stackup(stackupOptions({ port })),
+    instance: stackup(stackupOptions({ port, pool: true })),
   },
   {
-    instance: rundler(rundlerOptions({ port })),
+    instance: rundler(rundlerOptions({ port, pool: true })),
   },
 ])('instance: $instance.name', ({ instance }) => {
   test('default', async () => {

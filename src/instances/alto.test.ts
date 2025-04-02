@@ -12,7 +12,7 @@ const port = await getPort()
 
 const defineInstance = (parameters: Partial<AltoParameters> = {}) => {
   const instance = alto({
-    ...altoOptions({ port }),
+    ...altoOptions({ port, pool: false }),
     ...parameters,
   })
   instances.push(instance)
