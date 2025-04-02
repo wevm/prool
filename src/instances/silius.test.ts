@@ -12,7 +12,7 @@ const port = await getPort()
 
 const defineInstance = (parameters?: Partial<{}>) => {
   const instance = silius({
-    ...siliusOptions({ port }),
+    ...siliusOptions({ port, pool: false }),
     ...parameters,
   })
   instances.push(instance)

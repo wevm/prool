@@ -7,11 +7,20 @@ import { alto } from './instances/alto.js'
 import { anvil } from './instances/anvil.js'
 import { stackup } from './instances/stackup.js'
 import { definePool } from './pool.js'
+import { createServer } from './server.js'
 
 let pool: ReturnType<typeof definePool>
 const port = await getPort()
 
-beforeAll(() => anvil({ port }).start())
+beforeAll(() =>
+  createServer({
+    instance: anvil({
+      chainId: 1,
+      forkUrl: process.env.VITE_FORK_URL ?? 'https://eth.merkle.io',
+    }),
+    port,
+  }).start(),
+)
 
 afterEach(async () => {
   try {
@@ -22,15 +31,15 @@ afterEach(async () => {
 })
 
 describe.each([
-  { instance: anvil() },
+  { instance: anvil({ port: await getPort() }) },
   {
-    instance: alto(altoOptions({ port })),
+    instance: alto(altoOptions({ port, pool: true })),
   },
   {
-    instance: stackup(stackupOptions({ port })),
+    instance: stackup(stackupOptions({ port, pool: true })),
   },
   {
-    instance: rundler(rundlerOptions({ port })),
+    instance: rundler(rundlerOptions({ port, pool: true })),
   },
 ])('instance: $instance.name', ({ instance }) => {
   test('default', async () => {
