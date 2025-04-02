@@ -1,5 +1,11 @@
 # prool
 
+## 0.0.24
+
+### Patch Changes
+
+- [#46](https://github.com/wevm/prool/pull/46) [`e8e711e`](https://github.com/wevm/prool/commit/e8e711ede52b9028c2bd986a873f818d36421bd2) Thanks [@jxom](https://github.com/jxom)! - Updated Alto.
+
 ## 0.0.23
 
 ### Patch Changes
