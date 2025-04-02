@@ -19,7 +19,12 @@ const defineInstance = (parameters: Partial<AltoParameters> = {}) => {
   return instance
 }
 
-beforeAll(() => anvil({ port }).start())
+beforeAll(() =>
+  anvil({
+    forkUrl: process.env.VITE_FORK_URL ?? 'https://eth.merkle.io',
+    port,
+  }).start(),
+)
 
 afterEach(async () => {
   for (const instance of instances) await instance.stop().catch(() => {})
