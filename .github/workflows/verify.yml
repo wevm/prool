@@ -80,3 +80,5 @@ jobs:
 
       - name: Run tests
         run: pnpm test
+        env:
+          VITE_FORK_URL: ${{ secrets.VITE_FORK_URL }}
