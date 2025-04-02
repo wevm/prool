@@ -19,7 +19,7 @@ beforeAll(async () => {
   await createServer({
     instance: anvil({
       chainId: 1,
-      forkUrl: process.env.VITE_FORK_URL,
+      forkUrl: process.env.VITE_FORK_URL ?? 'https://eth.merkle.io',
     }),
     port,
   }).start()
