@@ -7,11 +7,20 @@ import { alto } from './instances/alto.js'
 import { anvil } from './instances/anvil.js'
 import { stackup } from './instances/stackup.js'
 import { definePool } from './pool.js'
+import { createServer } from './server.js'
 
 let pool: ReturnType<typeof definePool>
 const port = await getPort()
 
-beforeAll(() => anvil({ port }).start())
+beforeAll(() =>
+  createServer({
+    instance: anvil({
+      chainId: 1,
+      forkUrl: process.env.VITE_FORK_URL,
+    }),
+    port,
+  }).start(),
+)
 
 afterEach(async () => {
   try {

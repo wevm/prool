@@ -15,7 +15,15 @@ import { createServer } from './server.js'
 
 const port = await getPort()
 
-beforeAll(() => anvil({ port }).start())
+beforeAll(async () => {
+  await createServer({
+    instance: anvil({
+      chainId: 1,
+      forkUrl: process.env.VITE_FORK_URL,
+    }),
+    port,
+  }).start()
+})
 
 describe.each([
   { instance: anvil() },
