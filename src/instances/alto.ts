@@ -4,7 +4,6 @@ import { execa } from '../processes/execa.js'
 import { toArgs } from '../utils.js'
 
 import { fileURLToPath } from 'url';
-import { dirname, resolve as pathResolve } from 'path';
 
 export type AltoParameters = {
   /**
@@ -254,9 +253,8 @@ export const alto = defineInstance((parameters?: AltoParameters) => {
     name,
     port: args.port ?? 3000,
     async start({ port = args.port ?? 3000 }, options) {
-      const __filename = fileURLToPath(import.meta.url);
-      const __dirname = dirname(__filename);
-      const altoCliPath = pathResolve(__dirname, '../../../@pimlico/alto/esm/cli/alto.js');
+      const altoModuleUrl = await import.meta.resolve('@pimlico/alto/esm/cli/alto.js');
+      const altoCliPath = fileURLToPath(altoModuleUrl);
       const binary = ['node', altoCliPath];
 
       await process.start(($) => $`${binary} ${toArgs({ port, ...args })}`, {
