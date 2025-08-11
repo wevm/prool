@@ -3,6 +3,8 @@ import { defineInstance } from '../instance.js'
 import { execa } from '../processes/execa.js'
 import { toArgs } from '../utils.js'
 
+import { fileURLToPath } from 'url';
+
 export type AltoParameters = {
   /**
    * API version (used for internal Pimlico versioning compatibility).
@@ -251,15 +253,9 @@ export const alto = defineInstance((parameters?: AltoParameters) => {
     name,
     port: args.port ?? 3000,
     async start({ port = args.port ?? 3000 }, options) {
-      const binary = (() => {
-        if (args.binary) return [args.binary]
-        const libPath = (
-          'resolve' in import.meta
-            ? import.meta.resolve('@pimlico/alto').split('file:')[1]
-            : require.resolve('@pimlico/alto')
-        )!
-        return ['node', resolve(libPath, '../cli/alto.js')]
-      })()
+      const altoModuleUrl = await import.meta.resolve('@pimlico/alto/esm/cli/alto.js');
+      const altoCliPath = fileURLToPath(altoModuleUrl);
+      const binary = ['node', altoCliPath];
 
       await process.start(($) => $`${binary} ${toArgs({ port, ...args })}`, {
         ...options,
