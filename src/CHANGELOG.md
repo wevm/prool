@@ -1,5 +1,11 @@
 # prool
 
+## 0.0.25
+
+### Patch Changes
+
+- [`2b25d5e`](https://github.com/wevm/prool/commit/2b25d5efac3b4355166407eae6a90a44572e7750) Thanks [@jxom](https://github.com/jxom)! - Added CORS headers.
+
 ## 0.0.24
 
 ### Patch Changes
