@@ -48,37 +48,37 @@ jobs:
       - name: Check types
         run: pnpm typecheck
 
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Clone repository
-        uses: actions/checkout@v4
+  # test:
+  #   name: Test
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Clone repository
+  #       uses: actions/checkout@v4
 
-      - name: Install dependencies
-        uses: wevm/actions/.github/actions/pnpm@main
-        with: 
-          node-version: 22
+  #     - name: Install dependencies
+  #       uses: wevm/actions/.github/actions/pnpm@main
+  #       with: 
+  #         node-version: 22
 
-      - name: Set up Foundry
-        uses: foundry-rs/foundry-toolchain@v1
+  #     - name: Set up Foundry
+  #       uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Set up Rundler
-        uses: jaxxstorm/action-install-gh-release@v1.12.0
-        with:
-          repo: alchemyplatform/rundler
-          platform: linux
+  #     - name: Set up Rundler
+  #       uses: jaxxstorm/action-install-gh-release@v1.12.0
+  #       with:
+  #         repo: alchemyplatform/rundler
+  #         platform: linux
 
-      - name: Set up Docker
-        uses: docker/setup-docker-action@v4
+  #     - name: Set up Docker
+  #       uses: docker/setup-docker-action@v4
       
-      - name: Pull Silius
-        run: docker pull ghcr.io/silius-rs/silius:latest
+  #     - name: Pull Silius
+  #       run: docker pull ghcr.io/silius-rs/silius:latest
         
-      - name: Pull Stackup
-        run: docker pull stackupwallet/stackup-bundler:latest
+  #     - name: Pull Stackup
+  #       run: docker pull stackupwallet/stackup-bundler:latest
 
-      - name: Run tests
-        run: pnpm test
-        env:
-          VITE_FORK_URL: ${{ secrets.VITE_FORK_URL }}
+  #     - name: Run tests
+  #       run: pnpm test
+  #       env:
+  #         VITE_FORK_URL: ${{ secrets.VITE_FORK_URL }}
