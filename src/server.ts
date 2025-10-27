@@ -72,6 +72,17 @@ export function createServer(
 
   const server = createServer_(async (request, response) => {
     try {
+      if (request.method === 'OPTIONS') {
+        response.writeHead(200, {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Max-Age': '86400',
+        })
+        response.end()
+        return
+      }
+
       const url = request.url
       if (!url) {
         response.end()
@@ -121,6 +132,14 @@ export function createServer(
     ;(req as any)._proxyReq = proxyReq
   })
 
+  proxy.on('proxyRes', (proxyRes) => {
+    proxyRes.headers['Access-Control-Allow-Origin'] = '*'
+    proxyRes.headers['Access-Control-Allow-Methods'] =
+      'GET, POST, PUT, DELETE, OPTIONS'
+    proxyRes.headers['Access-Control-Allow-Headers'] =
+      'Content-Type, Authorization'
+  })
+
   proxy.on('error', (err, req) => {
     if (req.socket.destroyed && (err as any).code === 'ECONNRESET') {
       ;(req as any)._proxyReq.abort()
@@ -168,6 +187,11 @@ export function createServer(
 
 function done(res: ServerResponse, statusCode: number, json?: unknown) {
   return res
-    .writeHead(statusCode, { 'Content-Type': 'application/json' })
+    .writeHead(statusCode, {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    })
     .end(json ? JSON.stringify(json) : undefined)
 }
