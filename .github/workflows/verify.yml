@@ -4,33 +4,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-
-    steps:
-      - name: Clone repository
-        uses: actions/checkout@v4
-
-      - name: Install dependencies
-        uses: wevm/actions/.github/actions/pnpm@main
-        with: 
-          node-version: 22
-
-      - name: Lint code
-        run: pnpm lint
-      
-      - uses: stefanzweifel/git-auto-commit-action@v5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          commit_message: 'chore: format'
-          commit_user_name: 'github-actions[bot]'
-          commit_user_email: 'github-actions[bot]@users.noreply.github.com'
-
-  types:
-    name: Types
+  checks:
+    name: Checks
     runs-on: ubuntu-latest
 
     steps:
@@ -38,15 +13,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install dependencies
-        uses: wevm/actions/.github/actions/pnpm@main
-        with: 
-          node-version: 22
+        uses: ./.github/actions/install-dependencies
 
-      - name: Build
-        run: pnpm build
-        
+      - name: Check code
+        run: pnpm check
+
       - name: Check types
-        run: pnpm typecheck
+        run: pnpm check:types
 
   test:
     name: Test
@@ -56,9 +29,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install dependencies
-        uses: wevm/actions/.github/actions/pnpm@main
-        with: 
-          node-version: 22
+        uses: ./.github/actions/install-dependencies
 
       - name: Set up Foundry
         uses: foundry-rs/foundry-toolchain@v1

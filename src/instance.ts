@@ -157,7 +157,7 @@ export function defineInstance<
       const { _internal, host, name, port, start, stop } = {
         ...instance,
         ...createParameters,
-        port: instance.port,
+        port: createParameters.port ?? instance.port,
       }
       const { messageBuffer = 20, timeout } = options
 

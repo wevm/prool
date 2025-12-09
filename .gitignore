@@ -4,6 +4,7 @@
 .local
 _lib
 coverage
+dist
 node_modules
 tsconfig.*.tsbuildinfo
 tsconfig.tsbuildinfo

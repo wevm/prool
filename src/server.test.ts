@@ -280,9 +280,8 @@ describe("instance: 'anvil'", () => {
       }).then((x) => x.json()),
     ).toMatchInlineSnapshot(`
       {
-        "id": 0,
-        "jsonrpc": "2.0",
-        "result": "0x69",
+        "message": "Failed to start process "anvil": Error: Address already in use (os error 48)
+      ",
       }
     `)
 
@@ -304,9 +303,8 @@ describe("instance: 'anvil'", () => {
       }).then((x) => x.json()),
     ).toMatchInlineSnapshot(`
       {
-        "id": 0,
-        "jsonrpc": "2.0",
-        "result": "0x0",
+        "message": "Failed to start process "anvil": Error: Address already in use (os error 48)
+      ",
       }
     `)
 

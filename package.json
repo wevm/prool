@@ -1,16 +1,13 @@
 {
-  "name": "prool",
-  "type": "module",
   "scripts": {
-    "build": "pnpm clean && tsc --project ./tsconfig.build.json",
-    "changeset": "changeset",
-    "changeset:release": "pnpm build && changeset publish",
-    "changeset:version": "changeset version && pnpm install --lockfile-only && pnpm format",
-    "check": "biome check .",
-    "check:types": "tsc --noEmit",
-    "clean": "rm -rf src/_lib src/tsconfig.build.tsbuildinfo",
-    "test": "vitest --testTimeout 10000",
-    "test:cov": "vitest --coverage"
+    "build": "zile",
+    "changeset:publish": "zile publish:prepare && changeset publish && zile publish:post",
+    "changeset:version": "changeset version",
+    "check": "biome check --fix --unsafe",
+    "check:types": "tsc",
+    "dev": "zile dev",
+    "postinstall": "pnpm dev",
+    "test": "vitest"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.8",
@@ -23,7 +20,67 @@
     "@vitest/coverage-v8": "^1.6.0",
     "typescript": "^5.9.3",
     "vitest": "^1.6.0",
-    "ws": "^8.18.3"
+    "ws": "^8.18.3",
+    "zile": "^0.0.13"
   },
-  "packageManager": "pnpm@10.25.0"
+  "packageManager": "pnpm@10.25.0",
+  "[!start-pkg]": "",
+  "name": "prool",
+  "description": "HTTP testing instances for Ethereum",
+  "version": "0.0.25",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "src": "./src/exports/index.ts",
+      "types": "./dist/exports/index.d.ts",
+      "default": "./dist/exports/index.js"
+    },
+    "./processes": {
+      "src": "./src/exports/processes.ts",
+      "types": "./dist/exports/processes.d.ts",
+      "default": "./dist/exports/processes.js"
+    },
+    "./instances": {
+      "src": "./src/exports/instances.ts",
+      "types": "./dist/exports/instances.d.ts",
+      "default": "./dist/exports/instances.js"
+    }
+  },
+  "dependencies": {
+    "change-case": "5.4.4",
+    "eventemitter3": "^5.0.1",
+    "execa": "^9.1.0",
+    "get-port": "^7.1.0",
+    "http-proxy": "^1.18.1",
+    "tar": "7.2.0"
+  },
+  "peerDependencies": {
+    "@pimlico/alto": "*"
+  },
+  "peerDependenciesMeta": {
+    "@pimlico/alto": {
+      "optional": true
+    }
+  },
+  "license": "MIT",
+  "homepage": "https://wevm.dev",
+  "repository": "wevm/prool",
+  "authors": [
+    "awkweb",
+    "jxom"
+  ],
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/wevm"
+    }
+  ],
+  "keywords": [],
+  "main": "./dist/exports/index.js",
+  "module": "./dist/exports/index.js",
+  "types": "./dist/exports/index.d.ts"
 }
