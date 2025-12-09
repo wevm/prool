@@ -153,9 +153,11 @@ export function defineInstance<
       const parameters = parametersOrOptions as parameters
       const options = options_ || parametersOrOptions || {}
 
+      const instance = fn(parameters)
       const { _internal, host, name, port, start, stop } = {
-        ...fn(parameters),
+        ...instance,
         ...createParameters,
+        port: instance.port,
       }
       const { messageBuffer = 20, timeout } = options
 

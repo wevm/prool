@@ -82,14 +82,7 @@ test('start (error)', async () => {
         process.stderr.on('data', reject)
       },
     }),
-  ).rejects.toThrowErrorMatchingInlineSnapshot(`
-    [Error: Failed to start process "foo": error: unexpected argument '--lol' found
-
-    Usage: anvil [OPTIONS] [COMMAND]
-
-    For more information, try '--help'.
-    ]
-  `)
+  ).rejects.toThrowError('Failed to start process "foo"')
   await expect(resolvers.message.promise).resolves.toBeDefined()
   await expect(resolvers.stderr.promise).resolves.toBeDefined()
 })

@@ -6,27 +6,24 @@
     "changeset": "changeset",
     "changeset:release": "pnpm build && changeset publish",
     "changeset:version": "changeset version && pnpm install --lockfile-only && pnpm format",
-    "clean": "rimraf src/_lib src/tsconfig.build.tsbuildinfo",
-    "format": "biome format . --write",
-    "lint": "biome check . --apply",
-    "postinstall": "pnpm build",
+    "check": "biome check .",
+    "check:types": "tsc --noEmit",
+    "clean": "rm -rf src/_lib src/tsconfig.build.tsbuildinfo",
     "test": "vitest --testTimeout 10000",
-    "test:cov": "vitest --coverage",
-    "typecheck": "tsc --noEmit"
+    "test:cov": "vitest --coverage"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.7.3",
-    "@changesets/changelog-github": "^0.5.0",
-    "@changesets/cli": "^2.27.3",
+    "@biomejs/biome": "^2.3.8",
+    "@changesets/changelog-github": "^0.5.2",
+    "@changesets/cli": "^2.29.8",
     "@pimlico/alto": "0.0.15",
-    "@types/http-proxy": "^1.17.14",
-    "@types/node": "^20.14.0",
-    "@types/ws": "^8.5.10",
+    "@types/http-proxy": "^1.17.17",
+    "@types/node": "^24.10.2",
+    "@types/ws": "^8.18.1",
     "@vitest/coverage-v8": "^1.6.0",
-    "rimraf": "^5.0.7",
-    "typescript": "^5.4.5",
+    "typescript": "^5.9.3",
     "vitest": "^1.6.0",
-    "ws": "^8.17.0"
+    "ws": "^8.18.3"
   },
-  "packageManager": "pnpm@9.1.0"
+  "packageManager": "pnpm@10.25.0"
 }

@@ -10,44 +10,44 @@ export type RundlerParameters = {
    *
    * @default rundler
    */
-  binary?: string
+  binary?: string | undefined
 
   /**
    * The version of the entrypoint to use
    *
    * @default 0.6.0
    */
-  entryPointVersion?: '0.6.0' | '0.7.0'
+  entryPointVersion?: '0.6.0' | '0.7.0' | undefined
 
   /**
    * Network to look up a hardcoded chain spec.
    * @default dev
    */
-  network?: string
+  network?: string | undefined
 
   /**
    * Path to a chain spec TOML file.
    */
-  chainSpec?: string
+  chainSpec?: string | undefined
 
   /**
    * EVM Node HTTP URL to use.
    *
    * @default http://localhost:8545
    */
-  nodeHttp?: string
+  nodeHttp?: string | undefined
 
   /**
    * Maximum verification gas.
    * @default 5000000
    */
-  maxVerificationGas?: number
+  maxVerificationGas?: number | undefined
 
   /**
    * Maximum bundle gas.
    * @default 25000000
    */
-  maxBundleGas?: number
+  maxBundleGas?: number | undefined
 
   /**
    * Minimum stake value.
@@ -59,300 +59,318 @@ export type RundlerParameters = {
    * Minimum unstake delay.
    * @default 84600
    */
-  minUnstakeDelay?: number
+  minUnstakeDelay?: number | undefined
 
   /**
    * Number of blocks to search when calling eth_getUserOperationByHash.
    * @default 100
    */
-  userOperationEventBlockDistance?: number
+  userOperationEventBlockDistance?: number | undefined
 
   /**
    * Maximum gas for simulating handle operations.
    * @default 20000000
    */
-  maxSimulateHandleOpsGas?: number
+  maxSimulateHandleOpsGas?: number | undefined
 
   /**
    * The gas fee to use during verification estimation.
    * @default 1000000000000 10K gwei
    */
-  verificationEstimationGasFee?: number
+  verificationEstimationGasFee?: number | undefined
 
   /**
    * Bundle transaction priority fee overhead over network value.
    * @default 0
    */
-  bundlePriorityFeeOverheadPercent?: number
+  bundlePriorityFeeOverheadPercent?: number | undefined
 
   /**
    * Priority fee mode kind.
    * Possible values are base_fee_percent and priority_fee_increase_percent.
    * @default priority_fee_increase_percent
    */
-  priorityFeeModeKind?: 'base_fee_percent' | 'priority_fee_increase_percent'
+  priorityFeeModeKind?:
+    | 'base_fee_percent'
+    | 'priority_fee_increase_percent'
+    | undefined
 
   /**
    * Priority fee mode value.
    * @default 0
    */
-  priorityFeeModeValue?: number
+  priorityFeeModeValue?: number | undefined
 
   /**
    * Percentage of the current network fees a user operation must have in order to be accepted into the mempool.
    * @default 100
    */
-  baseFeeAcceptPercent?: number
+  baseFeeAcceptPercent?: number | undefined
 
   /**
    * AWS region.
    * @default us-east-1
    */
-  awsRegion?: string
+  awsRegion?: string | undefined
 
   /**
    * Interval at which the builder polls an RPC node for new blocks and mined transactions.
    * @default 100
    */
-  ethPollIntervalMillis?: number
+  ethPollIntervalMillis?: number | undefined
 
   /**
    * Flag for unsafe bundling mode. When set Rundler will skip checking simulation rules (and any debug_traceCall).
    *
    * @default true
    */
-  unsafe?: boolean
+  unsafe?: boolean | undefined
 
   /**
    * Path to the mempool configuration file.
    * This path can either be a local file path or an S3 url.
    */
-  mempoolConfigPath?: string
+  mempoolConfigPath?: string | undefined
 
-  metrics?: {
-    /**
-     * Port to listen on for metrics requests.
-     * @default 8080
-     */
-    port?: number
+  metrics?:
+    | {
+        /**
+         * Port to listen on for metrics requests.
+         * @default 8080
+         */
+        port?: number | undefined
 
-    /**
-     * Host to listen on for metrics requests.
-     * @default 0.0.0.0
-     */
-    host?: string
+        /**
+         * Host to listen on for metrics requests.
+         * @default 0.0.0.0
+         */
+        host?: string | undefined
 
-    /**
-     * Tags for metrics in the format key1=value1,key2=value2,...
-     */
-    tags?: string
+        /**
+         * Tags for metrics in the format key1=value1,key2=value2,...
+         */
+        tags?: string | undefined
 
-    /**
-     * Sample interval to use for sampling metrics.
-     * @default 1000
-     */
-    sampleIntervalMillis?: number
-  }
+        /**
+         * Sample interval to use for sampling metrics.
+         * @default 1000
+         */
+        sampleIntervalMillis?: number | undefined
+      }
+    | undefined
 
-  logging?: {
-    /**
-     * Log file. If not provided, logs will be written to stdout.
-     */
-    file?: string
+  logging?:
+    | {
+        /**
+         * Log file. If not provided, logs will be written to stdout.
+         */
+        file?: string | undefined
 
-    /**
-     * If set, logs will be written in JSON format.
-     */
-    json?: boolean
-  }
+        /**
+         * If set, logs will be written in JSON format.
+         */
+        json?: boolean | undefined
+      }
+    | undefined
 
-  rpc?: {
-    /**
-     * Port to listen on for JSON-RPC requests.
-     * @default 3000
-     */
-    port?: number
+  rpc?:
+    | {
+        /**
+         * Port to listen on for JSON-RPC requests.
+         * @default 3000
+         */
+        port?: number | undefined
 
-    /**
-     * Host to listen on for JSON-RPC requests.
-     * @default 127.0.0.1
-     */
-    host?: string
+        /**
+         * Host to listen on for JSON-RPC requests.
+         * @default 127.0.0.1
+         */
+        host?: string | undefined
 
-    /**
-     * Which APIs to expose over the RPC interface.
-     * @default eth,rundler
-     */
-    api?: string
+        /**
+         * Which APIs to expose over the RPC interface.
+         * @default eth,rundler
+         */
+        api?: string | undefined
 
-    /**
-     * Timeout for RPC requests.
-     * @default 20
-     */
-    timeoutSeconds?: number
+        /**
+         * Timeout for RPC requests.
+         * @default 20
+         */
+        timeoutSeconds?: number | undefined
 
-    /**
-     * Maximum number of concurrent connections.
-     * @default 100
-     */
-    maxConnections?: number
-  }
+        /**
+         * Maximum number of concurrent connections.
+         * @default 100
+         */
+        maxConnections?: number | undefined
+      }
+    | undefined
 
-  pool?: {
-    /**
-     * Maximum size in bytes for the pool.
-     * @default 500000000, 0.5 GB
-     */
-    maxSizeInBytes?: number
+  pool?:
+    | {
+        /**
+         * Maximum size in bytes for the pool.
+         * @default 500000000, 0.5 GB
+         */
+        maxSizeInBytes?: number | undefined
 
-    /**
-     * Maximum number of user operations for an unstaked sender.
-     * @default 4
-     */
-    sameSenderMempoolCount?: number
+        /**
+         * Maximum number of user operations for an unstaked sender.
+         * @default 4
+         */
+        sameSenderMempoolCount?: number | undefined
 
-    /**
-     * Minimum replacement fee increase percentage.
-     * @default 10
-     */
-    minReplacementFeeIncreasePercentage?: number
+        /**
+         * Minimum replacement fee increase percentage.
+         * @default 10
+         */
+        minReplacementFeeIncreasePercentage?: number | undefined
 
-    /**
-     * Path to a blocklist file.
-     * This path can either be a local file path or an S3 url.
-     */
-    blocklistPath?: string
+        /**
+         * Path to a blocklist file.
+         * This path can either be a local file path or an S3 url.
+         */
+        blocklistPath?: string | undefined
 
-    /**
-     * Path to an allowlist file.
-     * This path can either be a local file path or an S3 url.
-     */
-    allowlistPath?: string
+        /**
+         * Path to an allowlist file.
+         * This path can either be a local file path or an S3 url.
+         */
+        allowlistPath?: string | undefined
 
-    /**
-     * Size of the chain history.
-     */
-    chainHistorySize?: number
+        /**
+         * Size of the chain history.
+         */
+        chainHistorySize?: number | undefined
 
-    /**
-     * Boolean field that sets whether the pool server starts with paymaster tracking enabled.
-     * @default true
-     */
-    paymasterTrackingEnabled?: boolean
+        /**
+         * Boolean field that sets whether the pool server starts with paymaster tracking enabled.
+         * @default true
+         */
+        paymasterTrackingEnabled?: boolean | undefined
 
-    /**
-     * Length of the paymaster cache.
-     * @default 10_000
-     */
-    paymasterCacheLength?: number
+        /**
+         * Length of the paymaster cache.
+         * @default 10_000
+         */
+        paymasterCacheLength?: number | undefined
 
-    /**
-     * Boolean field that sets whether the pool server starts with reputation tracking enabled.
-     * @default true
-     */
-    reputationTrackingEnabled?: boolean
+        /**
+         * Boolean field that sets whether the pool server starts with reputation tracking enabled.
+         * @default true
+         */
+        reputationTrackingEnabled?: boolean | undefined
 
-    /**
-     * The minimum number of blocks that a UO must stay in the mempool before it can be requested to be dropped by the user.
-     * @default 10
-     */
-    dropMinNumBlocks?: number
-  }
+        /**
+         * The minimum number of blocks that a UO must stay in the mempool before it can be requested to be dropped by the user.
+         * @default 10
+         */
+        dropMinNumBlocks?: number | undefined
+      }
+    | undefined
 
-  builder?: {
-    /**
-     * Private key to use for signing transactions.
-     * If used with awsKmsKeyIds, then explicitly pass in `null` here.
-     *
-     * @default 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-     */
-    privateKey?: string
+  builder?:
+    | {
+        /**
+         * Private key to use for signing transactions.
+         * If used with awsKmsKeyIds, then explicitly pass in `null` here.
+         *
+         * @default 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+         */
+        privateKey?: string | undefined
 
-    /**
-     * AWS KMS key IDs to use for signing transactions (comma-separated).
-     * Only required if privateKey is not provided.
-     */
-    awsKmsKeyIds?: string
+        /**
+         * AWS KMS key IDs to use for signing transactions (comma-separated).
+         * Only required if privateKey is not provided.
+         */
+        awsKmsKeyIds?: string | undefined
 
-    /**
-     * Redis URI to use for KMS leasing.
-     * Only required when awsKmsKeyIds are provided.
-     *
-     * @default ""
-     */
-    redisUri?: string
+        /**
+         * Redis URI to use for KMS leasing.
+         * Only required when awsKmsKeyIds are provided.
+         *
+         * @default ""
+         */
+        redisUri?: string | undefined
 
-    /**
-     * Redis lock TTL in milliseconds.
-     * Only required when awsKmsKeyIds are provided.
-     * @default 60000
-     */
-    redisLockTtlMillis?: number
+        /**
+         * Redis lock TTL in milliseconds.
+         * Only required when awsKmsKeyIds are provided.
+         * @default 60000
+         */
+        redisLockTtlMillis?: number | undefined
 
-    /**
-     * Maximum number of ops to include in one bundle.
-     * @default 128
-     */
-    maxBundleSize?: number
+        /**
+         * Maximum number of ops to include in one bundle.
+         * @default 128
+         */
+        maxBundleSize?: number | undefined
 
-    /**
-     * If present, the URL of the ETH provider that will be used to send transactions.
-     * Defaults to the value of nodeHttp.
-     */
-    submitUrl?: string
+        /**
+         * If present, the URL of the ETH provider that will be used to send transactions.
+         * Defaults to the value of nodeHttp.
+         */
+        submitUrl?: string | undefined
 
-    /**
-     * Choice of what sender type to use for transaction submission.
-     * @default raw
-     * options: raw, conditional, flashbots, polygon_bloxroute
-     */
-    sender?: 'raw' | 'conditional' | 'flashbots' | 'polygonBloxroute'
+        /**
+         * Choice of what sender type to use for transaction submission.
+         * @default raw
+         * options: raw, conditional, flashbots, polygon_bloxroute
+         */
+        sender?:
+          | 'raw'
+          | 'conditional'
+          | 'flashbots'
+          | 'polygonBloxroute'
+          | undefined
 
-    /**
-     * After submitting a bundle transaction, the maximum number of blocks to wait for that transaction to mine before trying to resend with higher gas fees.
-     * @default 2
-     */
-    maxBlocksToWaitForMine?: number
+        /**
+         * After submitting a bundle transaction, the maximum number of blocks to wait for that transaction to mine before trying to resend with higher gas fees.
+         * @default 2
+         */
+        maxBlocksToWaitForMine?: number | undefined
 
-    /**
-     * Percentage amount to increase gas fees when retrying a transaction after it failed to mine.
-     * @default 10
-     */
-    replacementFeePercentIncrease?: number
+        /**
+         * Percentage amount to increase gas fees when retrying a transaction after it failed to mine.
+         * @default 10
+         */
+        replacementFeePercentIncrease?: number | undefined
 
-    /**
-     * Maximum number of fee increases to attempt.
-     * Seven increases of 10% is roughly 2x the initial fees.
-     * @default 7
-     */
-    maxFeeIncreases?: number
+        /**
+         * Maximum number of fee increases to attempt.
+         * Seven increases of 10% is roughly 2x the initial fees.
+         * @default 7
+         */
+        maxFeeIncreases?: number | undefined
 
-    /**
-     * Additional builders to send bundles to through the Flashbots relay RPC (comma-separated).
-     * List of builders that the Flashbots RPC supports can be found here.
-     * @default flashbots
-     */
-    flashbotsRelayBuilders?: string
+        /**
+         * Additional builders to send bundles to through the Flashbots relay RPC (comma-separated).
+         * List of builders that the Flashbots RPC supports can be found here.
+         * @default flashbots
+         */
+        flashbotsRelayBuilders?: string | undefined
 
-    /**
-     * Authorization key to use with the Flashbots relay.
-     * See here for more info.
-     * @default None
-     */
-    flashbotsRelayAuthKey?: string
+        /**
+         * Authorization key to use with the Flashbots relay.
+         * See here for more info.
+         * @default None
+         */
+        flashbotsRelayAuthKey?: string | undefined
 
-    /**
-     * If using the bloxroute transaction sender on Polygon, this is the auth header to supply with the requests.
-     * @default None
-     */
-    bloxrouteAuthHeader?: string
+        /**
+         * If using the bloxroute transaction sender on Polygon, this is the auth header to supply with the requests.
+         * @default None
+         */
+        bloxrouteAuthHeader?: string | undefined
 
-    /**
-     * If running multiple builder processes, this is the index offset to assign unique indexes to each bundle sender.
-     * @default 0
-     */
-    indexOffset?: number
-  }
+        /**
+         * If running multiple builder processes, this is the index offset to assign unique indexes to each bundle sender.
+         * @default 0
+         */
+        indexOffset?: number | undefined
+      }
+    | undefined
 }
 
 /**

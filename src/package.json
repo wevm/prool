@@ -8,7 +8,7 @@
   "typings": "_lib/exports/index.d.ts",
   "sideEffects": false,
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "exports": {
     ".": {
@@ -43,7 +43,10 @@
   "license": "MIT",
   "homepage": "https://wevm.dev",
   "repository": "wevm/prool",
-  "authors": ["awkweb", "jxom"],
+  "authors": [
+    "awkweb",
+    "jxom"
+  ],
   "funding": [
     {
       "type": "github",

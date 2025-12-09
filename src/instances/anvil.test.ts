@@ -100,7 +100,7 @@ test.skip('behavior: starts anvil with custom options', async () => {
 test('behavior: exit', async () => {
   const instance = defineInstance({ timestamp })
 
-  let exitCode: number | null | undefined = undefined
+  let exitCode: number | null | undefined
   instance.on('exit', (code) => {
     exitCode = code
   })

@@ -14,7 +14,10 @@ export type Pool<key extends number | string = number | string> = Pick<
   destroy(key: key): Promise<void>
   destroyAll(): Promise<void>
   restart(key: key): Promise<void>
-  start(key: key, options?: { port?: number }): Promise<Instance_>
+  start(
+    key: key,
+    options?: { port?: number | undefined } | undefined,
+  ): Promise<Instance_>
   stop(key: key): Promise<void>
   stopAll(): Promise<void>
 }
@@ -25,7 +28,7 @@ export type DefinePoolParameters<
   /** Instance for the pool. */
   instance: Instance | ((key: key) => Instance)
   /** The maximum number of instances that can be started. */
-  limit?: number | number
+  limit?: number | undefined
 }
 
 export type DefinePoolReturnType<

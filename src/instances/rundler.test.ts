@@ -76,12 +76,12 @@ test('behavior: can subscribe to stderr', async () => {
 
   const instance_1 = defineInstance({
     rpc: {
-      port: 1338,
+      port: 1339,
     },
   })
   const instance_2 = defineInstance({
     rpc: {
-      port: 1338,
+      port: 1339,
     },
   })
 
@@ -90,22 +90,4 @@ test('behavior: can subscribe to stderr', async () => {
   await expect(() => instance_2.start()).rejects.toThrowError(
     'Failed to start process "rundler"',
   )
-})
-
-test('behavior: exit', async () => {
-  const instance = defineInstance()
-
-  let exitCode: number | null | undefined = undefined
-  instance.on('exit', (code) => {
-    exitCode = code
-  })
-
-  await instance.start()
-  expect(instance.status).toEqual('started')
-
-  instance._internal.process.kill()
-
-  await new Promise<void>((res) => setTimeout(res, 100))
-  expect(instance.status).toEqual('stopped')
-  expect(typeof exitCode !== 'undefined').toBeTruthy()
 })

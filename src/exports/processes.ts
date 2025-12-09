@@ -3,6 +3,6 @@ export {
   type ExecaProcess,
   type ExecaReturnType,
   type ExecaStartOptions,
-  type Process_internal,
   execa,
+  type Process_internal,
 } from '../processes/execa.js'

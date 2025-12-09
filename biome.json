@@ -1,17 +1,16 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.5.3/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.3.8/schema.json",
   "files": {
-    "ignore": [
-      "coverage",
-      "node_modules",
-      "src/_lib",
-      "tsconfig.json",
-      "tsconfig.*.json"
+    "includes": [
+      "**",
+      "!**/coverage",
+      "!**/node_modules",
+      "!**/src/_lib",
+      "!**/tsconfig.json",
+      "!**/tsconfig.*.json"
     ]
   },
-  "organizeImports": {
-    "enabled": true
-  },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
@@ -22,7 +21,8 @@
     "rules": {
       "recommended": true,
       "complexity": {
-        "noBannedTypes": "off"
+        "noBannedTypes": "off",
+        "useLiteralKeys": "off"
       },
       "style": {
         "noNonNullAssertion": "off"
@@ -36,7 +36,7 @@
   "javascript": {
     "formatter": {
       "quoteStyle": "single",
-      "trailingComma": "all",
+      "trailingCommas": "all",
       "semicolons": "asNeeded"
     }
   }

@@ -30,7 +30,7 @@ export function extractPath(request: string): ExtractPathReturnType {
 }
 
 const ansiColorRegex =
-  // biome-ignore lint/suspicious/noControlCharactersInRegex: <explanation>
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: _
   /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g
 
 /**

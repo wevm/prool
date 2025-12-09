@@ -1,11 +1,10 @@
 import getPort from 'get-port'
 import { afterEach, beforeAll, describe, expect, test } from 'vitest'
 
-import { altoOptions, rundlerOptions, stackupOptions } from '../test/utils.js'
+import { altoOptions, rundlerOptions } from '../test/utils.js'
 import { rundler } from './exports/instances.js'
 import { alto } from './instances/alto.js'
 import { anvil } from './instances/anvil.js'
-import { stackup } from './instances/stackup.js'
 import { definePool } from './pool.js'
 import { createServer } from './server.js'
 
@@ -16,7 +15,7 @@ beforeAll(() =>
   createServer({
     instance: anvil({
       chainId: 1,
-      forkUrl: process.env.VITE_FORK_URL ?? 'https://eth.merkle.io',
+      forkUrl: process.env['VITE_FORK_URL'] ?? 'https://eth.merkle.io',
     }),
     port,
   }).start(),
@@ -34,9 +33,6 @@ describe.each([
   { instance: anvil({ port: await getPort() }) },
   {
     instance: alto(altoOptions({ port, pool: true })),
-  },
-  {
-    instance: stackup(stackupOptions({ port, pool: true })),
   },
   {
     instance: rundler(rundlerOptions({ port, pool: true })),

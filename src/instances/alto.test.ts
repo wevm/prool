@@ -21,7 +21,7 @@ const defineInstance = (parameters: Partial<AltoParameters> = {}) => {
 
 beforeAll(() =>
   anvil({
-    forkUrl: process.env.VITE_FORK_URL ?? 'https://eth.merkle.io',
+    forkUrl: process.env['VITE_FORK_URL'] ?? 'https://eth.merkle.io',
     port,
   }).start(),
 )
@@ -100,7 +100,7 @@ test.skip('behavior: can subscribe to stderr', async () => {
 test('behavior: exit', async () => {
   const instance = defineInstance()
 
-  let exitCode: number | null | undefined = undefined
+  let exitCode: number | null | undefined
   instance.on('exit', (code) => {
     exitCode = code
   })

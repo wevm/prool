@@ -1,16 +1,10 @@
 import getPort from 'get-port'
 import { beforeAll, describe, expect, test } from 'vitest'
 import { type MessageEvent, WebSocket } from 'ws'
-import {
-  altoOptions,
-  rundlerOptions,
-  siliusOptions,
-  stackupOptions,
-} from '../test/utils.js'
-import { rundler, silius } from './exports/instances.js'
+import { altoOptions, rundlerOptions } from '../test/utils.js'
 import { alto } from './instances/alto.js'
 import { anvil } from './instances/anvil.js'
-import { stackup } from './instances/stackup.js'
+import { rundler } from './instances/rundler.js'
 import { createServer } from './server.js'
 
 const port = await getPort()
@@ -19,7 +13,7 @@ beforeAll(async () => {
   await createServer({
     instance: anvil({
       chainId: 1,
-      forkUrl: process.env.VITE_FORK_URL ?? 'https://eth.merkle.io',
+      forkUrl: process.env['VITE_FORK_URL'] ?? 'https://eth.merkle.io',
     }),
     port,
   }).start()
@@ -29,9 +23,6 @@ describe.each([
   { instance: anvil() },
   {
     instance: alto(altoOptions({ port, pool: true })),
-  },
-  {
-    instance: stackup(stackupOptions({ port, pool: true })),
   },
   {
     instance: rundler(rundlerOptions({ port, pool: true })),
@@ -413,41 +404,6 @@ describe("instance: 'alto'", () => {
   })
 })
 
-describe("instance: 'stackup'", () => {
-  test('request: /{id}', async () => {
-    const server = createServer({
-      instance: stackup(stackupOptions({ port, pool: true })),
-    })
-
-    const stop = await server.start()
-    const { port: port_2 } = server.address()!
-    const response = await fetch(`http://localhost:${port_2}/1`, {
-      body: JSON.stringify({
-        method: 'eth_supportedEntryPoints',
-        params: [],
-        id: 0,
-        jsonrpc: '2.0',
-      }),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      method: 'POST',
-    })
-    expect(response.status).toBe(200)
-    expect(await response.json()).toMatchInlineSnapshot(`
-        {
-          "id": 0,
-          "jsonrpc": "2.0",
-          "result": [
-            "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
-          ],
-        }
-      `)
-
-    await stop()
-  })
-})
-
 describe("instance: 'rundler'", () => {
   test('request: /{id}', async () => {
     const server = createServer({
@@ -481,45 +437,6 @@ describe("instance: 'rundler'", () => {
 
     await stop()
   })
-})
-
-describe("instance: 'silius'", () => {
-  test(
-    'request: /{id}',
-    async () => {
-      const server = createServer({
-        instance: silius(siliusOptions({ port, pool: true })),
-      })
-
-      const stop = await server.start()
-      const { port: port_2 } = server.address()!
-      const response = await fetch(`http://localhost:${port_2}/1`, {
-        body: JSON.stringify({
-          method: 'eth_supportedEntryPoints',
-          params: [],
-          id: 0,
-          jsonrpc: '2.0',
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        method: 'POST',
-      })
-      expect(response.status).toBe(200)
-      expect(await response.json()).toMatchInlineSnapshot(`
-      {
-        "id": 0,
-        "jsonrpc": "2.0",
-        "result": [
-          "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
-        ],
-      }
-    `)
-
-      await stop()
-    },
-    { timeout: 10_000 },
-  )
 })
 
 test('404', async () => {

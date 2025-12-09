@@ -1,8 +1,8 @@
 import {
+  createServer as createServer_,
   type IncomingMessage,
   type Server,
   type ServerResponse,
-  createServer as createServer_,
 } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import httpProxy from 'http-proxy'
