@@ -44,8 +44,8 @@ test('default', async () => {
 })
 
 test('behavior: instance errored (duplicate ports)', async () => {
-  const instance_1 = defineInstance({ port: 8545 })
-  const instance_2 = defineInstance({ port: 8545 })
+  const instance_1 = defineInstance({ port: 8546 })
+  const instance_2 = defineInstance({ port: 8546 })
 
   await instance_1.start()
   await expect(() => instance_2.start()).rejects.toThrowError('Failed to start')
@@ -76,8 +76,8 @@ test('behavior: can subscribe to stdout', async () => {
 test('behavior: can subscribe to stderr', async () => {
   const messages: string[] = []
 
-  const instance_1 = defineInstance({ port: 8545 })
-  const instance_2 = defineInstance({ port: 8545 })
+  const instance_1 = defineInstance({ port: 8546 })
+  const instance_2 = defineInstance({ port: 8546 })
 
   await instance_1.start()
   instance_2.on('stderr', (message) => messages.push(message))
