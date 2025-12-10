@@ -1,21 +1,20 @@
 import type { SignalConstants } from 'node:os'
-import { type ResultPromise, execa as exec } from 'execa'
-import type { InstanceStartOptions_internal } from '../instance.js'
-import { stripColors } from '../utils.js'
+import { execa as exec, type ResultPromise } from 'execa'
+import type * as Instance from '../Instance.js'
+import { stripColors } from '../internal/utils.js'
 
 export type Process_internal = ResultPromise<{ cleanup: true; reject: false }>
 
-export type ExecaStartOptions = InstanceStartOptions_internal & {
-  resolver(options: {
-    process: Process_internal
-    reject(data: string): Promise<void>
-    resolve(): void
-  }): void
-}
+export type ExecaStartOptions =
+  Instance.define.InstanceStartOptions_internal & {
+    resolver(options: {
+      process: Process_internal
+      reject(data: string): Promise<void>
+      resolve(): void
+    }): void
+  }
 
-export type ExecaParameters = { name: string }
-
-export type ExecaProcess = {
+export type Process = {
   _internal: {
     process: Process_internal
   }
@@ -26,9 +25,8 @@ export type ExecaProcess = {
   ): Promise<void>
   stop(signal?: keyof SignalConstants | number): Promise<void>
 }
-export type ExecaReturnType = ExecaProcess
 
-export function execa(parameters: ExecaParameters): ExecaReturnType {
+export function execa(parameters: execa.Parameters): execa.ReturnType {
   const { name } = parameters
 
   const errorMessages: string[] = []
@@ -111,4 +109,10 @@ export function execa(parameters: ExecaParameters): ExecaReturnType {
       await stop()
     },
   }
+}
+
+export declare namespace execa {
+  export type Parameters = { name: string }
+
+  export type ReturnType = Process
 }

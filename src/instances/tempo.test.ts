@@ -1,25 +1,16 @@
 import getPort from 'get-port'
-import { afterEach, beforeAll, expect, test } from 'vitest'
+import { Instance } from 'prool'
+import { afterEach, expect, test } from 'vitest'
 
-import { siliusOptions } from '../../test/utils.js'
-import type { Instance } from '../instance.js'
-import { anvil } from './anvil.js'
-import { silius } from './silius.js'
-
-const instances: Instance[] = []
+const instances: Instance.Instance[] = []
 
 const port = await getPort()
 
-const defineInstance = (parameters?: Partial<{}>) => {
-  const instance = silius({
-    ...siliusOptions({ port, pool: false }),
-    ...parameters,
-  })
+const defineInstance = (parameters: Instance.tempo.Parameters = {}) => {
+  const instance = Instance.tempo({ port, ...parameters })
   instances.push(instance)
   return instance
 }
-
-beforeAll(() => anvil({ port }).start())
 
 afterEach(async () => {
   for (const instance of instances) await instance.stop().catch(() => {})
@@ -52,15 +43,11 @@ test('default', async () => {
 })
 
 test('behavior: instance errored (duplicate ports)', async () => {
-  const instance_1 = defineInstance({
-    port: 1337,
-  })
-  const instance_2 = defineInstance({
-    port: 1337,
-  })
+  const instance_1 = defineInstance({ port: 8546 })
+  const instance_2 = defineInstance({ port: 8546 })
 
   await instance_1.start()
-  await expect(() => instance_2.start()).rejects.toThrowError()
+  await expect(() => instance_2.start()).rejects.toThrowError('Failed to start')
 })
 
 test('behavior: start and stop multiple times', async () => {
@@ -76,33 +63,22 @@ test('behavior: start and stop multiple times', async () => {
   await instance.stop()
 })
 
+test('behavior: can subscribe to stdout', async () => {
+  const messages: string[] = []
+  const instance = defineInstance()
+  instance.on('stdout', (message) => messages.push(message))
+
+  await instance.start()
+  expect(messages.length).toBeGreaterThanOrEqual(1)
+})
+
 test('behavior: can subscribe to stderr', async () => {
   const messages: string[] = []
 
-  const instance_1 = defineInstance({ port: 1338 })
-  const instance_2 = defineInstance({ port: 1338 })
+  const instance_1 = defineInstance({ port: 8546 })
+  const instance_2 = defineInstance({ port: 8546 })
 
   await instance_1.start()
   instance_2.on('stderr', (message) => messages.push(message))
-  await expect(instance_2.start()).rejects.toThrowError()
-})
-
-test('behavior: exit', async () => {
-  const instance = defineInstance()
-  const { promise, resolve } = Promise.withResolvers<void>()
-
-  let exitCode: number | null | undefined = undefined
-  instance.on('exit', (code) => {
-    exitCode = code
-    resolve()
-  })
-
-  await instance.start()
-  expect(instance.status).toEqual('started')
-
-  instance._internal.process.kill()
-
-  await promise
-  expect(instance.status).toEqual('stopped')
-  expect(typeof exitCode !== 'undefined').toBeTruthy()
+  await expect(instance_2.start()).rejects.toThrow('Failed to start')
 })

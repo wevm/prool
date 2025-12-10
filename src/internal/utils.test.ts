@@ -43,12 +43,12 @@ test.each([
     [{ foo: { barBaz: 'test' } }, { casing: 'snake' }],
     ['--foo.bar_baz', 'test'],
   ],
-] as [Parameters<typeof toArgs>, string[]][])(
-  'toArgs(%o) -> %o',
-  ([input, options], expected) => {
-    expect(toArgs(input, options)).toEqual(expected)
-  },
-)
+] as [Parameters<typeof toArgs>, string[]][])('toArgs(%o) -> %o', ([
+  input,
+  options,
+], expected) => {
+  expect(toArgs(input, options)).toEqual(expected)
+})
 
 test.each([
   ['foo', '--foo'],

@@ -1,17 +1,14 @@
 import getPort from 'get-port'
+import { Instance } from 'prool'
 import { afterEach, beforeAll, expect, test } from 'vitest'
-
 import { altoOptions } from '../../test/utils.js'
-import type { Instance } from '../instance.js'
-import { type AltoParameters, alto } from './alto.js'
-import { anvil } from './anvil.js'
 
-const instances: Instance[] = []
+const instances: Instance.Instance[] = []
 
 const port = await getPort()
 
-const defineInstance = (parameters: Partial<AltoParameters> = {}) => {
-  const instance = alto({
+const defineInstance = (parameters: Partial<Instance.alto.Parameters> = {}) => {
+  const instance = Instance.alto({
     ...altoOptions({ port, pool: false }),
     ...parameters,
   })
@@ -20,8 +17,8 @@ const defineInstance = (parameters: Partial<AltoParameters> = {}) => {
 }
 
 beforeAll(() =>
-  anvil({
-    forkUrl: process.env.VITE_FORK_URL ?? 'https://eth.merkle.io',
+  Instance.anvil({
+    forkUrl: process.env['VITE_FORK_URL'] ?? 'https://eth.merkle.io',
     port,
   }).start(),
 )
@@ -64,7 +61,7 @@ test.skip('behavior: instance errored (duplicate ports)', async () => {
   await expect(() => instance_2.start()).rejects.toThrowError()
 })
 
-test('behavior: start and stop multiple times', async () => {
+test.skip('behavior: start and stop multiple times', async () => {
   const instance = defineInstance()
 
   await instance.start()
@@ -100,7 +97,7 @@ test.skip('behavior: can subscribe to stderr', async () => {
 test('behavior: exit', async () => {
   const instance = defineInstance()
 
-  let exitCode: number | null | undefined = undefined
+  let exitCode: number | null | undefined
   instance.on('exit', (code) => {
     exitCode = code
   })

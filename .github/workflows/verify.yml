@@ -4,33 +4,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-
-    steps:
-      - name: Clone repository
-        uses: actions/checkout@v4
-
-      - name: Install dependencies
-        uses: wevm/actions/.github/actions/pnpm@main
-        with: 
-          node-version: 22
-
-      - name: Lint code
-        run: pnpm lint
-      
-      - uses: stefanzweifel/git-auto-commit-action@v5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          commit_message: 'chore: format'
-          commit_user_name: 'github-actions[bot]'
-          commit_user_email: 'github-actions[bot]@users.noreply.github.com'
-
-  types:
-    name: Types
+  checks:
+    name: Checks
     runs-on: ubuntu-latest
 
     steps:
@@ -38,47 +13,31 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install dependencies
-        uses: wevm/actions/.github/actions/pnpm@main
-        with: 
-          node-version: 22
+        uses: ./.github/actions/install-dependencies
 
-      - name: Build
-        run: pnpm build
-        
+      - name: Check code
+        run: pnpm check
+
       - name: Check types
-        run: pnpm typecheck
+        run: pnpm check:types
 
-  # test:
-  #   name: Test
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Clone repository
-  #       uses: actions/checkout@v4
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
 
-  #     - name: Install dependencies
-  #       uses: wevm/actions/.github/actions/pnpm@main
-  #       with: 
-  #         node-version: 22
+      - name: Install dependencies
+        uses: ./.github/actions/install-dependencies
 
-  #     - name: Set up Foundry
-  #       uses: foundry-rs/foundry-toolchain@v1
+      - name: Set up Foundry
+        uses: foundry-rs/foundry-toolchain@v1
 
-  #     - name: Set up Rundler
-  #       uses: jaxxstorm/action-install-gh-release@v1.12.0
-  #       with:
-  #         repo: alchemyplatform/rundler
-  #         platform: linux
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v4
 
-  #     - name: Set up Docker
-  #       uses: docker/setup-docker-action@v4
-      
-  #     - name: Pull Silius
-  #       run: docker pull ghcr.io/silius-rs/silius:latest
-        
-  #     - name: Pull Stackup
-  #       run: docker pull stackupwallet/stackup-bundler:latest
-
-  #     - name: Run tests
-  #       run: pnpm test
-  #       env:
-  #         VITE_FORK_URL: ${{ secrets.VITE_FORK_URL }}
+      - name: Run tests
+        run: pnpm test --bail=1
+        env:
+          VITE_FORK_URL: ${{ secrets.VITE_FORK_URL }}

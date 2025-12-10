@@ -1,39 +1,15 @@
 import { EventEmitter } from 'eventemitter3'
 
+export { alto } from './instances/alto.js'
+export { anvil } from './instances/anvil.js'
+export { tempo, tempoDocker } from './instances/tempo.js'
+
 type EventTypes = {
   exit: [code: number | null, signal: NodeJS.Signals | null]
   listening: []
   message: [message: string]
   stderr: [message: string]
   stdout: [message: string]
-}
-
-export type InstanceStartOptions_internal = {
-  emitter: EventEmitter<EventTypes>
-  status: Instance['status']
-}
-export type InstanceStopOptions_internal = {
-  emitter: EventEmitter<EventTypes>
-  status: Instance['status']
-}
-
-export type InstanceStartOptions = {
-  /**
-   * Port to start the instance on.
-   */
-  port?: number | undefined
-}
-
-export type DefineInstanceFn<
-  parameters,
-  _internal extends object | undefined = object | undefined,
-> = (parameters: parameters) => Pick<Instance, 'host' | 'name' | 'port'> & {
-  _internal?: _internal | undefined
-  start(
-    options: InstanceStartOptions,
-    options_internal: InstanceStartOptions_internal,
-  ): Promise<void>
-  stop(options_internal: InstanceStopOptions_internal): Promise<void>
 }
 
 export type Instance<
@@ -111,15 +87,6 @@ export type InstanceOptions = {
   timeout?: number
 }
 
-export type DefineInstanceReturnType<
-  _internal extends object | undefined = object | undefined,
-  parameters = undefined,
-> = (
-  ...parameters: parameters extends undefined
-    ? [options?: InstanceOptions]
-    : [parameters: parameters, options?: InstanceOptions]
-) => Instance<_internal>
-
 /**
  * Creates an instance definition.
  *
@@ -127,7 +94,7 @@ export type DefineInstanceReturnType<
  *
  * @example
  * ```ts
- * const foo = defineInstance((parameters: FooParameters) => {
+ * const foo = Instance.define((parameters: FooParameters) => {
  *  return {
  *    name: 'foo',
  *    host: 'localhost',
@@ -142,20 +109,22 @@ export type DefineInstanceReturnType<
  * })
  * ```
  */
-export function defineInstance<
+export function define<
   _internal extends object | undefined,
   parameters = undefined,
 >(
-  fn: DefineInstanceFn<parameters, _internal>,
-): DefineInstanceReturnType<_internal, parameters> {
+  fn: define.DefineFn<parameters, _internal>,
+): define.ReturnType<_internal, parameters> {
   return (...[parametersOrOptions, options_]) => {
     function create(createParameters: Parameters<Instance['create']>[0] = {}) {
       const parameters = parametersOrOptions as parameters
       const options = options_ || parametersOrOptions || {}
 
+      const instance = fn(parameters)
       const { _internal, host, name, port, start, stop } = {
-        ...fn(parameters),
+        ...instance,
         ...createParameters,
+        port: createParameters.port ?? instance.port,
       }
       const { messageBuffer = 20, timeout } = options
 
@@ -306,5 +275,45 @@ export function defineInstance<
     }
 
     return Object.assign(create(), { create })
+  }
+}
+
+export declare namespace define {
+  export type DefineFn<
+    parameters,
+    _internal extends object | undefined = object | undefined,
+  > = (parameters: parameters) => Pick<Instance, 'host' | 'name' | 'port'> & {
+    _internal?: _internal | undefined
+    start(
+      options: InstanceStartOptions,
+      options_internal: InstanceStartOptions_internal,
+    ): Promise<void>
+    stop(options_internal: InstanceStopOptions_internal): Promise<void>
+  }
+
+  export type ReturnType<
+    _internal extends object | undefined = object | undefined,
+    parameters = undefined,
+  > = (
+    ...parameters: parameters extends undefined
+      ? [options?: InstanceOptions]
+      : [parameters: parameters, options?: InstanceOptions]
+  ) => Instance<_internal>
+
+  export type InstanceStartOptions_internal = {
+    emitter: EventEmitter<EventTypes>
+    status: Instance['status']
+  }
+
+  export type InstanceStopOptions_internal = {
+    emitter: EventEmitter<EventTypes>
+    status: Instance['status']
+  }
+
+  export type InstanceStartOptions = {
+    /**
+     * Port to start the instance on.
+     */
+    port?: number | undefined
   }
 }

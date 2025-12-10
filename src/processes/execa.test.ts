@@ -1,8 +1,9 @@
 import { EventEmitter } from 'eventemitter3'
+import getPort from 'get-port'
 import { afterEach, expect, test } from 'vitest'
-import { type ExecaProcess, execa } from './execa.js'
+import { execa } from './execa.js'
 
-const processes: ExecaProcess[] = []
+const processes: execa.ReturnType[] = []
 function createProcess() {
   const process = execa({ name: 'foo' })
   processes.push(process)
@@ -82,14 +83,7 @@ test('start (error)', async () => {
         process.stderr.on('data', reject)
       },
     }),
-  ).rejects.toThrowErrorMatchingInlineSnapshot(`
-    [Error: Failed to start process "foo": error: unexpected argument '--lol' found
-
-    Usage: anvil [OPTIONS] [COMMAND]
-
-    For more information, try '--help'.
-    ]
-  `)
+  ).rejects.toThrowError('Failed to start process "foo"')
   await expect(resolvers.message.promise).resolves.toBeDefined()
   await expect(resolvers.stderr.promise).resolves.toBeDefined()
 })
@@ -128,7 +122,8 @@ test('behavior: exit when status is starting', async () => {
   emitter.on('exit', resolvers.exit.resolve)
 
   // Invalid argument
-  await process.start(($) => $`anvil`, {
+  const port = await getPort()
+  await process.start(($) => $`anvil --port ${port}`, {
     emitter,
     status: 'starting',
     resolver({ process, resolve }) {

@@ -1,22 +1,17 @@
 import getPort from 'get-port'
+import { Instance, Pool, Server } from 'prool'
 import { afterEach, beforeAll, describe, expect, test } from 'vitest'
 
-import { altoOptions, rundlerOptions, stackupOptions } from '../test/utils.js'
-import { rundler } from './exports/instances.js'
-import { alto } from './instances/alto.js'
-import { anvil } from './instances/anvil.js'
-import { stackup } from './instances/stackup.js'
-import { definePool } from './pool.js'
-import { createServer } from './server.js'
+import { altoOptions } from '../test/utils.js'
 
-let pool: ReturnType<typeof definePool>
+let pool: ReturnType<typeof Pool.define>
 const port = await getPort()
 
 beforeAll(() =>
-  createServer({
-    instance: anvil({
+  Server.create({
+    instance: Instance.anvil({
       chainId: 1,
-      forkUrl: process.env.VITE_FORK_URL ?? 'https://eth.merkle.io',
+      forkUrl: process.env['VITE_FORK_URL'] ?? 'https://eth.merkle.io',
     }),
     port,
   }).start(),
@@ -31,19 +26,14 @@ afterEach(async () => {
 })
 
 describe.each([
-  { instance: anvil({ port: await getPort() }) },
+  { instance: Instance.anvil({ port: await getPort() }) },
+  { instance: Instance.tempo({ port: await getPort() }) },
   {
-    instance: alto(altoOptions({ port, pool: true })),
-  },
-  {
-    instance: stackup(stackupOptions({ port, pool: true })),
-  },
-  {
-    instance: rundler(rundlerOptions({ port, pool: true })),
+    instance: Instance.alto(altoOptions({ port, pool: true })),
   },
 ])('instance: $instance.name', ({ instance }) => {
   test('default', async () => {
-    pool = definePool({
+    pool = Pool.define({
       instance,
     })
 
@@ -51,7 +41,7 @@ describe.each([
   })
 
   test('start', async () => {
-    pool = definePool({
+    pool = Pool.define({
       instance,
     })
 
@@ -72,7 +62,7 @@ describe.each([
 
   test('callback instance', async () => {
     const keys: (number | string)[] = []
-    pool = definePool({
+    pool = Pool.define({
       instance(key) {
         keys.push(key)
         return instance
@@ -87,7 +77,7 @@ describe.each([
   })
 
   test('stop / destroy', async () => {
-    pool = definePool({
+    pool = Pool.define({
       instance,
     })
 
@@ -124,32 +114,28 @@ describe.each([
     expect(pool.size).toEqual(0)
   })
 
-  test(
-    'restart',
-    async () => {
-      pool = definePool({
-        instance,
-      })
+  test('restart', { timeout: 10_000 }, async () => {
+    pool = Pool.define({
+      instance,
+    })
 
-      const instance_1 = await pool.start(1)
-      const instance_2 = await pool.start(2)
-      const instance_3 = await pool.start(3)
+    const instance_1 = await pool.start(1)
+    const instance_2 = await pool.start(2)
+    const instance_3 = await pool.start(3)
 
-      expect(instance_1.status).toBe('started')
-      expect(instance_2.status).toBe('started')
-      expect(instance_3.status).toBe('started')
-      expect(pool.size).toEqual(3)
+    expect(instance_1.status).toBe('started')
+    expect(instance_2.status).toBe('started')
+    expect(instance_3.status).toBe('started')
+    expect(pool.size).toEqual(3)
 
-      const promise_1 = pool.restart(1)
-      expect(instance_1.status).toBe('restarting')
-      await promise_1
-      expect(instance_1.status).toBe('started')
-    },
-    { timeout: 10_000 },
-  )
+    const promise_1 = pool.restart(1)
+    expect(instance_1.status).toBe('restarting')
+    await promise_1
+    expect(instance_1.status).toBe('started')
+  })
 
   test('start > stop > start', async () => {
-    pool = definePool({
+    pool = Pool.define({
       instance,
     })
 
@@ -164,7 +150,7 @@ describe.each([
   })
 
   test('stopAll / destroyAll', async () => {
-    pool = definePool({
+    pool = Pool.define({
       instance,
     })
 
@@ -182,7 +168,7 @@ describe.each([
   })
 
   test('get', async () => {
-    pool = definePool({
+    pool = Pool.define({
       instance,
     })
 
@@ -196,7 +182,7 @@ describe.each([
   })
 
   test('behavior: start more than once', async () => {
-    pool = definePool({
+    pool = Pool.define({
       instance,
     })
 
@@ -210,7 +196,7 @@ describe.each([
   })
 
   test('behavior: clear more than once', async () => {
-    pool = definePool({
+    pool = Pool.define({
       instance,
     })
 
@@ -227,7 +213,7 @@ describe.each([
   })
 
   test('behavior: restart more than once', async () => {
-    pool = definePool({
+    pool = Pool.define({
       instance,
     })
 
@@ -248,7 +234,7 @@ describe.each([
   })
 
   test('behavior: stop more than once', async () => {
-    pool = definePool({
+    pool = Pool.define({
       instance,
     })
 
@@ -265,7 +251,7 @@ describe.each([
   test('error: start more than once on same port', async () => {
     const port = await getPort()
 
-    pool = definePool({
+    pool = Pool.define({
       instance,
     })
 
@@ -280,7 +266,7 @@ describe.each([
   })
 
   test('error: instance limit reached', async () => {
-    pool = definePool({
+    pool = Pool.define({
       instance,
       limit: 2,
     })
