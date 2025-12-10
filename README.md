@@ -75,8 +75,9 @@ bun i prool
 
 #### Requirements
 
-- [Foundry](https://getfoundry.sh/) binary installed
-  - Download: `curl -L https://foundry.paradigm.xyz | bash`
+```bash
+curl -L https://foundry.paradigm.xyz | bash   # Install Foundry
+```
 
 #### Usage
 
@@ -99,8 +100,10 @@ await server.start()
 
 #### Requirements
 
-- [Tempo](https://docs.tempo.xyz/guide/node/installation) binary installed
-  - Download: `curl -L https://tempo.xyz/install | bash`
+```bash
+curl -L https://get.docker.com/ | bash    # Install Docker
+npm i testcontainers                      # Install `testcontainers`
+```
 
 #### Usage
 

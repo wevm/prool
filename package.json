@@ -18,6 +18,7 @@
     "@types/node": "^24.10.2",
     "@types/ws": "^8.18.1",
     "@vitest/coverage-v8": "^4.0.15",
+    "testcontainers": "^11.10.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.15",
     "ws": "^8.18.3",
@@ -30,7 +31,10 @@
   "version": "0.0.25",
   "type": "module",
   "sideEffects": false,
-  "files": ["src", "dist"],
+  "files": [
+    "src",
+    "dist"
+  ],
   "engines": {
     "node": ">=22"
   },
@@ -50,10 +54,14 @@
     "tar": "7.2.0"
   },
   "peerDependencies": {
-    "@pimlico/alto": "*"
+    "@pimlico/alto": "*",
+    "testcontainers": ">=11.10.0"
   },
   "peerDependenciesMeta": {
     "@pimlico/alto": {
+      "optional": true
+    },
+    "testcontainers": {
       "optional": true
     }
   },

@@ -1,14 +1,13 @@
-import { afterEach, expect, test } from 'vitest'
-import type { Instance } from '../Instance.js'
-import { type TempoParameters, tempo } from './tempo.js'
 import getPort from 'get-port'
+import { Instance } from 'prool'
+import { afterEach, expect, test } from 'vitest'
 
-const instances: Instance[] = []
+const instances: Instance.Instance[] = []
 
 const port = await getPort()
 
-const defineInstance = (parameters: TempoParameters = {}) => {
-  const instance = tempo({ ...parameters, port })
+const defineInstance = (parameters: Instance.tempo.Parameters = {}) => {
+  const instance = Instance.tempo({ port, ...parameters })
   instances.push(instance)
   return instance
 }

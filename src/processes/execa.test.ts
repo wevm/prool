@@ -1,7 +1,7 @@
 import { EventEmitter } from 'eventemitter3'
+import getPort from 'get-port'
 import { afterEach, expect, test } from 'vitest'
 import { execa } from './execa.js'
-import getPort from 'get-port'
 
 const processes: execa.ReturnType[] = []
 function createProcess() {
