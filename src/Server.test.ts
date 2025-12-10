@@ -17,8 +17,8 @@ beforeAll(async () => {
 })
 
 describe.each([
-  { instance: Instance.anvil({ port: port + 1 }) },
-  { instance: Instance.tempo({ port: port + 2 }) },
+  { instance: Instance.anvil({ port: await getPort() }) },
+  { instance: Instance.tempo({ port: await getPort() }) },
   {
     instance: Instance.alto(altoOptions({ port, pool: true })),
   },
