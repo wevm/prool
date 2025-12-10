@@ -30,6 +30,7 @@
   "version": "0.0.25",
   "type": "module",
   "sideEffects": false,
+  "files": ["src", "dist"],
   "engines": {
     "node": ">=22"
   },
