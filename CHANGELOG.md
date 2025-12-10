@@ -1,5 +1,65 @@
 # prool
 
+## 0.1.0
+
+### Minor Changes
+
+- [#58](https://github.com/wevm/prool/pull/58) [`5f79243`](https://github.com/wevm/prool/commit/5f792438e4977116725252b105e8b75cfb3a3ba1) Thanks [@jxom](https://github.com/jxom)! - **Breaking:** Removed `silius`, `stackup`, `rundler` instances.
+
+- [#58](https://github.com/wevm/prool/pull/58) [`5f79243`](https://github.com/wevm/prool/commit/5f792438e4977116725252b105e8b75cfb3a3ba1) Thanks [@jxom](https://github.com/jxom)! - **Breaking:** Refactored to use namespace imports.
+
+  ### Imports
+
+  ```diff
+  - import { createServer } from 'prool'
+  - import { anvil, alto } from 'prool/instances'
+  - import { defineInstance } from 'prool'
+  - import { definePool } from 'prool'
+  + import { Instance, Pool, Server } from 'prool'
+  ```
+
+  ### `Server.create` → `Server.create`
+
+  ```diff
+  - const server = createServer({
+  -   instance: anvil(),
+  + const server = Server.create({
+  +   instance: Instance.anvil(),
+    })
+  ```
+
+  ### `anvil`, `alto` → `Instance.anvil`, `Instance.alto`
+
+  ```diff
+  - const instance = anvil({ ... })
+  + const instance = Instance.anvil({ ... })
+
+  - const instance = alto({ ... })
+  + const instance = Instance.alto({ ... })
+  ```
+
+  ### `defineInstance` → `Instance.define`
+
+  ```diff
+  - const foo = defineInstance((parameters) => {
+  + const foo = Instance.define((parameters) => {
+      return {
+        name: 'foo',
+        // ...
+      }
+    })
+  ```
+
+  ### `definePool` → `Pool.define`
+
+  ```diff
+  - const pool = definePool({
+  -   instance: anvil(),
+  + const pool = Pool.define({
+  +   instance: Instance.anvil(),
+    })
+  ```
+
 ## 0.0.25
 
 ### Patch Changes
