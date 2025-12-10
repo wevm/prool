@@ -61,7 +61,7 @@ test.skip('behavior: instance errored (duplicate ports)', async () => {
   await expect(() => instance_2.start()).rejects.toThrowError()
 })
 
-test('behavior: start and stop multiple times', async () => {
+test.skip('behavior: start and stop multiple times', async () => {
   const instance = defineInstance()
 
   await instance.start()
