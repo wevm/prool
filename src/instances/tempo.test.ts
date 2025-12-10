@@ -1,12 +1,14 @@
-import { setTimeout } from 'node:timers/promises'
 import { afterEach, expect, test } from 'vitest'
 import type { Instance } from '../Instance.js'
 import { type TempoParameters, tempo } from './tempo.js'
+import getPort from 'get-port'
 
 const instances: Instance[] = []
 
+const port = await getPort()
+
 const defineInstance = (parameters: TempoParameters = {}) => {
-  const instance = tempo(parameters)
+  const instance = tempo({ ...parameters, port })
   instances.push(instance)
   return instance
 }

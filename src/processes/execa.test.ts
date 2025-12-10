@@ -1,6 +1,7 @@
 import { EventEmitter } from 'eventemitter3'
 import { afterEach, expect, test } from 'vitest'
 import { execa } from './execa.js'
+import getPort from 'get-port'
 
 const processes: execa.ReturnType[] = []
 function createProcess() {
@@ -121,7 +122,8 @@ test('behavior: exit when status is starting', async () => {
   emitter.on('exit', resolvers.exit.resolve)
 
   // Invalid argument
-  await process.start(($) => $`anvil`, {
+  const port = await getPort()
+  await process.start(($) => $`anvil --port ${port}`, {
     emitter,
     status: 'starting',
     resolver({ process, resolve }) {
