@@ -1,11 +1,10 @@
+import { Instance } from 'prool'
 import { afterEach, expect, test } from 'vitest'
-import type { Instance } from '../instance.js'
-import { type RundlerParameters, rundler } from './rundler.js'
 
-const instances: Instance[] = []
+const instances: Instance.Instance[] = []
 
-const defineInstance = (parameters: RundlerParameters = {}) => {
-  const instance = rundler(parameters)
+const defineInstance = (parameters: Instance.rundler.Parameters = {}) => {
+  const instance = Instance.rundler(parameters)
   instances.push(instance)
   return instance
 }

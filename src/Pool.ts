@@ -1,6 +1,6 @@
 import getPort from 'get-port'
 
-import type { Instance } from './instance.js'
+import type { Instance } from './Instance.js'
 
 type Instance_ = Omit<Instance, 'create'>
 
@@ -22,25 +22,12 @@ export type Pool<key extends number | string = number | string> = Pick<
   stopAll(): Promise<void>
 }
 
-export type DefinePoolParameters<
-  key extends number | string = number | string,
-> = {
-  /** Instance for the pool. */
-  instance: Instance | ((key: key) => Instance)
-  /** The maximum number of instances that can be started. */
-  limit?: number | undefined
-}
-
-export type DefinePoolReturnType<
-  key extends number | string = number | string,
-> = Pool<key>
-
 /**
  * Defines an instance pool. Instances can be started, cached, and stopped against an identifier.
  *
  * @example
  * ```
- * const pool = definePool({
+ * const pool = Pool.define({
  *  instance: anvil(),
  * })
  *
@@ -49,9 +36,9 @@ export type DefinePoolReturnType<
  * const instance_3 = await pool.start(3)
  * ```
  */
-export function definePool<key extends number | string = number>(
-  parameters: DefinePoolParameters<key>,
-): DefinePoolReturnType<key> {
+export function define<key extends number | string = number>(
+  parameters: define.Parameters<key>,
+): define.ReturnType<key> {
   const { limit } = parameters
 
   type Instance_ = Omit<Instance, 'create'>
@@ -200,4 +187,16 @@ export function definePool<key extends number | string = number>(
     has: instances.has.bind(instances),
     values: instances.values.bind(instances),
   }
+}
+
+export declare namespace define {
+  export type Parameters<key extends number | string = number | string> = {
+    /** Instance for the pool. */
+    instance: Instance | ((key: key) => Instance)
+    /** The maximum number of instances that can be started. */
+    limit?: number | undefined
+  }
+
+  export type ReturnType<key extends number | string = number | string> =
+    Pool<key>
 }

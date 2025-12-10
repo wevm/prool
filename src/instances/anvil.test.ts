@@ -1,12 +1,11 @@
+import { Instance } from 'prool'
 import { afterEach, expect, test } from 'vitest'
-import type { Instance } from '../instance.js'
-import { type AnvilParameters, anvil } from './anvil.js'
 
-const instances: Instance[] = []
+const instances: Instance.Instance[] = []
 const timestamp = 1717114065
 
-const defineInstance = (parameters: AnvilParameters = {}) => {
-  const instance = anvil(parameters)
+const defineInstance = (parameters: Instance.anvil.Parameters = {}) => {
+  const instance = Instance.anvil(parameters)
   instances.push(instance)
   return instance
 }

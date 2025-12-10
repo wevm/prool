@@ -6,13 +6,12 @@ import {
 } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import httpProxy from 'http-proxy'
-
-import { type DefinePoolParameters, definePool } from './pool.js'
-import { extractPath } from './utils.js'
+import { extractPath } from './internal/utils.js'
+import * as Pool from './Pool.js'
 
 const { createProxyServer } = httpProxy
 
-export type CreateServerParameters = DefinePoolParameters<number> &
+export type CreateServerParameters = Pool.define.Parameters<number> &
   (
     | {
         /** Host to run the server on. */
@@ -40,11 +39,10 @@ export type CreateServerReturnType = Omit<
  *
  * @example
  * ```
- * import { createServer } from 'prool'
- * import { anvil } from 'prool/instances'
+ * import { Instance, Server } from 'prool'
  *
- * const server = createServer({
- *  instance: anvil(),
+ * const server = Server.create({
+ *  instance: Instance.anvil(),
  * })
  *
  * const server = await server.start()
@@ -59,12 +57,12 @@ export type CreateServerReturnType = Omit<
  * // "http://localhost:8545/healthcheck"
  * ```
  */
-export function createServer(
+export function create(
   parameters: CreateServerParameters,
 ): CreateServerReturnType {
   const { host = '::', instance, limit, port } = parameters
 
-  const pool = definePool({ instance, limit })
+  const pool = Pool.define({ instance, limit })
   const proxy = createProxyServer({
     ignorePath: true,
     ws: true,

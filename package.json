@@ -17,9 +17,9 @@
     "@types/http-proxy": "^1.17.17",
     "@types/node": "^24.10.2",
     "@types/ws": "^8.18.1",
-    "@vitest/coverage-v8": "^1.6.0",
+    "@vitest/coverage-v8": "^4.0.15",
     "typescript": "^5.9.3",
-    "vitest": "^1.6.0",
+    "vitest": "^4.0.15",
     "ws": "^8.18.3",
     "zile": "^0.0.13"
   },
@@ -35,19 +35,9 @@
   },
   "exports": {
     ".": {
-      "src": "./src/exports/index.ts",
-      "types": "./dist/exports/index.d.ts",
-      "default": "./dist/exports/index.js"
-    },
-    "./processes": {
-      "src": "./src/exports/processes.ts",
-      "types": "./dist/exports/processes.d.ts",
-      "default": "./dist/exports/processes.js"
-    },
-    "./instances": {
-      "src": "./src/exports/instances.ts",
-      "types": "./dist/exports/instances.d.ts",
-      "default": "./dist/exports/instances.js"
+      "src": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     }
   },
   "dependencies": {
@@ -80,7 +70,7 @@
     }
   ],
   "keywords": [],
-  "main": "./dist/exports/index.js",
-  "module": "./dist/exports/index.js",
-  "types": "./dist/exports/index.d.ts"
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts"
 }

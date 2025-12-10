@@ -1,9 +1,9 @@
+import { Instance } from 'prool'
 import { expect, test } from 'vitest'
-import { defineInstance } from './instance.js'
 
 test('default', async () => {
   let started = false
-  const foo = defineInstance(() => {
+  const foo = Instance.define(() => {
     return {
       name: 'foo',
       host: 'localhost',
@@ -28,7 +28,7 @@ test('default', async () => {
 
 test('behavior: parameters', async () => {
   let started = [false, {}]
-  const foo = defineInstance((parameters: { bar: string }) => {
+  const foo = Instance.define((parameters: { bar: string }) => {
     return {
       name: 'foo',
       host: 'localhost',
@@ -53,7 +53,7 @@ test('behavior: parameters', async () => {
 
 test('behavior: start', async () => {
   let count = 0
-  const foo = defineInstance(() => {
+  const foo = Instance.define(() => {
     return {
       name: 'foo',
       host: 'localhost',
@@ -91,7 +91,7 @@ test('behavior: start', async () => {
 })
 
 test('behavior: start (error)', async () => {
-  const foo = defineInstance(() => {
+  const foo = Instance.define(() => {
     return {
       name: 'foo',
       host: 'localhost',
@@ -114,7 +114,7 @@ test('behavior: start (error)', async () => {
 
 test('behavior: stop', async () => {
   let count = 0
-  const foo = defineInstance(() => {
+  const foo = Instance.define(() => {
     return {
       name: 'foo',
       host: 'localhost',
@@ -150,7 +150,7 @@ test('behavior: stop', async () => {
 })
 
 test('behavior: stop (error)', async () => {
-  const foo = defineInstance(() => {
+  const foo = Instance.define(() => {
     return {
       name: 'foo',
       host: 'localhost',
@@ -175,7 +175,7 @@ test('behavior: stop (error)', async () => {
 
 test('behavior: restart', async () => {
   let count = 0
-  const foo = defineInstance(() => {
+  const foo = Instance.define(() => {
     return {
       name: 'foo',
       host: 'localhost',
@@ -206,7 +206,7 @@ test('behavior: restart', async () => {
 })
 
 test('behavior: events', async () => {
-  const foo = defineInstance(() => {
+  const foo = Instance.define(() => {
     let count = 0
     return {
       name: 'foo',
@@ -263,7 +263,7 @@ test('behavior: events', async () => {
 })
 
 test('behavior: messages', async () => {
-  const foo = defineInstance(() => {
+  const foo = Instance.define(() => {
     return {
       name: 'foo',
       host: 'localhost',
@@ -306,7 +306,7 @@ test('behavior: messages', async () => {
 })
 
 test('options: timeout', async () => {
-  const foo = defineInstance(() => {
+  const foo = Instance.define(() => {
     return {
       name: 'foo',
       host: 'localhost',
@@ -323,7 +323,7 @@ test('options: timeout', async () => {
     'Instance "foo" failed to start in time',
   )
 
-  const bar = defineInstance(() => {
+  const bar = Instance.define(() => {
     return {
       name: 'bar',
       host: 'localhost',

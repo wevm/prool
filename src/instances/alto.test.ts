@@ -1,17 +1,14 @@
 import getPort from 'get-port'
+import { Instance } from 'prool'
 import { afterEach, beforeAll, expect, test } from 'vitest'
-
 import { altoOptions } from '../../test/utils.js'
-import type { Instance } from '../instance.js'
-import { type AltoParameters, alto } from './alto.js'
-import { anvil } from './anvil.js'
 
-const instances: Instance[] = []
+const instances: Instance.Instance[] = []
 
 const port = await getPort()
 
-const defineInstance = (parameters: Partial<AltoParameters> = {}) => {
-  const instance = alto({
+const defineInstance = (parameters: Partial<Instance.alto.Parameters> = {}) => {
+  const instance = Instance.alto({
     ...altoOptions({ port, pool: false }),
     ...parameters,
   })
@@ -20,7 +17,7 @@ const defineInstance = (parameters: Partial<AltoParameters> = {}) => {
 }
 
 beforeAll(() =>
-  anvil({
+  Instance.anvil({
     forkUrl: process.env['VITE_FORK_URL'] ?? 'https://eth.merkle.io',
     port,
   }).start(),

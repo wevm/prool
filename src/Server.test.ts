@@ -1,17 +1,14 @@
 import getPort from 'get-port'
+import { Instance, Server } from 'prool'
 import { beforeAll, describe, expect, test } from 'vitest'
 import { type MessageEvent, WebSocket } from 'ws'
 import { altoOptions, rundlerOptions } from '../test/utils.js'
-import { alto } from './instances/alto.js'
-import { anvil } from './instances/anvil.js'
-import { rundler } from './instances/rundler.js'
-import { createServer } from './server.js'
 
 const port = await getPort()
 
 beforeAll(async () => {
-  await createServer({
-    instance: anvil({
+  await Server.create({
+    instance: Instance.anvil({
       chainId: 1,
       forkUrl: process.env['VITE_FORK_URL'] ?? 'https://eth.merkle.io',
     }),
@@ -20,16 +17,16 @@ beforeAll(async () => {
 })
 
 describe.each([
-  { instance: anvil() },
+  { instance: Instance.anvil() },
   {
-    instance: alto(altoOptions({ port, pool: true })),
+    instance: Instance.alto(altoOptions({ port, pool: true })),
   },
   {
-    instance: rundler(rundlerOptions({ port, pool: true })),
+    instance: Instance.rundler(rundlerOptions({ port, pool: true })),
   },
 ])('instance: $instance.name', ({ instance }) => {
   test('default', async () => {
-    const server = createServer({
+    const server = Server.create({
       instance,
     })
     expect(server).toBeDefined()
@@ -50,7 +47,7 @@ describe.each([
   })
 
   test('args: port', async () => {
-    const server = createServer({
+    const server = Server.create({
       instance,
       port: 3000,
     })
@@ -62,7 +59,7 @@ describe.each([
   })
 
   test('args: host', async () => {
-    const server = createServer({
+    const server = Server.create({
       instance,
       host: 'localhost',
       port: 3000,
@@ -76,7 +73,7 @@ describe.each([
   })
 
   test('request: /healthcheck', async () => {
-    const server = createServer({
+    const server = Server.create({
       instance,
     })
 
@@ -89,7 +86,7 @@ describe.each([
   })
 
   test('request: /start + /stop', async () => {
-    const server = createServer({
+    const server = Server.create({
       instance,
     })
 
@@ -118,7 +115,7 @@ describe.each([
   })
 
   test('request: /restart', async () => {
-    const server = createServer({
+    const server = Server.create({
       instance,
     })
 
@@ -133,8 +130,8 @@ describe.each([
 
 describe("instance: 'anvil'", () => {
   test('request: /{id}', async () => {
-    const server = createServer({
-      instance: anvil(),
+    const server = Server.create({
+      instance: Instance.anvil(),
     })
 
     const stop = await server.start()
@@ -244,8 +241,8 @@ describe("instance: 'anvil'", () => {
   })
 
   test('request: /restart', async () => {
-    const server = createServer({
-      instance: anvil(),
+    const server = Server.create({
+      instance: Instance.anvil(),
     })
 
     const stop = await server.start()
@@ -280,8 +277,9 @@ describe("instance: 'anvil'", () => {
       }).then((x) => x.json()),
     ).toMatchInlineSnapshot(`
       {
-        "message": "Failed to start process "anvil": Error: Address already in use (os error 48)
-      ",
+        "id": 0,
+        "jsonrpc": "2.0",
+        "result": "0x69",
       }
     `)
 
@@ -303,8 +301,9 @@ describe("instance: 'anvil'", () => {
       }).then((x) => x.json()),
     ).toMatchInlineSnapshot(`
       {
-        "message": "Failed to start process "anvil": Error: Address already in use (os error 48)
-      ",
+        "id": 0,
+        "jsonrpc": "2.0",
+        "result": "0x0",
       }
     `)
 
@@ -312,8 +311,8 @@ describe("instance: 'anvil'", () => {
   })
 
   test('request: /messages', async () => {
-    const server = createServer({
-      instance: anvil(),
+    const server = Server.create({
+      instance: Instance.anvil(),
     })
 
     const stop = await server.start()
@@ -341,8 +340,8 @@ describe("instance: 'anvil'", () => {
   })
 
   test('ws', async () => {
-    const server = createServer({
-      instance: anvil(),
+    const server = Server.create({
+      instance: Instance.anvil(),
     })
 
     const stop = await server.start()
@@ -369,8 +368,8 @@ describe("instance: 'anvil'", () => {
 
 describe("instance: 'alto'", () => {
   test('request: /{id}', async () => {
-    const server = createServer({
-      instance: alto(altoOptions({ port, pool: true })),
+    const server = Server.create({
+      instance: Instance.alto(altoOptions({ port, pool: true })),
     })
 
     const stop = await server.start()
@@ -404,8 +403,8 @@ describe("instance: 'alto'", () => {
 
 describe("instance: 'rundler'", () => {
   test('request: /{id}', async () => {
-    const server = createServer({
-      instance: rundler(rundlerOptions({ port, pool: true })),
+    const server = Server.create({
+      instance: Instance.rundler(rundlerOptions({ port, pool: true })),
     })
 
     const stop = await server.start()
@@ -438,8 +437,8 @@ describe("instance: 'rundler'", () => {
 })
 
 test('404', async () => {
-  const server = createServer({
-    instance: anvil(),
+  const server = Server.create({
+    instance: Instance.anvil(),
   })
 
   const stop = await server.start()

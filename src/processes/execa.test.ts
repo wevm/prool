@@ -1,8 +1,8 @@
 import { EventEmitter } from 'eventemitter3'
 import { afterEach, expect, test } from 'vitest'
-import { type ExecaProcess, execa } from './execa.js'
+import { execa } from './execa.js'
 
-const processes: ExecaProcess[] = []
+const processes: execa.ReturnType[] = []
 function createProcess() {
   const process = execa({ name: 'foo' })
   processes.push(process)

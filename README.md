@@ -39,24 +39,21 @@ Prool is a library that provides programmatic HTTP testing instances for Ethereu
 Prool contains a set of pre-configured instances that can be used to simulate Ethereum server environments, being:
 
 - **Local Execution Nodes:** [`anvil`](#anvil-execution-node)
-- **Bundler Nodes:** [`alto`](#alto-bundler-node), [`rundler`](#rundler-bundler-node)
-- **Indexer Nodes:** `ponder`⚠️
+- **ERC-4337 Bundler Nodes:** [`alto`](#alto-bundler-node), [`rundler`](#rundler-bundler-node)
 
-⚠️ = soon
-
-You can also create your own custom instances by using the [`defineInstance` function](#defineinstance).
+You can also create your own custom instances by using the [`Instance.define` function](#instancedefine).
 
 ## Table of Contents
 
 - [Install](#install)
 - [Getting Started](#getting-started)
   - [Anvil (Execution Node)](#anvil-execution-node)
-  - [Alto (Bundler Node)](#alto-bundler-node)
-  - [Rundler (Bundler Node)](#rundler-bundler-node)
+  - [Alto (ERC-4337 Bundler Node)](#alto-bundler-node)
+  - [Rundler (ERC-4337 Bundler Node)](#rundler-bundler-node)
 - [Reference](#reference)
-  - [`createServer`](#createserver)
-  - [`defineInstance`](#defineinstance)
-  - [`definePool`](#definepool)
+  - [`Server.create`](#servercreate)
+  - [`Instance.define`](#instancedefine)
+  - [`Pool.define`](#pooldefine)
 
 
 ## Install
@@ -85,11 +82,10 @@ bun i prool
 #### Usage
 
 ```ts
-import { createServer } from 'prool'
-import { anvil } from 'prool/instances'
+import { Instance, Server } from 'prool'
 
-const server = createServer({
-  instance: anvil(),
+const server = Server.create({
+  instance: Instance.anvil(),
 })
 
 await server.start() 
@@ -113,11 +109,10 @@ See [`AnvilParameters`](https://github.com/wevm/prool/blob/801ede06ded8b2cb2d59c
 #### Usage
 
 ```ts
-import { createServer } from 'prool'
-import { anvil, alto } from 'prool/instances'
+import { Instance, Server } from 'prool'
 
-const executionServer = createServer({
-  instance: anvil(),
+const executionServer = Server.create({
+  instance: Instance.anvil(),
   port: 8545
 })
 await executionServer.start() 
@@ -127,8 +122,8 @@ await executionServer.start()
 // "http://localhost:8545/3"
 // "http://localhost:8545/n"
 
-const bundlerServer = createServer({
-  instance: (key) => alto({
+const bundlerServer = Server.create({
+  instance: (key) => Instance.alto({
     entrypoints: ['0x0000000071727De22E5E9d8BAf0edAc6f37da032'],
     rpcUrl: `http://localhost:8545/${key}`,
     executorPrivateKeys: ['0x...'],
@@ -156,11 +151,10 @@ See [`AltoParameters`](https://github.com/wevm/prool/blob/801ede06ded8b2cb2d59c9
 #### Usage
 
 ```ts
-import { createServer } from 'prool'
-import { anvil, rundler } from 'prool/instances'
+import { Instance, Server } from 'prool'
 
-const executionServer = createServer({
-  instance: anvil(),
+const executionServer = Server.create({
+  instance: Instance.anvil(),
   port: 8545
 })
 await executionServer.start() 
@@ -170,8 +164,8 @@ await executionServer.start()
 // "http://localhost:8545/3"
 // "http://localhost:8545/n"
 
-const bundlerServer = createServer({
-  instance: (key) => rundler({
+const bundlerServer = Server.create({
+  instance: (key) => Instance.rundler({
     nodeHttp: `http://localhost:8545/${key}`,
   })
 })
@@ -189,18 +183,17 @@ See [RundlerParameters]().
 
 ## Reference
 
-### `createServer`
+### `Server.create`
 
 Creates a server that manages a pool of instances via a proxy.
 
 #### Usage
 
 ```ts
-import { createServer } from 'prool'
-import { anvil } from 'prool/instances'
+import { Instance, Server } from 'prool'
 
-const executionServer = createServer({
-  instance: anvil(),
+const executionServer = Server.create({
+  instance: Instance.anvil(),
 })
 await executionServer.start() 
 // Instances accessible at:
@@ -229,18 +222,18 @@ await executionServer.start()
 | `limit`    | Number of instances that can be instantiated in the pool | `number`                                |
 | `host`     | Host for the server.                                     | `string`                                |
 | `port`     | Port for the server.                                     | `number`                                |
-| returns    | Server                                                   | `CreateServerReturnType`                |
+| returns    | Server                                                   | `Server.Server`                         |
 
-### `defineInstance`
+### `Instance.define`
 
-Creates an instance definition, that can be used with [`createServer`](#createserver) or [`definePool`](#definepool).
+Creates an instance definition, that can be used with [`Server.create`](#servercreate) or [`Pool.define`](#pooldefine).
 
 #### Usage
 
 ```ts
-import { defineInstance } from 'prool'
+import { Instance } from 'prool'
 
-const foo = defineInstance((parameters: FooParameters) => {
+const foo = Instance.define((parameters: FooParameters) => {
  return {
    name: 'foo',
    host: 'localhost',
@@ -262,18 +255,17 @@ const foo = defineInstance((parameters: FooParameters) => {
 | `fn`    | Instance definition. | `DefineInstanceFn` |
 | returns | Instance.            | `Instance`         |
 
-### `definePool`
+### `Pool.define`
 
 Defines a pool of instances. Instances can be started, cached, and stopped against an identifier.
 
 #### Usage
 
 ```ts
-import { definePool } from 'prool'
-import { anvil } from 'prool/instances'
+import { Instance, Pool } from 'prool'
 
-const pool = definePool({
- instance: anvil(),
+const pool = Pool.define({
+ instance: Instance.anvil(),
 })
 const instance_1 = await pool.start(1)
 const instance_2 = await pool.start(2)
