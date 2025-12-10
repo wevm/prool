@@ -101,8 +101,7 @@ await server.start()
 #### Requirements
 
 ```bash
-curl -L https://get.docker.com/ | bash    # Install Docker
-npm i testcontainers                      # Install `testcontainers`
+curl -L https://tempo.xyz/install | bash   # Install Tempo
 ```
 
 #### Usage
