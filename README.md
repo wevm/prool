@@ -38,7 +38,7 @@ Prool is a library that provides programmatic HTTP testing instances for Ethereu
 
 Prool contains a set of pre-configured instances that can be used to simulate Ethereum server environments, being:
 
-- **Local Execution Nodes:** [`anvil`](#anvil-execution-node)
+- **Local Execution Nodes:** [`anvil`](#anvil-execution-node), [`tempo`](#tempo-execution-node)
 - **ERC-4337 Bundler Nodes:** [`alto`](#alto-bundler-node)
 
 You can also create your own custom instances by using the [`Instance.define` function](#instancedefine).
@@ -95,9 +95,29 @@ await server.start()
 // "http://localhost:8545/n"
 ```
 
-#### Parameters
+### Tempo (Execution Node)
 
-See [`AnvilParameters`](https://github.com/wevm/prool/blob/801ede06ded8b2cb2d59c95294aae795e548897c/src/instances/anvil.ts#L5).
+#### Requirements
+
+- [Tempo](https://docs.tempo.xyz/guide/node/installation) binary installed
+  - Download: `curl -L https://tempo.xyz/install | bash`
+
+#### Usage
+
+```ts
+import { Instance, Server } from 'prool'
+
+const server = Server.create({
+  instance: Instance.tempo(),
+})
+
+await server.start() 
+// Instances accessible at:
+// "http://localhost:8545/1"
+// "http://localhost:8545/2"
+// "http://localhost:8545/3"
+// "http://localhost:8545/n"
+```
 
 ### Alto (Bundler Node)
 
@@ -135,10 +155,6 @@ await bundlerServer.start()
 // "http://localhost:3000/3" (→ http://localhost:8545/3)
 // "http://localhost:3000/n" (→ http://localhost:8545/n)
 ```
-
-#### Parameters
-
-See [`AltoParameters`](https://github.com/wevm/prool/blob/801ede06ded8b2cb2d59c95294aae795e548897c/src/instances/alto.ts#L7).
 
 ## Reference
 

@@ -27,6 +27,7 @@ afterEach(async () => {
 
 describe.each([
   { instance: Instance.anvil({ port: await getPort() }) },
+  { instance: Instance.tempo({ port: await getPort() }) },
   {
     instance: Instance.alto(altoOptions({ port, pool: true })),
   },
@@ -113,29 +114,25 @@ describe.each([
     expect(pool.size).toEqual(0)
   })
 
-  test(
-    'restart',
-    { timeout: 10_000 },
-    async () => {
-      pool = Pool.define({
-        instance,
-      })
+  test('restart', { timeout: 10_000 }, async () => {
+    pool = Pool.define({
+      instance,
+    })
 
-      const instance_1 = await pool.start(1)
-      const instance_2 = await pool.start(2)
-      const instance_3 = await pool.start(3)
+    const instance_1 = await pool.start(1)
+    const instance_2 = await pool.start(2)
+    const instance_3 = await pool.start(3)
 
-      expect(instance_1.status).toBe('started')
-      expect(instance_2.status).toBe('started')
-      expect(instance_3.status).toBe('started')
-      expect(pool.size).toEqual(3)
+    expect(instance_1.status).toBe('started')
+    expect(instance_2.status).toBe('started')
+    expect(instance_3.status).toBe('started')
+    expect(pool.size).toEqual(3)
 
-      const promise_1 = pool.restart(1)
-      expect(instance_1.status).toBe('restarting')
-      await promise_1
-      expect(instance_1.status).toBe('started')
-    },
-  )
+    const promise_1 = pool.restart(1)
+    expect(instance_1.status).toBe('restarting')
+    await promise_1
+    expect(instance_1.status).toBe('started')
+  })
 
   test('start > stop > start', async () => {
     pool = Pool.define({

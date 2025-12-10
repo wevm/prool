@@ -18,6 +18,7 @@ beforeAll(async () => {
 
 describe.each([
   { instance: Instance.anvil() },
+  { instance: Instance.tempo() },
   {
     instance: Instance.alto(altoOptions({ port, pool: true })),
   },

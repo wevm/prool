@@ -2,6 +2,7 @@ import { EventEmitter } from 'eventemitter3'
 
 export { alto } from './instances/alto.js'
 export { anvil } from './instances/anvil.js'
+export { tempo } from './instances/tempo.js'
 
 type EventTypes = {
   exit: [code: number | null, signal: NodeJS.Signals | null]
