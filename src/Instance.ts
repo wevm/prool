@@ -129,14 +129,26 @@ export function define<
       const { messageBuffer = 20, timeout } = options
 
       let restartResolver = Promise.withResolvers<void>()
-      let startResolver = Promise.withResolvers<() => void>()
-      let stopResolver = Promise.withResolvers<void>()
 
       const emitter = new EventEmitter<EventTypes>()
 
       let messages: string[] = []
       let status: Instance['status'] = 'idle'
       let restarting = false
+
+      let currentStart: {
+        promise: Promise<() => void>
+        resolve: (fn: () => void) => void
+        reject: (err: unknown) => void
+        timer?: NodeJS.Timeout
+      } | null = null
+
+      let currentStop: {
+        promise: Promise<void>
+        resolve: () => void
+        reject: (err: unknown) => void
+        timer?: NodeJS.Timeout
+      } | null = null
 
       function onExit() {
         status = 'stopped'
@@ -167,19 +179,26 @@ export function define<
           return status
         },
         async start() {
-          if (status === 'starting') return startResolver.promise
+          if (status === 'starting' && currentStart) return currentStart.promise
           if (status !== 'idle' && status !== 'stopped')
             throw new Error(
               `Instance "${name}" is not in an idle or stopped state. Status: ${status}`,
             )
 
+          const { promise, resolve, reject } =
+            Promise.withResolvers<() => void>()
+          currentStart = { promise, resolve, reject }
+
           if (typeof timeout === 'number') {
             const timer = setTimeout(() => {
-              clearTimeout(timer)
-              startResolver.reject(
-                new Error(`Instance "${name}" failed to start in time.`),
-              )
+              if (currentStart?.promise === promise) {
+                currentStart.reject(
+                  new Error(`Instance "${name}" failed to start in time.`),
+                )
+                currentStart = null
+              }
             }, timeout)
+            currentStart.timer = timer
           }
 
           emitter.on('message', onMessage)
@@ -199,30 +218,40 @@ export function define<
             .then(() => {
               status = 'started'
 
-              stopResolver = Promise.withResolvers<void>()
-              startResolver.resolve(this.stop.bind(this))
+              if (currentStart?.timer) clearTimeout(currentStart.timer)
+              currentStart?.resolve(this.stop.bind(this))
+              currentStart = null
             })
             .catch((error) => {
               status = 'idle'
               this.messages.clear()
               emitter.off('message', onMessage)
-              startResolver.reject(error)
+
+              if (currentStart?.timer) clearTimeout(currentStart.timer)
+              currentStart?.reject(error)
+              currentStart = null
             })
 
-          return startResolver.promise
+          return promise
         },
         async stop() {
-          if (status === 'stopping') return stopResolver.promise
+          if (status === 'stopping' && currentStop) return currentStop.promise
           if (status === 'starting')
             throw new Error(`Instance "${name}" is starting.`)
 
+          const { promise, resolve, reject } = Promise.withResolvers<void>()
+          currentStop = { promise, resolve, reject }
+
           if (typeof timeout === 'number') {
             const timer = setTimeout(() => {
-              clearTimeout(timer)
-              stopResolver.reject(
-                new Error(`Instance "${name}" failed to stop in time.`),
-              )
+              if (currentStop?.promise === promise) {
+                currentStop.reject(
+                  new Error(`Instance "${name}" failed to stop in time.`),
+                )
+                currentStop = null
+              }
             }, timeout)
+            currentStop.timer = timer
           }
 
           status = 'stopping'
@@ -230,7 +259,7 @@ export function define<
             emitter,
             status: this.status,
           })
-            .then((...args) => {
+            .then(() => {
               status = 'stopped'
               this.messages.clear()
 
@@ -238,15 +267,19 @@ export function define<
               emitter.off('listening', onListening)
               emitter.off('exit', onExit)
 
-              startResolver = Promise.withResolvers<() => void>()
-              stopResolver.resolve(...args)
+              if (currentStop?.timer) clearTimeout(currentStop.timer)
+              currentStop?.resolve()
+              currentStop = null
             })
             .catch((error) => {
               status = 'started'
-              stopResolver.reject(error)
+
+              if (currentStop?.timer) clearTimeout(currentStop.timer)
+              currentStop?.reject(error)
+              currentStop = null
             })
 
-          return stopResolver.promise
+          return promise
         },
         async restart() {
           if (restarting) return restartResolver.promise
