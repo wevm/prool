@@ -7,6 +7,7 @@ test('default', async () => {
     return {
       name: 'foo',
       host: 'localhost',
+      port: 3000,
       async start() {
         started = true
       },
