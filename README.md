@@ -39,7 +39,7 @@ Prool is a library that provides programmatic HTTP testing instances for Ethereu
 Prool contains a set of pre-configured instances that can be used to simulate Ethereum server environments, being:
 
 - **Local Execution Nodes:** [`anvil`](#anvil-execution-node)
-- **ERC-4337 Bundler Nodes:** [`alto`](#alto-bundler-node), [`rundler`](#rundler-bundler-node)
+- **ERC-4337 Bundler Nodes:** [`alto`](#alto-bundler-node)
 
 You can also create your own custom instances by using the [`Instance.define` function](#instancedefine).
 
@@ -49,7 +49,6 @@ You can also create your own custom instances by using the [`Instance.define` fu
 - [Getting Started](#getting-started)
   - [Anvil (Execution Node)](#anvil-execution-node)
   - [Alto (ERC-4337 Bundler Node)](#alto-bundler-node)
-  - [Rundler (ERC-4337 Bundler Node)](#rundler-bundler-node)
 - [Reference](#reference)
   - [`Server.create`](#servercreate)
   - [`Instance.define`](#instancedefine)
@@ -140,46 +139,6 @@ await bundlerServer.start()
 #### Parameters
 
 See [`AltoParameters`](https://github.com/wevm/prool/blob/801ede06ded8b2cb2d59c95294aae795e548897c/src/instances/alto.ts#L7).
-
-### Rundler (Bundler Node)
-
-#### Requirements
-
-- [Rundler](https://github.com/alchemyplatform/rundler) binary installed
-  - [Download](https://github.com/alchemyplatform/rundler/releases)
-
-#### Usage
-
-```ts
-import { Instance, Server } from 'prool'
-
-const executionServer = Server.create({
-  instance: Instance.anvil(),
-  port: 8545
-})
-await executionServer.start() 
-// Instances accessible at:
-// "http://localhost:8545/1"
-// "http://localhost:8545/2"
-// "http://localhost:8545/3"
-// "http://localhost:8545/n"
-
-const bundlerServer = Server.create({
-  instance: (key) => Instance.rundler({
-    nodeHttp: `http://localhost:8545/${key}`,
-  })
-})
-await bundlerServer.start()
-// Instances accessible at:
-// "http://localhost:3000/1" (→ http://localhost:8545/1)
-// "http://localhost:3000/2" (→ http://localhost:8545/2)
-// "http://localhost:3000/3" (→ http://localhost:8545/3)
-// "http://localhost:3000/n" (→ http://localhost:8545/n)
-```
-
-#### Parameters
-
-See [RundlerParameters]().
 
 ## Reference
 

@@ -8,7 +8,7 @@
 
 ```diff
 - import { createServer } from 'prool'
-- import { anvil, alto, rundler } from 'prool/instances'
+- import { anvil, alto } from 'prool/instances'
 - import { defineInstance } from 'prool'
 - import { definePool } from 'prool'
 + import { Instance, Pool, Server } from 'prool'
@@ -24,7 +24,7 @@
   })
 ```
 
-### `anvil`, `alto`, `rundler` → `Instance.anvil`, `Instance.alto`, `Instance.rundler`
+### `anvil`, `alto` → `Instance.anvil`, `Instance.alto`
 
 ```diff
 - const instance = anvil({ ... })
@@ -32,9 +32,6 @@
 
 - const instance = alto({ ... })
 + const instance = Instance.alto({ ... })
-
-- const instance = rundler({ ... })
-+ const instance = Instance.rundler({ ... })
 ```
 
 ### `defineInstance` → `Instance.define`

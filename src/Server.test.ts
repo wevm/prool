@@ -2,7 +2,7 @@ import getPort from 'get-port'
 import { Instance, Server } from 'prool'
 import { beforeAll, describe, expect, test } from 'vitest'
 import { type MessageEvent, WebSocket } from 'ws'
-import { altoOptions, rundlerOptions } from '../test/utils.js'
+import { altoOptions } from '../test/utils.js'
 
 const port = await getPort()
 
@@ -20,9 +20,6 @@ describe.each([
   { instance: Instance.anvil() },
   {
     instance: Instance.alto(altoOptions({ port, pool: true })),
-  },
-  {
-    instance: Instance.rundler(rundlerOptions({ port, pool: true })),
   },
 ])('instance: $instance.name', ({ instance }) => {
   test('default', async () => {
@@ -396,41 +393,6 @@ describe("instance: 'alto'", () => {
           ],
         }
       `)
-
-    await stop()
-  })
-})
-
-describe("instance: 'rundler'", () => {
-  test('request: /{id}', async () => {
-    const server = Server.create({
-      instance: Instance.rundler(rundlerOptions({ port, pool: true })),
-    })
-
-    const stop = await server.start()
-    const { port: port_2 } = server.address()!
-    const response = await fetch(`http://localhost:${port_2}/1`, {
-      body: JSON.stringify({
-        method: 'eth_supportedEntryPoints',
-        params: [],
-        id: 0,
-        jsonrpc: '2.0',
-      }),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      method: 'POST',
-    })
-    expect(response.status).toBe(200)
-    expect(await response.json()).toMatchInlineSnapshot(`
-      {
-        "id": 0,
-        "jsonrpc": "2.0",
-        "result": [
-          "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
-        ],
-      }
-    `)
 
     await stop()
   })

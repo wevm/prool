@@ -2,4 +2,4 @@
 "prool": minor
 ---
 
-**Breaking:** Removed `silius` + `stackup` instances.
+**Breaking:** Removed `silius`, `stackup`, `rundler` instances.

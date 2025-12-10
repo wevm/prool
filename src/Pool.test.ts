@@ -2,7 +2,7 @@ import getPort from 'get-port'
 import { Instance, Pool, Server } from 'prool'
 import { afterEach, beforeAll, describe, expect, test } from 'vitest'
 
-import { altoOptions, rundlerOptions } from '../test/utils.js'
+import { altoOptions } from '../test/utils.js'
 
 let pool: ReturnType<typeof Pool.define>
 const port = await getPort()
@@ -29,9 +29,6 @@ describe.each([
   { instance: Instance.anvil({ port: await getPort() }) },
   {
     instance: Instance.alto(altoOptions({ port, pool: true })),
-  },
-  {
-    instance: Instance.rundler(rundlerOptions({ port, pool: true })),
   },
 ])('instance: $instance.name', ({ instance }) => {
   test('default', async () => {
