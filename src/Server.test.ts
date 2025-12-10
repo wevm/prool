@@ -17,11 +17,11 @@ beforeAll(async () => {
 })
 
 describe.each([
-  // { instance: Instance.anvil({ port: port + 1 }) },
+  { instance: Instance.anvil({ port: port + 1 }) },
   { instance: Instance.tempo({ port: port + 2 }) },
-  // {
-  //   instance: Instance.alto(altoOptions({ port, pool: true })),
-  // },
+  {
+    instance: Instance.alto(altoOptions({ port, pool: true })),
+  },
 ])('instance: $instance.name', ({ instance }) => {
   test('default', async () => {
     const server = Server.create({
