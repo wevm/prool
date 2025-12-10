@@ -35,12 +35,14 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
 
       - name: Set up Tempo
-        run: curl -L https://tempo.xyz/install | bash
+        run: |
+          curl -L https://tempo.xyz/install | bash
+          echo "$HOME/.tempo/bin" >> $GITHUB_PATH
 
       - name: Set up Docker
         uses: docker/setup-docker-action@v4
 
       - name: Run tests
-        run: pnpm test
+        run: pnpm test --bail=1
         env:
           VITE_FORK_URL: ${{ secrets.VITE_FORK_URL }}
