@@ -1,5 +1,11 @@
 # prool
 
+## 0.1.1
+
+### Patch Changes
+
+- [`e5ec435`](https://github.com/wevm/prool/commit/e5ec435dac98e815fd1c6680bcac06621d83a881) Thanks [@jxom](https://github.com/jxom)! - Modified `Instance.tempo` to forward arbitrary arguments.
+
 ## 0.1.0
 
 ### Minor Changes
