@@ -6,43 +6,60 @@ import {
   Wait,
 } from 'testcontainers'
 import * as Instance from '../Instance.js'
+import { deepAssign, toArgs } from '../internal/utils.js'
 import { execa } from '../processes/execa.js'
 
 export function command(parameters: tempo.Parameters): string[] {
-  const { faucet, port } = parameters
-  const dataDir = path.join(os.tmpdir(), '.prool', `tempo.${port}`)
+  const { blockMaxTransactions, blockTime, mnemonic, port, ...rest } =
+    parameters
+
+  const datadir = path.join(os.tmpdir(), '.prool', `tempo.${port}`)
+  const defaultParameters = {
+    authrpc: {
+      port: port! + 30,
+    },
+    datadir,
+    dev: [
+      true,
+      {
+        blockTime: blockTime ?? '50ms',
+        ...(blockMaxTransactions ? { blockMaxTransactions } : {}),
+        ...(mnemonic ? { mnemonic } : {}),
+      },
+    ],
+    engine: {
+      disablePrecompileCache: true,
+      legacyStateRoot: true,
+    },
+    faucet: {
+      address: [
+        '0x20c0000000000000000000000000000000000000',
+        '0x20c0000000000000000000000000000000000001',
+        '0x20c0000000000000000000000000000000000002',
+        '0x20c0000000000000000000000000000000000003',
+      ],
+      amount: '1000000000000',
+      enabled: true,
+      privateKey:
+        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+    },
+    http: {
+      addr: '0.0.0.0',
+      api: 'all',
+      corsdomain: '*',
+      port: port!,
+    },
+    port: port! + 10,
+    ws: {
+      port: port! + 20,
+    },
+  }
+
   return [
     'node',
-    `--authrpc.port=${port! + 30}`,
-    `--datadir=${dataDir}`,
-    '--dev',
-    `--dev.block-time=${parameters?.blockTime ?? '50ms'}`,
-    '--engine.disable-precompile-cache',
-    '--engine.legacy-state-root',
-    '--faucet.address',
-    ...(faucet?.addresses ?? [
-      '0x20c0000000000000000000000000000000000000',
-      '0x20c0000000000000000000000000000000000001',
-      '0x20c0000000000000000000000000000000000002',
-      '0x20c0000000000000000000000000000000000003',
-    ]),
-    `--faucet.amount=${faucet?.amount ?? '1000000000000'}`,
-    '--faucet.enabled',
-    `--faucet.private-key=${faucet?.privateKey ?? '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'}`,
-    '--http',
-    '--http.addr=0.0.0.0',
-    '--http.api=all',
-    '--http.corsdomain=*',
-    `--http.port=${port!}`,
-    `--port=${port! + 10}`,
-    '--txpool.basefee-max-count=10000000000000',
-    '--txpool.basefee-max-size=10000',
-    '--txpool.max-account-slots=500000',
-    '--txpool.pending-max-count=10000000000000',
-    '--txpool.pending-max-size=10000',
-    '--txpool.queued-max-count=10000000000000',
-    '--txpool.queued-max-size=10000',
-    `--ws.port=${port! + 20}`,
+    ...toArgs(deepAssign(defaultParameters, rest), {
+      arraySeparator: null,
+    }),
   ]
 }
 
@@ -89,7 +106,7 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
             env: {
               RUST_LOG,
             },
-          })`${[binary, ...command({ ...parameters, port })]}`,
+          })`${[binary, ...command({ ...args, port })]}`,
         {
           ...options,
           // Resolve when the process is listening via "RPC HTTP server started" message.
@@ -124,6 +141,28 @@ export declare namespace tempo {
      * Interval between blocks.
      */
     blockTime?: string | undefined
+    /**
+     * How many transactions to mine per block
+     */
+    blockMaxTransactions?: number | undefined
+    /**
+     * Path to a configuration file.
+     */
+    config?: string | undefined
+    /**
+     * The chain this node is running.
+     * Possible values are either a built-in chain or the path to a chain specification file.
+     *
+     * Built-in chains:
+     * - testnet
+     *
+     * @default "testnet"
+     */
+    chain?: string | undefined
+    /**
+     * The path to the data dir for all reth files and subdirectories.
+     */
+    datadir?: string | undefined
     /**
      * Faucet options.
      */
@@ -161,10 +200,15 @@ export declare namespace tempo {
      */
     host?: string | undefined
     /**
+     * Derive dev accounts from a fixed mnemonic instead of random ones.
+     * @default "test test test test test test test test test test test junk"
+     */
+    mnemonic?: string | undefined
+    /**
      * Port the server will listen on.
      */
     port?: number | undefined
-  }
+  } & Record<string, unknown>
 }
 
 /**
@@ -218,7 +262,7 @@ export const tempoDocker = Instance.define(
           ])
           .withName(containerName)
           .withEnvironment({ RUST_LOG })
-          .withCommand(command({ ...parameters, port }))
+          .withCommand(command({ ...args, port }))
           .withWaitStrategy(Wait.forLogMessage(/RPC HTTP server started/))
           .withLogConsumer((stream) => {
             stream.on('data', (data) => {

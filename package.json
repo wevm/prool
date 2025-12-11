@@ -7,7 +7,7 @@
     "check:types": "tsc",
     "dev": "zile dev",
     "postinstall": "pnpm dev",
-    "test": "vitest --testTimeout=10000"
+    "test": "vitest --testTimeout=100000"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.8",

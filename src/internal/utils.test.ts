@@ -30,10 +30,12 @@ test.each([
   [[{ foo: 0 }], ['--foo', '0']],
   [[{ foo: 1 }], ['--foo', '1']],
   [[{ foo: 1n }], ['--foo', '1']],
+  [[{ foo: 1n }], ['--foo', '1']],
   [[{ foo: 'bar', baz: 1 }], ['--foo', 'bar', '--baz', '1']],
   [[{ fooBar: 'test' }], ['--foo-bar', 'test']],
   [[{ foo: ['bar', 'baz'] }], ['--foo', 'bar,baz']],
   [[{ foo: { barBaz: 'test' } }], ['--foo.bar-baz', 'test']],
+  [[{ foo: [true, { barBaz: 'test' }] }], ['--foo', '--foo.bar-baz', 'test']],
   [[{ foo: { barBaz: ['test', 'test2'] } }], ['--foo.bar-baz', 'test,test2']],
   [
     [{ fooBar: 'test' }, { casing: 'snake' }],
@@ -42,6 +44,18 @@ test.each([
   [
     [{ foo: { barBaz: 'test' } }, { casing: 'snake' }],
     ['--foo.bar_baz', 'test'],
+  ],
+  [
+    [{ foo: ['bar', 'baz'] }, { arraySeparator: null }],
+    ['--foo', 'bar', 'baz'],
+  ],
+  [
+    [{ foo: { bar: ['baz', 'qux'] } }, { arraySeparator: null }],
+    ['--foo.bar', 'baz', 'qux'],
+  ],
+  [
+    [{ foo: ['bar', 'baz'] }, { arraySeparator: null }],
+    ['--foo', 'bar', 'baz'],
   ],
 ] as [Parameters<typeof toArgs>, string[]][])('toArgs(%o) -> %o', ([
   input,
