@@ -1,5 +1,11 @@
 # prool
 
+## 0.2.1
+
+### Patch Changes
+
+- [`ae16fbd`](https://github.com/wevm/prool/commit/ae16fbd8101ff54418a424ab3faab21975e6b17a) Thanks [@jxom](https://github.com/jxom)! - Modified wait message for `Instance.tempo`.
+
 ## 0.2.0
 
 ### Minor Changes
