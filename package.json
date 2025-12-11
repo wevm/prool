@@ -28,7 +28,7 @@
   "[!start-pkg]": "",
   "name": "prool",
   "description": "HTTP testing instances for Ethereum",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "sideEffects": false,
   "files": [
