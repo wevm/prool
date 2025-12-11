@@ -1,5 +1,19 @@
 # prool
 
+## 0.2.0
+
+### Minor Changes
+
+- [`9c3ae82`](https://github.com/wevm/prool/commit/9c3ae8281fd05076d62265196662073596988d3e) Thanks [@jxom](https://github.com/jxom)! - **Breaking:** Moved `Instance.tempoDocker` into `prool/testcontainers` entrypoint.
+
+  ```diff
+  - import { Instance } from 'prool'
+  + import { Instance } from 'prool/testcontainers'
+
+  - Instance.tempoDocker
+  + Instance.tempo
+  ```
+
 ## 0.1.1
 
 ### Patch Changes
