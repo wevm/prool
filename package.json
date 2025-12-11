@@ -7,7 +7,7 @@
     "check:types": "tsc",
     "dev": "zile dev",
     "postinstall": "pnpm dev",
-    "test": "vitest --testTimeout=100000"
+    "test": "vitest --testTimeout=10000"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.8",
@@ -43,6 +43,11 @@
       "src": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./testcontainers": {
+      "src": "./src/testcontainers/index.ts",
+      "types": "./dist/testcontainers/index.d.ts",
+      "default": "./dist/testcontainers/index.js"
     }
   },
   "dependencies": {

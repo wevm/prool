@@ -7,7 +7,8 @@
     "moduleResolution": "nodenext",
     "target": "esnext",
     "paths": {
-      "prool": ["./src/index.ts"]
+      "prool": ["./src/index.ts"],
+      "prool/testcontainers": ["./src/testcontainers/index.ts"]
     },
     "types": ["node", "vitest/globals"],
 
