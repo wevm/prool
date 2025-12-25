@@ -2,14 +2,12 @@ import getPort from 'get-port'
 
 import type { Instance } from './Instance.js'
 
-type Instance_ = Omit<Instance, 'create'>
-
 export type Pool<key extends number | string = number | string> = Pick<
-  Map<key, Instance_>,
+  Map<key, Instance>,
   'entries' | 'keys' | 'forEach' | 'get' | 'has' | 'size' | 'values'
 > & {
   _internal: {
-    instance: Instance_ | ((key: key) => Instance_)
+    instance: Instance | ((key: key) => Instance)
   }
   destroy(key: key): Promise<void>
   destroyAll(): Promise<void>
@@ -17,7 +15,7 @@ export type Pool<key extends number | string = number | string> = Pick<
   start(
     key: key,
     options?: { port?: number | undefined } | undefined,
-  ): Promise<Instance_>
+  ): Promise<Instance>
   stop(key: key): Promise<void>
   stopAll(): Promise<void>
 }
@@ -41,8 +39,7 @@ export function define<key extends number | string = number>(
 ): define.ReturnType<key> {
   const { limit } = parameters
 
-  type Instance_ = Omit<Instance, 'create'>
-  const instances = new Map<key, Instance_>()
+  const instances = new Map<key, Instance>()
 
   // Define promise instances for mutators to avoid race conditions, and return
   // identical instances of the promises (instead of duplicating them).
@@ -52,7 +49,7 @@ export function define<key extends number | string = number>(
     destroy: new Map<key, Promise<void>>(),
     destroyAll: undefined as Promise<void> | undefined,
     restart: new Map<key, Promise<void>>(),
-    start: new Map<key, Promise<Instance_>>(),
+    start: new Map<key, Promise<Instance>>(),
     stop: new Map<key, Promise<void>>(),
     stopAll: undefined as Promise<void> | undefined,
   }
@@ -117,7 +114,7 @@ export function define<key extends number | string = number>(
       const startPromise = promises.start.get(key)
       if (startPromise) return startPromise
 
-      const resolver = Promise.withResolvers<Instance_>()
+      const resolver = Promise.withResolvers<Instance>()
 
       if (limit && instances.size >= limit)
         throw new Error(`Instance limit of ${limit} reached.`)
@@ -130,7 +127,12 @@ export function define<key extends number | string = number>(
           : parameters.instance
       const { port = await getPort() } = options
 
-      const instance_ = instances.get(key) || instance.create({ port })
+      const existingInstance = instances.get(key)
+      const instance_ = existingInstance || instance.create?.({ port })
+      if (!instance_)
+        throw new Error(
+          `Instance "${instance.name}" does not have a create method.`,
+        )
       instance_
         .start()
         .then(() => {
