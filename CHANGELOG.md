@@ -1,5 +1,11 @@
 # prool
 
+## 0.2.2
+
+### Patch Changes
+
+- [`ca088dd`](https://github.com/wevm/prool/commit/ca088ddad0c0b8489d4fb2a813455a2ab4b747c5) Thanks [@jxom](https://github.com/jxom)! - Added pull policy to `Instance.tempo`.
+
 ## 0.2.1
 
 ### Patch Changes
