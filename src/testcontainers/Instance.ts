@@ -1,5 +1,6 @@
 import {
   GenericContainer,
+  PullPolicy,
   type StartedTestContainer,
   Wait,
 } from 'testcontainers'
@@ -50,6 +51,7 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
       const promise = Promise.withResolvers<void>()
 
       const c = new GenericContainer(image)
+        .withPullPolicy(PullPolicy.alwaysPull())
         .withPlatform('linux/x86_64')
         .withNetworkMode('host')
         .withExtraHosts([
