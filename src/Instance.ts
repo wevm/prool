@@ -26,10 +26,13 @@ export type Instance<
   _internal: _internal
   /**
    * Creates an instance.
+   *
+   * Note: This method is only available on instances created directly (not from a pool).
+   * When an instance is obtained from a pool via `pool.start()`, this method is not present.
    */
-  create(
+  create?(
     parameters?: { port?: number | undefined } | undefined,
-  ): Omit<Instance<_internal>, 'create'>
+  ): Instance<_internal>
   /**
    * Host the instance is running on.
    */
@@ -116,7 +119,7 @@ export function define<
   fn: define.DefineFn<parameters, _internal>,
 ): define.ReturnType<_internal, parameters> {
   return (...[parametersOrOptions, options_]) => {
-    function create(createParameters: Parameters<Instance['create']>[0] = {}) {
+    function create(createParameters: { port?: number | undefined } = {}) {
       const parameters = parametersOrOptions as parameters
       const options = options_ || parametersOrOptions || {}
 
