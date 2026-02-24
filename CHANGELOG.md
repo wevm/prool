@@ -1,5 +1,11 @@
 # prool
 
+## 0.2.3
+
+### Patch Changes
+
+- [`ddef8f2`](https://github.com/wevm/prool/commit/ddef8f25ff91b059bec8cd72dd667362487d5cb1) Thanks [@jxom](https://github.com/jxom)! - Fixed Tempo instance readiness detection to support both v1.2.0 (`"Received block from consensus engine"`) and v1.3.0 (`"Received new payload from consensus engine"`) log messages.
+
 ## 0.2.2
 
 ### Patch Changes
