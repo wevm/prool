@@ -62,7 +62,7 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
         .withEnvironment({ RUST_LOG })
         .withCommand(command({ ...args, port }))
         .withWaitStrategy(
-          Wait.forLogMessage(/Received block from consensus engine/),
+          Wait.forLogMessage(/Received (block|new payload) from consensus engine/),
         )
         .withLogConsumer((stream) => {
           stream.on('data', (data) => {

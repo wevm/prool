@@ -104,12 +104,12 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
           })`${[binary, ...command({ ...args, port })]}`,
         {
           ...options,
-          // Resolve when the process is listening via "Received block from consensus engine" message.
-          resolver({ process, reject, resolve }) {
-            process.stdout.on('data', (data) => {
-              const message = data.toString()
-              if (log) console.log(message)
-              if (message.includes('Received block from consensus engine'))
+          // Resolve when the process is listening via consensus engine message.
+                      resolver({ process, reject, resolve }) {
+                        process.stdout.on('data', (data) => {
+                          const message = data.toString()
+                          if (log) console.log(message)
+                          if (message.includes('Received new payload from consensus engine') || message.includes('Received block from consensus engine'))
                 resolve()
               if (message.includes('shutting down')) reject('shutting down')
             })
