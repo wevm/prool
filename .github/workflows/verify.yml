@@ -41,6 +41,6 @@ jobs:
         run: docker pull ghcr.io/tempoxyz/tempo:latest
 
       - name: Run tests
-        run: pnpm test --bail=1 --testTimeout=120000 --hookTimeout=120000
+        run: pnpm exec vitest --bail=1 --testTimeout=120000 --hookTimeout=120000
         env:
           VITE_FORK_URL: ${{ secrets.VITE_FORK_URL }}
