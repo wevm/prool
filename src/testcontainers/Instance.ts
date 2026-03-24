@@ -6,6 +6,7 @@ import {
 } from 'testcontainers'
 import * as Instance from '../Instance.js'
 import { command, type tempo as core_tempo } from '../instances/tempo.js'
+import * as ContainerOptions from './containerOptions.js'
 
 export type { Instance, InstanceOptions } from '../Instance.js'
 
@@ -25,6 +26,7 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
     containerName = `tempo.${crypto.randomUUID()}`,
     image = 'ghcr.io/tempoxyz/tempo:latest',
     log: log_,
+    startupTimeout,
     ...args
   } = parameters || {}
 
@@ -62,7 +64,9 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
         .withEnvironment({ RUST_LOG })
         .withCommand(command({ ...args, port }))
         .withWaitStrategy(
-          Wait.forLogMessage(/Received (block|new payload) from consensus engine/),
+          Wait.forLogMessage(
+            /Received (block|new payload) from consensus engine/,
+          ),
         )
         .withLogConsumer((stream) => {
           stream.on('data', (data) => {
@@ -80,7 +84,9 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
             promise.reject(new Error(`Failed to start: ${error.message}`))
           })
         })
-        .withStartupTimeout(10_000)
+        .withStartupTimeout(
+          ContainerOptions.resolveStartupTimeout(startupTimeout),
+        )
 
       c.start()
         .then((c) => {
@@ -100,22 +106,23 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
 })
 
 export declare namespace tempo {
-  export type Parameters = Omit<core_tempo.Parameters, 'binary'> & {
-    /**
-     * Name of the container.
-     */
-    containerName?: string | undefined
-    /**
-     * Docker image to use.
-     */
-    image?: string | undefined
-    /**
-     * Host the server will listen on.
-     */
-    host?: string | undefined
-    /**
-     * Port the server will listen on.
-     */
-    port?: number | undefined
-  }
+  export type Parameters = Omit<core_tempo.Parameters, 'binary'> &
+    ContainerOptions.Parameters & {
+      /**
+       * Name of the container.
+       */
+      containerName?: string | undefined
+      /**
+       * Docker image to use.
+       */
+      image?: string | undefined
+      /**
+       * Host the server will listen on.
+       */
+      host?: string | undefined
+      /**
+       * Port the server will listen on.
+       */
+      port?: number | undefined
+    }
 }

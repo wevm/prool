@@ -6,12 +6,13 @@ import { altoOptions } from '../test/utils.js'
 
 let pool: ReturnType<typeof Pool.define>
 const port = await getPort()
+const forkUrl = process.env['VITE_FORK_URL'] || 'https://eth.merkle.io'
 
 beforeAll(() =>
   Server.create({
     instance: Instance.anvil({
       chainId: 1,
-      forkUrl: process.env['VITE_FORK_URL'] ?? 'https://eth.merkle.io',
+      forkUrl,
     }),
     port,
   }).start(),
@@ -40,7 +41,7 @@ describe.each([
     expect(pool).toBeDefined()
   })
 
-  test('start', async () => {
+  test('start', { timeout: 60_000 }, async () => {
     pool = Pool.define({
       instance,
     })

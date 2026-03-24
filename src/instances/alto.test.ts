@@ -6,6 +6,7 @@ import { altoOptions } from '../../test/utils.js'
 const instances: Instance.Instance[] = []
 
 const port = await getPort()
+const forkUrl = process.env['VITE_FORK_URL'] || 'https://eth.merkle.io'
 
 const defineInstance = (parameters: Partial<Instance.alto.Parameters> = {}) => {
   const instance = Instance.alto({
@@ -18,7 +19,7 @@ const defineInstance = (parameters: Partial<Instance.alto.Parameters> = {}) => {
 
 beforeAll(() =>
   Instance.anvil({
-    forkUrl: process.env['VITE_FORK_URL'] ?? 'https://eth.merkle.io',
+    forkUrl,
     port,
   }).start(),
 )

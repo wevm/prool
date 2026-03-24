@@ -5,12 +5,13 @@ import { type MessageEvent, WebSocket } from 'ws'
 import { altoOptions } from '../test/utils.js'
 
 const port = await getPort()
+const forkUrl = process.env['VITE_FORK_URL'] || 'https://eth.merkle.io'
 
 beforeAll(async () => {
   await Server.create({
     instance: Instance.anvil({
       chainId: 1,
-      forkUrl: process.env['VITE_FORK_URL'] ?? 'https://eth.merkle.io',
+      forkUrl,
     }),
     port,
   }).start()
@@ -83,7 +84,7 @@ describe.each([
     await stop()
   })
 
-  test('request: /start + /stop', async () => {
+  test('request: /start + /stop', { timeout: 60_000 }, async () => {
     const server = Server.create({
       instance,
     })
