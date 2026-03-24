@@ -1,5 +1,13 @@
 # prool
 
+## 0.2.4
+
+### Patch Changes
+
+- [#73](https://github.com/wevm/prool/pull/73) [`18283b9`](https://github.com/wevm/prool/commit/18283b954e2bd066501ad5b0ab93b8ea6d361009) Thanks [@brendanjryan](https://github.com/brendanjryan)! - Fixed testcontainers Tempo instance to use exposed ports instead of host networking for macOS compatibility. Containers now bind to `127.0.0.1` with dynamically mapped ports, resolving connectivity issues on non-Linux platforms.
+
+- [#71](https://github.com/wevm/prool/pull/71) [`474e091`](https://github.com/wevm/prool/commit/474e091e33ee6f0c6f3c14df1db453cab3e4d877) Thanks [@brendanjryan](https://github.com/brendanjryan)! - Made the testcontainers Tempo instance startup timeout configurable via `startupTimeout`. This also introduces a shared internal container-options shape for testcontainers-backed instances, so future container adapters can reuse the same option pattern. The default timeout remains `10_000ms`.
+
 ## 0.2.3
 
 ### Patch Changes
