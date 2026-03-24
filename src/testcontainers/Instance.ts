@@ -47,20 +47,21 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
     host: args.host ?? 'localhost',
     name,
     port: args.port ?? 8545,
-    async start({ port = args.port }, { emitter }) {
+    async start({ port = args.port }, { emitter, setEndpoint }) {
       const promise = Promise.withResolvers<void>()
+
+      const containerPort = port ?? 8545
 
       const c = new GenericContainer(image)
         .withPullPolicy(PullPolicy.alwaysPull())
         .withPlatform('linux/x86_64')
-        .withNetworkMode('host')
+        .withExposedPorts(containerPort)
         .withExtraHosts([
           { host: 'host.docker.internal', ipAddress: 'host-gateway' },
-          { host: 'localhost', ipAddress: 'host-gateway' },
         ])
         .withName(containerName)
         .withEnvironment({ RUST_LOG })
-        .withCommand(command({ ...args, port }))
+        .withCommand(command({ ...args, port: containerPort }))
         .withWaitStrategy(
           Wait.forLogMessage(/Received (block|new payload) from consensus engine/),
         )
@@ -83,8 +84,12 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
         .withStartupTimeout(10_000)
 
       c.start()
-        .then((c) => {
-          container = c
+        .then((started) => {
+          container = started
+          setEndpoint?.({
+            host: started.getHost(),
+            port: started.getMappedPort(containerPort),
+          })
           promise.resolve()
         })
         .catch(promise.reject)

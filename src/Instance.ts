@@ -121,11 +121,12 @@ export function define<
       const options = options_ || parametersOrOptions || {}
 
       const instance = fn(parameters)
-      const { _internal, host, name, port, start, stop } = {
+      const { _internal, name, start, stop } = {
         ...instance,
         ...createParameters,
-        port: createParameters.port ?? instance.port,
       }
+      let host = instance.host
+      let port = createParameters?.port ?? instance.port
       const { messageBuffer = 20, timeout } = options
 
       let restartResolver = Promise.withResolvers<void>()
@@ -159,9 +160,13 @@ export function define<
             return messages
           },
         },
-        host,
+        get host() {
+          return host
+        },
         name,
-        port,
+        get port() {
+          return port
+        },
         get status() {
           if (restarting) return 'restarting'
           return status
@@ -193,6 +198,10 @@ export function define<
             },
             {
               emitter,
+              setEndpoint(endpoint) {
+                if (endpoint.host) host = endpoint.host
+                if (endpoint.port) port = endpoint.port
+              },
               status: this.status,
             },
           )
@@ -302,6 +311,7 @@ export declare namespace define {
 
   export type InstanceStartOptions_internal = {
     emitter: EventEmitter<EventTypes>
+    setEndpoint?(endpoint: { host?: string; port?: number }): void
     status: Instance['status']
   }
 

@@ -305,6 +305,45 @@ test('behavior: messages', async () => {
   `)
 })
 
+test('behavior: dynamic host/port via setEndpoint', async () => {
+  const foo = Instance.define(() => {
+    return {
+      name: 'foo',
+      host: 'localhost',
+      port: 3000,
+      async start(_, { setEndpoint }) {
+        setEndpoint?.({ host: '192.168.1.100', port: 9999 })
+      },
+      async stop() {},
+    }
+  })
+
+  const instance = foo()
+  expect(instance.host).toEqual('localhost')
+  expect(instance.port).toEqual(3000)
+
+  await instance.start()
+  expect(instance.host).toEqual('192.168.1.100')
+  expect(instance.port).toEqual(9999)
+})
+
+test('behavior: start() returning void keeps original host/port', async () => {
+  const foo = Instance.define(() => {
+    return {
+      name: 'foo',
+      host: 'localhost',
+      port: 3000,
+      async start() {},
+      async stop() {},
+    }
+  })
+
+  const instance = foo()
+  await instance.start()
+  expect(instance.host).toEqual('localhost')
+  expect(instance.port).toEqual(3000)
+})
+
 test('options: timeout', async () => {
   const foo = Instance.define(() => {
     return {
