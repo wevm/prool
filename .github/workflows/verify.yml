@@ -37,7 +37,10 @@ jobs:
       - name: Set up Docker
         uses: docker/setup-docker-action@v4
 
+      - name: Pre-pull Tempo image
+        run: docker pull ghcr.io/tempoxyz/tempo:latest
+
       - name: Run tests
-        run: pnpm test --bail=1
+        run: pnpm test --bail=1 --testTimeout=120000 --hookTimeout=120000
         env:
           VITE_FORK_URL: ${{ secrets.VITE_FORK_URL }}
