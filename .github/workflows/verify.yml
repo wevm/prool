@@ -24,6 +24,8 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    env:
+      TEMPO_VERSION: v1.5.0
     steps:
       - name: Clone repository
         uses: actions/checkout@v4
@@ -33,6 +35,27 @@ jobs:
 
       - name: Set up Foundry
         uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Cache Tempo binary
+        id: cache-tempo
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/bin/tempo
+          key: tempo-${{ env.TEMPO_VERSION }}-${{ runner.os }}-${{ runner.arch }}
+
+      - name: Install Tempo
+        if: steps.cache-tempo.outputs.cache-hit != 'true'
+        run: |
+          TARGET="x86_64-unknown-linux-gnu"
+          ARCHIVE="tempo-${TEMPO_VERSION}-${TARGET}.tar.gz"
+          URL="https://github.com/tempoxyz/tempo/releases/download/${TEMPO_VERSION}/${ARCHIVE}"
+          mkdir -p ~/.local/bin
+          curl -sSL "$URL" | tar xz -C ~/.local/bin --strip-components=0 "tempo-${TEMPO_VERSION}-${TARGET}"
+          mv ~/.local/bin/tempo-${TEMPO_VERSION}-${TARGET} ~/.local/bin/tempo
+          chmod +x ~/.local/bin/tempo
+
+      - name: Add Tempo to PATH
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Set up Docker
         uses: docker/setup-docker-action@v4
