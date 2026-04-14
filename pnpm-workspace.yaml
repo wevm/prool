@@ -1,0 +1,7 @@
+strictDepBuilds: true
+blockExoticSubdeps: true
+trustPolicy: no-downgrade
+minimumReleaseAge: 1440
+
+onlyBuiltDependencies:
+  - esbuild

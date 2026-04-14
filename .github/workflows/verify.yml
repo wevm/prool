@@ -1,16 +1,25 @@
 name: Verify
 on:
   workflow_call:
+    secrets:
+      VITE_FORK_URL:
+        required: false
   workflow_dispatch:
+
+permissions: {}
 
 jobs:
   checks:
     name: Checks
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Clone repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
 
       - name: Install dependencies
         uses: ./.github/actions/install-dependencies
@@ -26,19 +35,23 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TEMPO_VERSION: v1.5.0
+    permissions:
+      contents: read
     steps:
       - name: Clone repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
 
       - name: Install dependencies
         uses: ./.github/actions/install-dependencies
 
       - name: Set up Foundry
-        uses: foundry-rs/foundry-toolchain@v1
+        uses: foundry-rs/foundry-toolchain@8789b3e21e6c11b2697f5eb56eddae542f746c10 # v1.7.0
 
       - name: Cache Tempo binary
         id: cache-tempo
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/.local/bin/tempo
           key: tempo-${{ env.TEMPO_VERSION }}-${{ runner.os }}-${{ runner.arch }}
@@ -49,8 +62,11 @@ jobs:
           TARGET="x86_64-unknown-linux-gnu"
           ARCHIVE="tempo-${TEMPO_VERSION}-${TARGET}.tar.gz"
           URL="https://github.com/tempoxyz/tempo/releases/download/${TEMPO_VERSION}/${ARCHIVE}"
+          EXPECTED_SHA="b97bf1970cdfa7b7bb017de680126686bda5a3f529c6e90cbd26973e01d2ca55"
           mkdir -p ~/.local/bin
-          curl -sSL "$URL" | tar xz -C ~/.local/bin --strip-components=0 "tempo-${TEMPO_VERSION}-${TARGET}"
+          curl -sSL "$URL" -o "/tmp/${ARCHIVE}"
+          echo "${EXPECTED_SHA}  /tmp/${ARCHIVE}" | sha256sum -c -
+          tar xzf "/tmp/${ARCHIVE}" -C ~/.local/bin --strip-components=0 "tempo-${TEMPO_VERSION}-${TARGET}"
           mv ~/.local/bin/tempo-${TEMPO_VERSION}-${TARGET} ~/.local/bin/tempo
           chmod +x ~/.local/bin/tempo
 
@@ -58,7 +74,7 @@ jobs:
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Set up Docker
-        uses: docker/setup-docker-action@v4
+        uses: docker/setup-docker-action@e43656e248c0bd0647d3f5c195d116aacf6fcaf4 # v4.7.0
 
       - name: Run tests
         run: pnpm test --bail=1
