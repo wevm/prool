@@ -136,3 +136,61 @@ test('behavior: exit when status is starting', async () => {
   process._internal.process.kill()
   await expect(resolvers.exit.promise).resolves.toBeDefined()
 })
+
+test('behavior: array interpolation preserves multi-word elements', async () => {
+  const emitter = new EventEmitter<any>()
+  const process = createProcess()
+
+  let stdout = ''
+  const done = Promise.withResolvers<void>()
+  emitter.on('stdout', (message) => {
+    stdout += message
+  })
+  emitter.on('exit', () => done.resolve())
+
+  const value = 'test test test test test test test test test test test junk'
+
+  await process.start(
+    ($) => $`node ${['-e', 'process.stdout.write(process.argv[1])', value]}`,
+    {
+      emitter,
+      status: 'idle',
+      resolver({ resolve }) {
+        resolve()
+      },
+    },
+  )
+
+  await done.promise
+  expect(stdout).toBe(value)
+})
+
+test('behavior: callable form merges env into spawned process', async () => {
+  const emitter = new EventEmitter<any>()
+  const process = createProcess()
+
+  let stdout = ''
+  const done = Promise.withResolvers<void>()
+  emitter.on('stdout', (message) => {
+    stdout += message
+  })
+  emitter.on('exit', () => done.resolve())
+
+  await process.start(
+    ($) =>
+      $({ env: { PROOL_TEST_VAR: 'hello' } })`node ${[
+        '-e',
+        'process.stdout.write(process.env.PROOL_TEST_VAR || "missing")',
+      ]}`,
+    {
+      emitter,
+      status: 'idle',
+      resolver({ resolve }) {
+        resolve()
+      },
+    },
+  )
+
+  await done.promise
+  expect(stdout).toBe('hello')
+})
