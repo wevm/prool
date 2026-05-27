@@ -51,12 +51,13 @@
     }
   },
   "dependencies": {
+    "args-tokenizer": "^0.3.0",
     "change-case": "5.4.4",
     "eventemitter3": "^5.0.1",
-    "execa": "^9.1.0",
     "get-port": "^7.1.0",
     "http-proxy": "^1.18.1",
-    "tar": "7.2.0"
+    "tar": "7.2.0",
+    "tinyexec": "^1.0.2"
   },
   "peerDependencies": {
     "@pimlico/alto": "*",
