@@ -358,9 +358,17 @@ test('options: timeout', async () => {
   })
 
   const instance_1 = foo({ timeout: 100 })
-  await expect(() => instance_1.start()).rejects.toThrow(
-    'Instance "foo" failed to start in time',
-  )
+  try {
+    await instance_1.start()
+    throw new Error('Expected start to time out.')
+  } catch (error) {
+    expect(error).toMatchInlineSnapshot(
+      '[Error: Instance "foo" failed to start in time.]',
+    )
+  }
+  expect(instance_1.status).toBe('idle')
+  await new Promise((resolve) => setTimeout(resolve, 150))
+  expect(instance_1.status).toBe('idle')
 
   const bar = Instance.define(() => {
     return {
