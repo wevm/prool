@@ -1,5 +1,13 @@
 # prool
 
+## 0.2.5
+
+### Patch Changes
+
+- [#83](https://github.com/wevm/prool/pull/83) [`a9070ff`](https://github.com/wevm/prool/commit/a9070ff63cb35b3cf83b5cd6be77fcf38c2fa181) Thanks [@jxom](https://github.com/jxom)! - Fixed process `stop()` hanging when the process had already exited.
+
+- [#83](https://github.com/wevm/prool/pull/83) [`a9070ff`](https://github.com/wevm/prool/commit/a9070ff63cb35b3cf83b5cd6be77fcf38c2fa181) Thanks [@jxom](https://github.com/jxom)! - Fixed Tempo faucet submitting funding transactions to the node default `http://localhost:8545` instead of the resolved `--http.port`.
+
 ## 0.2.4
 
 ### Patch Changes
