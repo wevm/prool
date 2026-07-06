@@ -33,9 +33,10 @@ export function execa(parameters: execa.Parameters): execa.ReturnType {
   let process: Process_internal
 
   async function stop(signal?: keyof SignalConstants | number) {
-    const killed = process.kill(signal)
-    if (!killed) return
-    return new Promise((resolve) => process.on('close', resolve))
+    process.kill(signal)
+    // Process may have exited on its own; 'exit' will not re-fire.
+    if (process.exitCode !== null || process.signalCode !== null) return
+    return new Promise((resolve) => process.once('exit', resolve))
   }
 
   return {
