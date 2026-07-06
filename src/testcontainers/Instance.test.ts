@@ -79,3 +79,49 @@ test('behavior: can subscribe to stdout', async () => {
 })
 
 test.skip('behavior: can subscribe to stderr', () => {})
+
+test('behavior: faucet funds address', { timeout: 120_000 }, async () => {
+  const instance = defineInstance({ startupTimeout: 60_000 })
+  await instance.start()
+
+  const rpc = async (method: string, params: unknown[]) => {
+    const response = await fetch(`http://${instance.host}:${instance.port}`, {
+      body: JSON.stringify({ id: 0, jsonrpc: '2.0', method, params }),
+      headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+    })
+    return await response.json()
+  }
+
+  // Funding races the first wall-clock block; expiring-nonce validation rejects until one exists.
+  let json: { result?: string[] } = {}
+  for (let i = 0; i < 100; i++) {
+    json = await rpc('tempo_fundAddress', [
+      '0x000000000000000000000000000000000000beef',
+    ])
+    if (json.result) break
+    await new Promise((resolve) => setTimeout(resolve, 500))
+  }
+
+  expect(
+    JSON.stringify(json).replaceAll(/0x[0-9a-f]{64}/g, '<hash>'),
+  ).toMatchInlineSnapshot(
+    `"{"jsonrpc":"2.0","id":0,"result":["<hash>","<hash>","<hash>","<hash>"]}"`,
+  )
+
+  // balanceOf(0x...beef) on the first faucet token.
+  let balance = 0n
+  for (let i = 0; i < 100; i++) {
+    const { result } = await rpc('eth_call', [
+      {
+        data: '0x70a08231000000000000000000000000000000000000000000000000000000000000beef',
+        to: '0x20c0000000000000000000000000000000000000',
+      },
+      'latest',
+    ])
+    balance = BigInt(result ?? 0)
+    if (balance > 0n) break
+    await new Promise((resolve) => setTimeout(resolve, 500))
+  }
+  expect(balance).toBeGreaterThan(0n)
+})
