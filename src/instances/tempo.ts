@@ -50,9 +50,17 @@ export function command(parameters: tempo.Parameters): string[] {
     },
   }
 
+  const args = deepAssign(defaultParameters, rest)
+
+  // Faucet submits funding transactions over RPC; point it at the resolved http port (node default: 8545).
+  const faucet = args['faucet'] as tempo.Parameters['faucet']
+  const http = args['http'] as { port: number }
+  if (faucet?.enabled && !faucet.nodeAddress)
+    faucet.nodeAddress = `http://localhost:${http.port}`
+
   return [
     'node',
-    ...toArgs(deepAssign(defaultParameters, rest), {
+    ...toArgs(args, {
       arraySeparator: null,
     }),
   ]
@@ -177,6 +185,16 @@ export declare namespace tempo {
            * Amount for each faucet funding transaction
            */
           amount?: bigint | undefined
+          /**
+           * Whether the faucet is enabled
+           * @default true
+           */
+          enabled?: boolean | undefined
+          /**
+           * Node RPC address the faucet submits funding transactions to
+           * @default `http://localhost:${port}`
+           */
+          nodeAddress?: string | undefined
           /**
            * Faucet funding mnemonic
            */

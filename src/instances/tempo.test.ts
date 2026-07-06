@@ -1,6 +1,8 @@
+import * as os from 'node:os'
 import getPort from 'get-port'
 import { Instance } from 'prool'
 import { afterEach, expect, test } from 'vitest'
+import { command } from './tempo.js'
 
 const instances: Instance.Instance[] = []
 const slowTestTimeout = 30_000
@@ -86,4 +88,89 @@ test('behavior: can subscribe to stderr', async () => {
   await instance_1.start()
   instance_2.on('stderr', (message) => messages.push(message))
   await expect(instance_2.start()).rejects.toThrow('Failed to start')
+})
+
+test(
+  'behavior: faucet funds address',
+  { timeout: slowTestTimeout },
+  async () => {
+    const instance = defineInstance()
+    await instance.start()
+
+    const rpc = async (method: string, params: unknown[]) => {
+      const response = await fetch(`http://localhost:${port}`, {
+        body: JSON.stringify({ id: 0, jsonrpc: '2.0', method, params }),
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+      })
+      return await response.json()
+    }
+
+    // Funding races the first wall-clock block; expiring-nonce validation rejects until one exists.
+    let json: { result?: string[] } = {}
+    for (let i = 0; i < 50; i++) {
+      json = await rpc('tempo_fundAddress', [
+        '0x000000000000000000000000000000000000beef',
+      ])
+      if (json.result) break
+      await new Promise((resolve) => setTimeout(resolve, 200))
+    }
+
+    expect(
+      JSON.stringify(json).replaceAll(/0x[0-9a-f]{64}/g, '<hash>'),
+    ).toMatchInlineSnapshot(
+      `"{"jsonrpc":"2.0","id":0,"result":["<hash>","<hash>","<hash>","<hash>"]}"`,
+    )
+
+    // balanceOf(0x...beef) on the first faucet token.
+    let balance = 0n
+    for (let i = 0; i < 50; i++) {
+      const { result } = await rpc('eth_call', [
+        {
+          data: '0x70a08231000000000000000000000000000000000000000000000000000000000000beef',
+          to: '0x20c0000000000000000000000000000000000000',
+        },
+        'latest',
+      ])
+      balance = BigInt(result ?? 0)
+      if (balance > 0n) break
+      await new Promise((resolve) => setTimeout(resolve, 200))
+    }
+    expect(balance).toBeGreaterThan(0n)
+  },
+)
+
+const redact = (args: string[]) =>
+  args.join(' ').replaceAll(os.tmpdir(), '<tmpdir>')
+
+test('command: default', () => {
+  expect(redact(command({ port: 8545 }))).toMatchInlineSnapshot(
+    `"node --authrpc.port 8575 --datadir <tmpdir>/.prool/tempo.8545 --dev --dev.block-time 50ms --engine.disable-precompile-cache --engine.legacy-state-root --faucet.address 0x20c0000000000000000000000000000000000000 0x20c0000000000000000000000000000000000001 0x20c0000000000000000000000000000000000002 0x20c0000000000000000000000000000000000003 --faucet.amount 1000000000000 --faucet.enabled --faucet.private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --faucet.node-address http://localhost:8545 --http.addr 0.0.0.0 --http.api all --http.corsdomain * --http.port 8545 --port 8555 --ws.port 8565"`,
+  )
+})
+
+test('command: behavior: faucet node address', () => {
+  expect(
+    redact(
+      command({ faucet: { nodeAddress: 'http://localhost:1337' }, port: 8545 }),
+    ),
+  ).toMatchInlineSnapshot(
+    `"node --authrpc.port 8575 --datadir <tmpdir>/.prool/tempo.8545 --dev --dev.block-time 50ms --engine.disable-precompile-cache --engine.legacy-state-root --faucet.address 0x20c0000000000000000000000000000000000000 0x20c0000000000000000000000000000000000001 0x20c0000000000000000000000000000000000002 0x20c0000000000000000000000000000000000003 --faucet.amount 1000000000000 --faucet.enabled --faucet.private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --faucet.node-address http://localhost:1337 --http.addr 0.0.0.0 --http.api all --http.corsdomain * --http.port 8545 --port 8555 --ws.port 8565"`,
+  )
+})
+
+test('command: behavior: faucet disabled', () => {
+  expect(
+    redact(command({ faucet: { enabled: false }, port: 8545 })),
+  ).toMatchInlineSnapshot(
+    `"node --authrpc.port 8575 --datadir <tmpdir>/.prool/tempo.8545 --dev --dev.block-time 50ms --engine.disable-precompile-cache --engine.legacy-state-root --faucet.address 0x20c0000000000000000000000000000000000000 0x20c0000000000000000000000000000000000001 0x20c0000000000000000000000000000000000002 0x20c0000000000000000000000000000000000003 --faucet.amount 1000000000000 --faucet.enabled false --faucet.private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --http.addr 0.0.0.0 --http.api all --http.corsdomain * --http.port 8545 --port 8555 --ws.port 8565"`,
+  )
+})
+
+test('command: behavior: http port override', () => {
+  expect(
+    redact(command({ http: { port: 1337 }, port: 8545 })),
+  ).toMatchInlineSnapshot(
+    `"node --authrpc.port 8575 --datadir <tmpdir>/.prool/tempo.8545 --dev --dev.block-time 50ms --engine.disable-precompile-cache --engine.legacy-state-root --faucet.address 0x20c0000000000000000000000000000000000000 0x20c0000000000000000000000000000000000001 0x20c0000000000000000000000000000000000002 0x20c0000000000000000000000000000000000003 --faucet.amount 1000000000000 --faucet.enabled --faucet.private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --faucet.node-address http://localhost:1337 --http.addr 0.0.0.0 --http.api all --http.corsdomain * --http.port 1337 --port 8555 --ws.port 8565"`,
+  )
 })
