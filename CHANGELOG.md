@@ -1,5 +1,11 @@
 # prool
 
+## 0.2.7
+
+### Patch Changes
+
+- [#88](https://github.com/wevm/prool/pull/88) [`981d94b`](https://github.com/wevm/prool/commit/981d94b523780bc1d1291db744d2957a96817033) Thanks [@jxom](https://github.com/jxom)! - Enabled WebSocket on the `tempo` instance HTTP port and exposed the `tempoZone` private RPC endpoint on testcontainers.
+
 ## 0.2.6
 
 ### Patch Changes
