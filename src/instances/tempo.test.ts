@@ -2,6 +2,7 @@ import * as os from 'node:os'
 import getPort from 'get-port'
 import { Instance } from 'prool'
 import { afterEach, expect, test } from 'vitest'
+import { type MessageEvent, WebSocket } from 'ws'
 import { command } from './tempo.js'
 
 const instances: Instance.Instance[] = []
@@ -140,12 +141,34 @@ test(
   },
 )
 
+test(
+  'behavior: serves websocket on http port',
+  { timeout: slowTestTimeout },
+  async () => {
+    const instance = defineInstance()
+    await instance.start()
+
+    const ws = new WebSocket(`ws://localhost:${port}`)
+    await new Promise((resolve, reject) => {
+      ws.addEventListener('open', resolve)
+      ws.addEventListener('error', reject)
+    })
+    ws.send(JSON.stringify({ id: 0, jsonrpc: '2.0', method: 'eth_chainId' }))
+    const { data } = await new Promise<MessageEvent>((resolve) =>
+      ws.addEventListener('message', resolve),
+    )
+    ws.close()
+
+    expect(JSON.parse(data.toString()).result).toBeDefined()
+  },
+)
+
 const redact = (args: string[]) =>
   args.join(' ').replaceAll(os.tmpdir(), '<tmpdir>')
 
 test('command: default', () => {
   expect(redact(command({ port: 8545 }))).toMatchInlineSnapshot(
-    `"node --authrpc.port 8575 --datadir <tmpdir>/.prool/tempo.8545 --dev --dev.block-time 50ms --engine.disable-precompile-cache --engine.legacy-state-root --faucet.address 0x20c0000000000000000000000000000000000000 0x20c0000000000000000000000000000000000001 0x20c0000000000000000000000000000000000002 0x20c0000000000000000000000000000000000003 --faucet.amount 1000000000000 --faucet.enabled --faucet.private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --faucet.node-address http://localhost:8545 --http.addr 0.0.0.0 --http.api all --http.corsdomain * --http.port 8545 --port 8555 --ws.port 8565"`,
+    `"node --authrpc.port 8575 --datadir <tmpdir>/.prool/tempo.8545 --dev --dev.block-time 50ms --engine.disable-precompile-cache --engine.legacy-state-root --faucet.address 0x20c0000000000000000000000000000000000000 0x20c0000000000000000000000000000000000001 0x20c0000000000000000000000000000000000002 0x20c0000000000000000000000000000000000003 --faucet.amount 1000000000000 --faucet.enabled --faucet.private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --faucet.node-address http://localhost:8545 --http.addr 0.0.0.0 --http.api all --http.corsdomain * --http.port 8545 --port 8555 --ws --ws.addr 0.0.0.0 --ws.api all --ws.port 8545"`,
   )
 })
 
@@ -155,7 +178,7 @@ test('command: behavior: faucet node address', () => {
       command({ faucet: { nodeAddress: 'http://localhost:1337' }, port: 8545 }),
     ),
   ).toMatchInlineSnapshot(
-    `"node --authrpc.port 8575 --datadir <tmpdir>/.prool/tempo.8545 --dev --dev.block-time 50ms --engine.disable-precompile-cache --engine.legacy-state-root --faucet.address 0x20c0000000000000000000000000000000000000 0x20c0000000000000000000000000000000000001 0x20c0000000000000000000000000000000000002 0x20c0000000000000000000000000000000000003 --faucet.amount 1000000000000 --faucet.enabled --faucet.private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --faucet.node-address http://localhost:1337 --http.addr 0.0.0.0 --http.api all --http.corsdomain * --http.port 8545 --port 8555 --ws.port 8565"`,
+    `"node --authrpc.port 8575 --datadir <tmpdir>/.prool/tempo.8545 --dev --dev.block-time 50ms --engine.disable-precompile-cache --engine.legacy-state-root --faucet.address 0x20c0000000000000000000000000000000000000 0x20c0000000000000000000000000000000000001 0x20c0000000000000000000000000000000000002 0x20c0000000000000000000000000000000000003 --faucet.amount 1000000000000 --faucet.enabled --faucet.private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --faucet.node-address http://localhost:1337 --http.addr 0.0.0.0 --http.api all --http.corsdomain * --http.port 8545 --port 8555 --ws --ws.addr 0.0.0.0 --ws.api all --ws.port 8545"`,
   )
 })
 
@@ -163,7 +186,15 @@ test('command: behavior: faucet disabled', () => {
   expect(
     redact(command({ faucet: { enabled: false }, port: 8545 })),
   ).toMatchInlineSnapshot(
-    `"node --authrpc.port 8575 --datadir <tmpdir>/.prool/tempo.8545 --dev --dev.block-time 50ms --engine.disable-precompile-cache --engine.legacy-state-root --faucet.address 0x20c0000000000000000000000000000000000000 0x20c0000000000000000000000000000000000001 0x20c0000000000000000000000000000000000002 0x20c0000000000000000000000000000000000003 --faucet.amount 1000000000000 --faucet.enabled false --faucet.private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --http.addr 0.0.0.0 --http.api all --http.corsdomain * --http.port 8545 --port 8555 --ws.port 8565"`,
+    `"node --authrpc.port 8575 --datadir <tmpdir>/.prool/tempo.8545 --dev --dev.block-time 50ms --engine.disable-precompile-cache --engine.legacy-state-root --faucet.address 0x20c0000000000000000000000000000000000000 0x20c0000000000000000000000000000000000001 0x20c0000000000000000000000000000000000002 0x20c0000000000000000000000000000000000003 --faucet.amount 1000000000000 --faucet.enabled false --faucet.private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --http.addr 0.0.0.0 --http.api all --http.corsdomain * --http.port 8545 --port 8555 --ws --ws.addr 0.0.0.0 --ws.api all --ws.port 8545"`,
+  )
+})
+
+test('command: behavior: ws port override', () => {
+  expect(
+    redact(command({ port: 8545, ws: [true, { port: 8565 }] })),
+  ).toMatchInlineSnapshot(
+    `"node --authrpc.port 8575 --datadir <tmpdir>/.prool/tempo.8545 --dev --dev.block-time 50ms --engine.disable-precompile-cache --engine.legacy-state-root --faucet.address 0x20c0000000000000000000000000000000000000 0x20c0000000000000000000000000000000000001 0x20c0000000000000000000000000000000000002 0x20c0000000000000000000000000000000000003 --faucet.amount 1000000000000 --faucet.enabled --faucet.private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --faucet.node-address http://localhost:8545 --http.addr 0.0.0.0 --http.api all --http.corsdomain * --http.port 8545 --port 8555 --ws --ws.port 8565"`,
   )
 })
 
@@ -171,6 +202,6 @@ test('command: behavior: http port override', () => {
   expect(
     redact(command({ http: { port: 1337 }, port: 8545 })),
   ).toMatchInlineSnapshot(
-    `"node --authrpc.port 8575 --datadir <tmpdir>/.prool/tempo.8545 --dev --dev.block-time 50ms --engine.disable-precompile-cache --engine.legacy-state-root --faucet.address 0x20c0000000000000000000000000000000000000 0x20c0000000000000000000000000000000000001 0x20c0000000000000000000000000000000000002 0x20c0000000000000000000000000000000000003 --faucet.amount 1000000000000 --faucet.enabled --faucet.private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --faucet.node-address http://localhost:1337 --http.addr 0.0.0.0 --http.api all --http.corsdomain * --http.port 1337 --port 8555 --ws.port 8565"`,
+    `"node --authrpc.port 8575 --datadir <tmpdir>/.prool/tempo.8545 --dev --dev.block-time 50ms --engine.disable-precompile-cache --engine.legacy-state-root --faucet.address 0x20c0000000000000000000000000000000000000 0x20c0000000000000000000000000000000000001 0x20c0000000000000000000000000000000000002 0x20c0000000000000000000000000000000000003 --faucet.amount 1000000000000 --faucet.enabled --faucet.private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --faucet.node-address http://localhost:1337 --http.addr 0.0.0.0 --http.api all --http.corsdomain * --http.port 1337 --port 8555 --ws --ws.addr 0.0.0.0 --ws.api all --ws.port 1337"`,
   )
 })
