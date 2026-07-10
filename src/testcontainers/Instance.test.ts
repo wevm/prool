@@ -1,6 +1,6 @@
 import getPort from 'get-port'
 import { Instance } from 'prool/testcontainers'
-import { afterEach, expect, test } from 'vitest'
+import { afterEach, describe, expect, test } from 'vitest'
 
 const instances: Instance.Instance[] = []
 const slowTestTimeout = 30_000
@@ -124,4 +124,50 @@ test('behavior: faucet funds address', { timeout: 120_000 }, async () => {
     await new Promise((resolve) => setTimeout(resolve, 500))
   }
   expect(balance).toBeGreaterThan(0n)
+})
+
+// Requires a `tempo-zone` image with the `dev` command and GHCR access
+// (the package is private), e.g. `VITE_TEMPO_ZONE_IMAGE=ghcr.io/tempoxyz/tempo-zone:latest`.
+const tempoZoneImage = process.env['VITE_TEMPO_ZONE_IMAGE']
+const zonePort = await getPort()
+
+describe.runIf(tempoZoneImage)('tempoZone', () => {
+  const defineZoneInstance = (
+    parameters: Instance.tempoZone.Parameters = {},
+  ) => {
+    const instance = Instance.tempoZone({
+      image: tempoZoneImage,
+      port: zonePort,
+      startupTimeout: 120_000,
+      ...parameters,
+    })
+    instances.push(instance)
+    return instance
+  }
+
+  test('default', { timeout: 300_000 }, async () => {
+    const instance = defineZoneInstance()
+
+    await instance.start()
+    expect(instance.status).toEqual('started')
+
+    const rpc = async (method: string, params: unknown[]) => {
+      const response = await fetch(`http://${instance.host}:${instance.port}`, {
+        body: JSON.stringify({ id: 0, jsonrpc: '2.0', method, params }),
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+      })
+      return await response.json()
+    }
+
+    // Zone chain IDs are derived: ZONE_CHAIN_ID_BASE + (zone_id % range).
+    const { result: chainId } = await rpc('eth_chainId', [])
+    expect(BigInt(chainId)).toBeGreaterThanOrEqual(421_700_000n)
+
+    const { result: blockNumber } = await rpc('eth_blockNumber', [])
+    expect(blockNumber).toBeDefined()
+
+    await instance.stop()
+    expect(instance.status).toEqual('stopped')
+  })
 })
