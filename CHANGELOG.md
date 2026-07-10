@@ -1,5 +1,11 @@
 # prool
 
+## 0.2.6
+
+### Patch Changes
+
+- [#85](https://github.com/wevm/prool/pull/85) [`83233b0`](https://github.com/wevm/prool/commit/83233b0e8203b62fbb1425c19c711380dbd1aa56) Thanks [@jxom](https://github.com/jxom)! - Added `tempoZone` instance for running a Tempo Zone node (`tempo-zone dev`) as a host process or testcontainer.
+
 ## 0.2.5
 
 ### Patch Changes
