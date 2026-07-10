@@ -45,9 +45,13 @@ export function command(parameters: tempo.Parameters): string[] {
       port: port!,
     },
     port: port! + 10,
-    ws: {
-      port: port! + 20,
-    },
+    ws: [
+      true,
+      {
+        addr: '0.0.0.0',
+        api: 'all',
+      },
+    ],
   }
 
   const args = deepAssign(defaultParameters, rest)
@@ -57,6 +61,13 @@ export function command(parameters: tempo.Parameters): string[] {
   const http = args['http'] as { port: number }
   if (faucet?.enabled && !faucet.nodeAddress)
     faucet.nodeAddress = `http://localhost:${http.port}`
+
+  // WS defaults to the http port: one endpoint (and one proxied server port) serves both protocols.
+  const ws = args['ws'] as [true, { port?: number | undefined }?] | undefined
+  if (Array.isArray(ws) && ws[0] === true) {
+    ws[1] ??= {}
+    ws[1].port ??= http.port
+  }
 
   return [
     'node',

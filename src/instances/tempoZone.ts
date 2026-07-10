@@ -93,13 +93,14 @@ export const tempoZone = Instance.define(
             })`${[binary, ...command({ ...args, port })]}`,
           {
             ...options,
-            // Resolve when the zone RPC server is listening (fires after provisioning).
+            // Resolve when the private zone RPC is listening (last server to start).
             resolver({ process, reject, resolve }) {
               let stderr = ''
               process.stdout.on('data', (data) => {
                 const message = data.toString()
                 if (log) console.log(message)
-                if (message.includes('RPC HTTP server started')) resolve()
+                if (message.includes('Private zone RPC server started'))
+                  resolve()
                 if (message.includes('shutting down')) reject('shutting down')
               })
               process.stderr.on('data', (data) => {

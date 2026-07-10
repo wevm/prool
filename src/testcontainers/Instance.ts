@@ -182,6 +182,7 @@ export const tempoZone = Instance.define(
     let container: StartedTestContainer | undefined
     let l1Container: StartedTestContainer | undefined
     let network: StartedNetwork | undefined
+    let privateRpcPort: number | undefined
 
     async function teardown() {
       if (container) await container.stop().catch(() => {})
@@ -190,6 +191,7 @@ export const tempoZone = Instance.define(
       container = undefined
       l1Container = undefined
       network = undefined
+      privateRpcPort = undefined
     }
 
     return {
@@ -203,12 +205,23 @@ export const tempoZone = Instance.define(
             wsPort: l1Container.getMappedPort(l1WsPort),
           }
         },
+        get privateRpc() {
+          if (!container || !privateRpcPort) return undefined
+          return {
+            host: container.getHost(),
+            port: container.getMappedPort(privateRpcPort),
+          }
+        },
       },
       host: args.host ?? 'localhost',
       name,
       port: args.port ?? 9545,
       async start({ port = args.port }, { emitter, setEndpoint }) {
         const containerPort = port ?? 9545
+        // Mirrors the `zoneCommand` default; serves authenticated `eth_*` + `zone_*`.
+        privateRpcPort =
+          (args['privateRpc'] as { port?: number } | undefined)?.port ??
+          containerPort + 3
         const timeout = ContainerOptions.resolveStartupTimeout(startupTimeout)
 
         const logConsumer =
@@ -272,7 +285,7 @@ export const tempoZone = Instance.define(
           let c = new GenericContainer(image)
             .withPullPolicy(PullPolicy.alwaysPull())
             .withPlatform('linux/x86_64')
-            .withExposedPorts(containerPort)
+            .withExposedPorts(containerPort, privateRpcPort)
             .withExtraHosts([
               { host: 'host.docker.internal', ipAddress: 'host-gateway' },
             ])
@@ -290,7 +303,10 @@ export const tempoZone = Instance.define(
                 port: containerPort,
               }),
             )
-            .withWaitStrategy(Wait.forLogMessage('RPC HTTP server started'))
+            // Fires after the public RPC; last server to start.
+            .withWaitStrategy(
+              Wait.forLogMessage('Private zone RPC server started'),
+            )
             .withLogConsumer(logConsumer(promise.reject))
             .withStartupTimeout(timeout)
           if (network) c = c.withNetwork(network)

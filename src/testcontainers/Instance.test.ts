@@ -167,6 +167,24 @@ describe.runIf(tempoZoneImage)('tempoZone', () => {
     const { result: blockNumber } = await rpc('eth_blockNumber', [])
     expect(blockNumber).toBeDefined()
 
+    // Private RPC (auth-gated `eth_*` + `zone_*`) is exposed; reachability only (no token).
+    const { privateRpc } = instance._internal
+    expect(privateRpc).toBeDefined()
+    const response = await fetch(
+      `http://${privateRpc!.host}:${privateRpc!.port}`,
+      {
+        body: JSON.stringify({
+          id: 0,
+          jsonrpc: '2.0',
+          method: 'zone_getZoneInfo',
+          params: [],
+        }),
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+      },
+    )
+    expect(response.status).toBeDefined()
+
     await instance.stop()
     expect(instance.status).toEqual('stopped')
   })
