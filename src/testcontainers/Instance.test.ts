@@ -126,27 +126,22 @@ test('behavior: faucet funds address', { timeout: 120_000 }, async () => {
   expect(balance).toBeGreaterThan(0n)
 })
 
-// Requires a `tempo-zone` image with the `dev` command and GHCR access
-// (the package is private), e.g. `VITE_TEMPO_ZONE_IMAGE=ghcr.io/tempoxyz/tempo-zone:latest`.
-const tempoZoneImage = process.env['VITE_TEMPO_ZONE_IMAGE']
 const zonePort = await getPort()
 
-describe.runIf(tempoZoneImage)('tempoZone', () => {
+describe('tempoZone', () => {
   const defineZoneInstance = (
     parameters: Instance.tempoZone.Parameters = {},
   ) => {
     const instance = Instance.tempoZone({
-      image: tempoZoneImage,
       port: zonePort,
-      startupTimeout: 120_000,
       ...parameters,
     })
     instances.push(instance)
     return instance
   }
 
-  test('default', { timeout: 300_000 }, async () => {
-    const instance = defineZoneInstance()
+  test('default image with quiet logs', { timeout: 600_000 }, async () => {
+    const instance = defineZoneInstance({ log: 'warn' })
 
     await instance.start()
     expect(instance.status).toEqual('started')
@@ -167,7 +162,13 @@ describe.runIf(tempoZoneImage)('tempoZone', () => {
     const { result: blockNumber } = await rpc('eth_blockNumber', [])
     expect(blockNumber).toBeDefined()
 
-    // Private RPC (auth-gated `eth_*` + `zone_*`) is exposed; reachability only (no token).
+    const { result: pathUsdCode } = await rpc('eth_getCode', [
+      '0x20c0000000000000000000000000000000000000',
+      'latest',
+    ])
+    expect(pathUsdCode).toMatch(/^0x[0-9a-f]{2,}$/)
+
+    // Private RPC rejects unauthenticated requests after becoming reachable.
     const { privateRpc } = instance._internal
     expect(privateRpc).toBeDefined()
     const response = await fetch(
@@ -183,7 +184,7 @@ describe.runIf(tempoZoneImage)('tempoZone', () => {
         method: 'POST',
       },
     )
-    expect(response.status).toBeDefined()
+    expect(response.status).toBe(401)
 
     await instance.stop()
     expect(instance.status).toEqual('stopped')
