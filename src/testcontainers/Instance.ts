@@ -138,13 +138,14 @@ export declare namespace tempo {
     }
 }
 
+const tempoZoneStartupTimeout = 120_000
+
 /**
  * Defines a Tempo Zone instance.
  *
- * Starts a Tempo dev L1 container and a zone container (`tempo-zone dev`) on a
- * shared network, provisioning a fresh zone against the L1. Pass `l1.rpcUrl`
- * to attach to an existing L1 instead (the URL must be reachable from inside
- * the container, e.g. `ws://host.docker.internal:8546`).
+ * Starts a Tempo dev L1 and `tempo-zone dev` on a shared network. An external
+ * `l1.rpcUrl` must be container-reachable, mine canonical headers, and fund
+ * the configured dev key with pathUSD.
  *
  * @example
  * ```ts
@@ -173,6 +174,9 @@ export const tempoZone = Instance.define(
       }
     })()
     const RUST_LOG = log && typeof log !== 'boolean' ? log : ''
+    const L1_RUST_LOG = RUST_LOG
+      ? `${RUST_LOG},reth_node_events=info`
+      : RUST_LOG
 
     // L1 ports inside the container (only reachable over the shared network).
     const l1HttpPort = 8545
@@ -222,13 +226,21 @@ export const tempoZone = Instance.define(
         privateRpcPort =
           (args['privateRpc'] as { port?: number } | undefined)?.port ??
           containerPort + 3
-        const timeout = ContainerOptions.resolveStartupTimeout(startupTimeout)
+        const timeout = startupTimeout ?? tempoZoneStartupTimeout
+        const includeL1Log = (message: string) => {
+          if (log !== 'warn' && log !== 'error') return true
+          return !/INFO.*reth_node_events::node/.test(message)
+        }
 
         const logConsumer =
-          (reject: (error: Error) => void) =>
+          (
+            reject: (error: Error) => void,
+            include: (message: string) => boolean = () => true,
+          ) =>
           (stream: NodeJS.ReadableStream) => {
             stream.on('data', (data) => {
               const message = data.toString()
+              if (!include(message)) return
               emitter.emit('message', message)
               emitter.emit('stdout', message)
               if (log) console.log(message)
@@ -252,12 +264,12 @@ export const tempoZone = Instance.define(
               l1Parameters?.image ?? 'ghcr.io/tempoxyz/tempo:latest',
             )
               .withPullPolicy(PullPolicy.alwaysPull())
-              .withPlatform('linux/x86_64')
+              .withPlatform('linux/amd64')
               .withNetwork(network)
               .withNetworkAliases('l1')
               .withExposedPorts(l1HttpPort, l1WsPort)
               .withName(`${containerName}.l1`)
-              .withEnvironment({ RUST_LOG })
+              .withEnvironment({ RUST_LOG: L1_RUST_LOG })
               .withCommand(
                 command({
                   port: l1HttpPort,
@@ -273,7 +285,7 @@ export const tempoZone = Instance.define(
               .withLogConsumer(
                 logConsumer(() => {
                   // L1 shutdown surfaces via the zone container failing to start.
-                }),
+                }, includeL1Log),
               )
               .withStartupTimeout(timeout)
               .start()
@@ -284,7 +296,8 @@ export const tempoZone = Instance.define(
 
           let c = new GenericContainer(image)
             .withPullPolicy(PullPolicy.alwaysPull())
-            .withPlatform('linux/x86_64')
+            // The public image currently publishes only linux/amd64.
+            .withPlatform('linux/amd64')
             .withExposedPorts(containerPort, privateRpcPort)
             .withExtraHosts([
               { host: 'host.docker.internal', ipAddress: 'host-gateway' },
@@ -303,9 +316,12 @@ export const tempoZone = Instance.define(
                 port: containerPort,
               }),
             )
-            // Fires after the public RPC; last server to start.
             .withWaitStrategy(
-              Wait.forLogMessage('Private zone RPC server started'),
+              Wait.forHttp('/', privateRpcPort, {
+                abortOnContainerExit: true,
+              })
+                .withMethod('POST')
+                .forStatusCode(401),
             )
             .withLogConsumer(logConsumer(promise.reject))
             .withStartupTimeout(timeout)
@@ -337,15 +353,21 @@ export const tempoZone = Instance.define(
 
 export declare namespace tempoZone {
   export type Parameters = Omit<core_tempoZone.Parameters, 'binary' | 'l1'> &
-    ContainerOptions.Parameters & {
+    Omit<ContainerOptions.Parameters, 'startupTimeout'> & {
       /**
        * Name of the container.
        */
       containerName?: string | undefined
       /**
        * Docker image to use for the zone node.
+       * @default "ghcr.io/tempoxyz/tempo-zone:latest"
        */
       image?: string | undefined
+      /**
+       * Startup timeout for each L1 and zone readiness check, in milliseconds.
+       * @default 120_000
+       */
+      startupTimeout?: number | undefined
       /**
        * Host the server will listen on.
        */
@@ -363,6 +385,7 @@ export declare namespace tempoZone {
              * Existing Tempo L1 WebSocket RPC URL, reachable from inside the
              * container (e.g. `ws://host.docker.internal:8546`). Starts a
              * dev L1 container when omitted.
+             * Anvil requires Foundry 1.8 or newer.
              */
             rpcUrl?: string | undefined
           })

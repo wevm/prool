@@ -5,9 +5,15 @@ import { deepAssign, toArgs } from '../internal/utils.js'
 import { execa } from '../processes/execa.js'
 
 // `tempo-zone dev` derives the WS RPC (port + 1) and P2P (port + 2) ports from
-// `http.port`. Each instance occupies the compact block [port, port + 4].
+// `http.port`. Each instance occupies the compact block [port, port + 3].
 export function command(parameters: tempoZone.Parameters): string[] {
-  const { nodeArgs, port, ...rest } = parameters
+  const { nodeArgs, port } = parameters
+  const options = { ...parameters }
+  delete options.binary
+  delete options.host
+  delete options.log
+  delete options.nodeArgs
+  delete options.port
 
   const datadir = path.join(os.tmpdir(), '.prool', `tempo-zone.${port}`)
   const defaultParameters = {
@@ -24,17 +30,14 @@ export function command(parameters: tempoZone.Parameters): string[] {
     },
   }
 
-  const args = deepAssign(defaultParameters, rest)
+  const args = deepAssign(defaultParameters, options)
 
   return [
     'dev',
     ...toArgs(args, {
       arraySeparator: null,
     }),
-    // Forwarded to `tempo-zone node`; keeps concurrent instances from colliding.
     '--',
-    '--authrpc.port',
-    String(port! + 4),
     '--ipcdisable',
     ...((nodeArgs as string[] | undefined) ?? []),
   ]
@@ -44,7 +47,8 @@ export function command(parameters: tempoZone.Parameters): string[] {
  * Defines a Tempo Zone instance.
  *
  * Provisions a fresh zone against a Tempo dev L1 (`tempo-zone dev`) and runs
- * the zone node. Requires a reachable Tempo dev L1 websocket RPC (`l1.rpcUrl`).
+ * the zone node. The L1 must mine canonical Tempo headers, and the dev key
+ * must hold pathUSD.
  *
  * @example
  * ```ts
@@ -68,7 +72,8 @@ export const tempoZone = Instance.define(
         return log_
       }
     })()
-    const RUST_LOG = log && typeof log !== 'boolean' ? log : ''
+    const RUST_LOG =
+      log && typeof log !== 'boolean' ? `${log},reth::cli=info` : ''
 
     const name = 'tempo-zone'
     const process = execa({ name })
@@ -84,16 +89,16 @@ export const tempoZone = Instance.define(
       name,
       port: args.port ?? 9545,
       async start({ port = args.port }, options) {
+        const httpPort = port ?? 9545
         return await process.start(
           ($) =>
             $({
               env: {
                 RUST_LOG,
               },
-            })`${[binary, ...command({ ...args, port })]}`,
+            })`${[binary, ...command({ ...args, port: httpPort })]}`,
           {
             ...options,
-            // Resolve when the private zone RPC is listening (last server to start).
             resolver({ process, reject, resolve }) {
               let stderr = ''
               process.stdout.on('data', (data) => {
@@ -108,7 +113,6 @@ export const tempoZone = Instance.define(
                 if (log) console.error(message)
                 stderr += message
               })
-              // Provisioning failures (e.g. unreachable L1) exit non-zero before the RPC starts.
               process.once('exit', (code) => {
                 if (code) reject(stderr || `exited with code ${code}`)
               })
@@ -166,6 +170,7 @@ export declare namespace tempoZone {
           factoryAddress?: string | undefined
           /**
            * Tempo L1 WebSocket RPC URL.
+           * Anvil requires Foundry 1.8 or newer.
            * @default "ws://localhost:8546"
            */
           rpcUrl?: string | undefined
