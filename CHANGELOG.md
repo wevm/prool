@@ -1,5 +1,11 @@
 # prool
 
+## 0.2.8
+
+### Patch Changes
+
+- [#90](https://github.com/wevm/prool/pull/90) [`799b442`](https://github.com/wevm/prool/commit/799b4428da58aad276e2e2a586aa21c9b31541f9) Thanks [@jxom](https://github.com/jxom)! - Fixed `tempoZone` argument forwarding and readiness, and enabled public-image integration coverage.
+
 ## 0.2.7
 
 ### Patch Changes
