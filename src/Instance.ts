@@ -179,10 +179,24 @@ export function define<
               `Instance "${name}" is not in an idle or stopped state. Status: ${status}`,
             )
 
+          startResolver = Promise.withResolvers<() => void>()
+          const resolver = startResolver
+          let timedOut = false
+          let timer: NodeJS.Timeout | undefined
+          const clearTimer = () => {
+            if (timer) clearTimeout(timer)
+            timer = undefined
+          }
+
           if (typeof timeout === 'number') {
-            const timer = setTimeout(() => {
-              clearTimeout(timer)
-              startResolver.reject(
+            timer = setTimeout(() => {
+              timedOut = true
+              status = 'idle'
+              this.messages.clear()
+              emitter.off('message', onMessage)
+              emitter.off('listening', onListening)
+              emitter.off('exit', onExit)
+              resolver.reject(
                 new Error(`Instance "${name}" failed to start in time.`),
               )
             }, timeout)
@@ -207,29 +221,42 @@ export function define<
             },
           )
             .then(() => {
+              if (timedOut) return
+              clearTimer()
               status = 'started'
 
               stopResolver = Promise.withResolvers<void>()
-              startResolver.resolve(this.stop.bind(this))
+              resolver.resolve(this.stop.bind(this))
             })
             .catch((error) => {
+              if (timedOut) return
+              clearTimer()
               status = 'idle'
               this.messages.clear()
               emitter.off('message', onMessage)
-              startResolver.reject(error)
+              emitter.off('listening', onListening)
+              emitter.off('exit', onExit)
+              resolver.reject(error)
             })
 
-          return startResolver.promise
+          return resolver.promise
         },
         async stop() {
           if (status === 'stopping') return stopResolver.promise
           if (status === 'starting')
             throw new Error(`Instance "${name}" is starting.`)
 
+          stopResolver = Promise.withResolvers<void>()
+          const resolver = stopResolver
+          let timer: NodeJS.Timeout | undefined
+          const clearTimer = () => {
+            if (timer) clearTimeout(timer)
+            timer = undefined
+          }
+
           if (typeof timeout === 'number') {
-            const timer = setTimeout(() => {
-              clearTimeout(timer)
-              stopResolver.reject(
+            timer = setTimeout(() => {
+              resolver.reject(
                 new Error(`Instance "${name}" failed to stop in time.`),
               )
             }, timeout)
@@ -241,6 +268,7 @@ export function define<
             status: this.status,
           })
             .then((...args) => {
+              clearTimer()
               status = 'stopped'
               this.messages.clear()
 
@@ -249,14 +277,15 @@ export function define<
               emitter.off('exit', onExit)
 
               startResolver = Promise.withResolvers<() => void>()
-              stopResolver.resolve(...args)
+              resolver.resolve(...args)
             })
             .catch((error) => {
+              clearTimer()
               status = 'started'
-              stopResolver.reject(error)
+              resolver.reject(error)
             })
 
-          return stopResolver.promise
+          return resolver.promise
         },
         async restart() {
           if (restarting) return restartResolver.promise
