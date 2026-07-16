@@ -57,9 +57,6 @@ jobs:
       - name: Add Tempo to PATH
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Set up Docker
-        uses: docker/setup-docker-action@v4
-
       - name: Run tests
         run: pnpm test --bail=1
         env:
