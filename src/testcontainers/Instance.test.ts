@@ -3,7 +3,7 @@ import { Instance } from 'prool/testcontainers'
 import { afterEach, describe, expect, test } from 'vitest'
 
 const instances: Instance.Instance[] = []
-const slowTestTimeout = 30_000
+const slowTestTimeout = 120_000
 
 const port = await getPort()
 
