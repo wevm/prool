@@ -147,12 +147,12 @@ describe('tempoZone', () => {
 
     await instance.start()
     expect(instance.status).toEqual('started')
-    expect(instance.endpoint('default')).toEqual({
+    expect(instance.endpoints.default).toEqual({
       host: instance.host,
       port: instance.port,
       protocol: 'http',
     })
-    expect(instance.endpoint('l1')).toMatchObject({ protocol: 'ws' })
+    expect(instance.endpoints.l1).toMatchObject({ protocol: 'ws' })
 
     const rpc = async (method: string, params: unknown[]) => {
       const response = await fetch(`http://${instance.host}:${instance.port}`, {
@@ -179,7 +179,7 @@ describe('tempoZone', () => {
     // Private RPC rejects unauthenticated requests after becoming reachable.
     const { privateRpc } = instance._internal
     expect(privateRpc).toBeDefined()
-    expect(instance.endpoint('privateRpc')).toEqual({
+    expect(instance.endpoints.privateRpc).toEqual({
       ...privateRpc,
       protocol: 'http',
     })

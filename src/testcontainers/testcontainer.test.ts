@@ -8,57 +8,70 @@ type StartedContainer = {
   stop(): Promise<unknown>
 }
 
-function container(started: StartedContainer): TestContainer {
-  return {
+function container(
+  started: StartedContainer,
+  expose: (ports: number[]) => void = () => {},
+): TestContainer {
+  const value = {
     async start() {
       return started
     },
-  } as unknown as TestContainer
+    withExposedPorts(...ports: number[]) {
+      expose(ports)
+      return value
+    },
+  }
+  return value as unknown as TestContainer
 }
 
 test('maps named endpoints and creates a fresh container on restart', async () => {
+  const exposures: number[][] = []
   const stops: ReturnType<typeof vi.fn>[] = []
   const createContainer = vi.fn(() => {
     const start = createContainer.mock.calls.length
     const stop = vi.fn(async () => {})
     stops.push(stop)
-    return container({
-      getHost: () => '127.0.0.1',
-      getMappedPort: (port) => start * 10_000 + port,
-      stop,
-    })
+    return container(
+      {
+        getHost: () => '127.0.0.1',
+        getMappedPort: (port) => start * 10_000 + port,
+        stop,
+      },
+      (ports) => exposures.push(ports),
+    )
   })
   const instance = Instance.testcontainer({
     name: 'service',
     container: createContainer,
     endpoints: {
-      default: { containerPort: 8080, protocol: 'http' },
-      metrics: { containerPort: 9090, protocol: 'tcp' },
+      default: { port: 8080, protocol: 'http' },
+      metrics: { port: 9090, protocol: 'tcp' },
     },
   })
 
-  expect(instance.endpoint('default')).toEqual({
+  expect(instance.endpoints.default).toEqual({
     host: 'localhost',
     port: 8080,
     protocol: 'http',
   })
-  expect(instance.endpoint('metrics')).toEqual({
+  expect(instance.endpoints.metrics).toEqual({
     host: 'localhost',
     port: 9090,
     protocol: 'tcp',
   })
-  expectTypeOf(instance.endpoint('default')).toEqualTypeOf<
+  expectTypeOf(instance.endpoints.default).toEqualTypeOf<
     Instance.Endpoint<'http'>
   >()
-  expectTypeOf(instance.endpoint('metrics')).toEqualTypeOf<
+  expectTypeOf(instance.endpoints.metrics).toEqualTypeOf<
     Instance.Endpoint<'tcp'>
   >()
 
   await instance.start()
 
+  expect(exposures).toEqual([[8080, 9090]])
   expect(instance.host).toBe('127.0.0.1')
   expect(instance.port).toBe(18_080)
-  expect(instance.endpoint('metrics')).toEqual({
+  expect(instance.endpoints.metrics).toEqual({
     host: '127.0.0.1',
     port: 19_090,
     protocol: 'tcp',
@@ -67,6 +80,10 @@ test('maps named endpoints and creates a fresh container on restart', async () =
   await instance.restart()
 
   expect(createContainer).toHaveBeenCalledTimes(2)
+  expect(exposures).toEqual([
+    [8080, 9090],
+    [8080, 9090],
+  ])
   expect(stops[0]).toHaveBeenCalledOnce()
   expect(instance.port).toBe(28_080)
 
@@ -88,8 +105,8 @@ test('stops a container when endpoint mapping fails', async () => {
         stop,
       }),
     endpoints: {
-      default: { containerPort: 8080, protocol: 'http' },
-      metrics: { containerPort: 9090, protocol: 'http' },
+      default: { port: 8080, protocol: 'http' },
+      metrics: { port: 9090, protocol: 'http' },
     },
   })
 
@@ -126,8 +143,8 @@ test('cleans a retained container before retrying start', async () => {
     name: 'service',
     container: createContainer,
     endpoints: {
-      default: { containerPort: 8080, protocol: 'http' },
-      metrics: { containerPort: 9090, protocol: 'http' },
+      default: { port: 8080, protocol: 'http' },
+      metrics: { port: 9090, protocol: 'http' },
     },
   })
 
@@ -156,7 +173,7 @@ test('retains the container when stopping fails', async () => {
         stop,
       }),
     endpoints: {
-      default: { containerPort: 8080, protocol: 'http' },
+      default: { port: 8080, protocol: 'http' },
     },
   })
 

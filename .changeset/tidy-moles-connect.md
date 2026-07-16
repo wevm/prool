@@ -10,14 +10,13 @@ import { GenericContainer } from 'testcontainers'
 
 const service = Instance.testcontainer({
   name: 'service',
-  container: () =>
-    new GenericContainer('service:latest').withExposedPorts(8080, 9090),
+  container: () => new GenericContainer('service:latest'),
   endpoints: {
-    default: { protocol: 'http', containerPort: 8080 },
-    metrics: { protocol: 'http', containerPort: 9090 },
+    default: { protocol: 'http', port: 8080 },
+    metrics: { protocol: 'http', port: 9090 },
   },
 })
 
 await service.start()
-service.endpoint('metrics')
+service.endpoints.metrics
 ```

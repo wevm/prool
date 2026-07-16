@@ -382,25 +382,25 @@ test('behavior: named endpoints', async () => {
   const instance = foo()
   const endpoints = instance.endpoints
 
-  expect(instance.endpoint('default')).toEqual({
+  expect(instance.endpoints.default).toEqual({
     host: 'endpoint.localhost',
     port: 3100,
     protocol: 'https',
   })
-  expect(instance.endpoint('metrics')).toEqual({
+  expect(instance.endpoints.metrics).toEqual({
     host: 'localhost',
     port: 9090,
     protocol: 'http',
   })
-  expectTypeOf(instance.endpoint('metrics').protocol).toEqualTypeOf<'http'>()
+  expectTypeOf(instance.endpoints.metrics.protocol).toEqualTypeOf<'http'>()
 
   await instance.start()
 
   expect(instance.host).toEqual('127.0.0.1')
   expect(instance.port).toEqual(4000)
-  expect(instance.endpoint('default').protocol).toBe('https')
-  expect(instance.endpoint('default')).toBe(endpoints.default)
-  expect(instance.endpoint('metrics')).toEqual({
+  expect(instance.endpoints.default.protocol).toBe('https')
+  expect(instance.endpoints.default).toBe(endpoints.default)
+  expect(instance.endpoints.metrics).toEqual({
     host: '127.0.0.1',
     port: 5000,
     protocol: 'http',

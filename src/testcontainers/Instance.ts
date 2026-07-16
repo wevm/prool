@@ -24,11 +24,10 @@ export type { Endpoint, Instance, InstanceOptions } from '../Instance.js'
  * ```ts
  * const instance = Instance.testcontainer({
  *   name: 'service',
- *   container: () => new GenericContainer('service:latest')
- *     .withExposedPorts(8080, 9090),
+ *   container: () => new GenericContainer('service:latest'),
  *   endpoints: {
- *     default: { protocol: 'http', containerPort: 8080 },
- *     metrics: { protocol: 'http', containerPort: 9090 },
+ *     default: { protocol: 'http', port: 8080 },
+ *     metrics: { protocol: 'http', port: 9090 },
  *   },
  * })
  * ```
@@ -39,12 +38,17 @@ export function testcontainer<
   parameters: testcontainer.Parameters<endpointDefinitions>,
   options?: Instance.InstanceOptions,
 ): Instance.Instance<undefined, testcontainer.Endpoints<endpointDefinitions>> {
+  const ports = [
+    ...new Set(
+      Object.values(parameters.endpoints).map((endpoint) => endpoint.port),
+    ),
+  ]
   const initialEndpoints = Object.fromEntries(
     Object.entries(parameters.endpoints).map(([name, endpoint]) => [
       name,
       {
         host: 'localhost',
-        port: endpoint.containerPort,
+        port: endpoint.port,
         protocol: endpoint.protocol,
       },
     ]),
@@ -71,7 +75,10 @@ export function testcontainer<
       port: initialEndpoints.default.port,
       async start(_, { setEndpoint }) {
         await stopContainer()
-        const started = await parameters.container().start()
+        const started = await parameters
+          .container()
+          .withExposedPorts(...ports)
+          .start()
         container = started
 
         try {
@@ -82,7 +89,7 @@ export function testcontainer<
                 name,
                 {
                   host,
-                  port: started.getMappedPort(definition.containerPort),
+                  port: started.getMappedPort(definition.port),
                   protocol: definition.protocol,
                 },
               ] as const,
@@ -111,7 +118,7 @@ export declare namespace testcontainer {
   export type EndpointDefinition<
     protocol extends Instance.Endpoint.Protocol = Instance.Endpoint.Protocol,
   > = {
-    containerPort: number
+    port: number
     protocol: protocol
   }
 

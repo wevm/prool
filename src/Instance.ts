@@ -57,10 +57,6 @@ export type Instance<
   ): Omit<Instance<_internal, endpoints>, 'create'>
   /** Named endpoints. `host` and `port` alias `default`. */
   endpoints: InstanceEndpoints<endpoints>
-  /** Returns endpoint metadata by name. */
-  endpoint<name extends keyof InstanceEndpoints<endpoints>>(
-    name: name,
-  ): InstanceEndpoints<endpoints>[name]
   /**
    * Host the instance is running on.
    */
@@ -226,11 +222,6 @@ export function define<
           return endpointMap.default.port
         },
         endpoints: endpointMap as InstanceEndpoints<endpoints>,
-        endpoint(name) {
-          return endpointMap[
-            name as string
-          ] as InstanceEndpoints<endpoints>[typeof name]
-        },
         get status() {
           if (restarting) return 'restarting'
           return status

@@ -51,12 +51,12 @@ test('preserves named endpoint types', async () => {
 
   const instance = await namedPool.start(1)
 
-  expect(instance.endpoint('metrics')).toEqual({
+  expect(instance.endpoints.metrics).toEqual({
     host: 'localhost',
     port: 9090,
     protocol: 'http',
   })
-  expectTypeOf(instance.endpoint('metrics').protocol).toEqualTypeOf<'http'>()
+  expectTypeOf(instance.endpoints.metrics.protocol).toEqualTypeOf<'http'>()
   await namedPool.destroyAll()
 })
 
