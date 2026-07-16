@@ -6,24 +6,32 @@ import {
 } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import httpProxy from 'http-proxy'
+import type { Endpoint, Instance } from './Instance.js'
 import { extractPath } from './internal/utils.js'
 import * as Pool from './Pool.js'
 
 const { createProxyServer } = httpProxy
+const websocketProtocols: Partial<Record<Endpoint.Protocol, 'ws' | 'wss'>> = {
+  http: 'ws',
+  https: 'wss',
+  ws: 'ws',
+  wss: 'wss',
+}
 
-export type CreateServerParameters = Pool.define.Parameters<number> &
-  (
-    | {
-        /** Host to run the server on. */
-        host?: string | undefined
-        /** Port to run the server on. */
-        port: number
-      }
-    | {
-        host?: undefined
-        port?: undefined
-      }
-  )
+export type CreateServerParameters<instance extends Instance = Instance> =
+  Pool.define.Parameters<number, instance> &
+    (
+      | {
+          /** Host to run the server on. */
+          host?: string | undefined
+          /** Port to run the server on. */
+          port: number
+        }
+      | {
+          host?: undefined
+          port?: undefined
+        }
+    )
 
 export type CreateServerReturnType = Omit<
   Server<typeof IncomingMessage, typeof ServerResponse>,
@@ -57,8 +65,8 @@ export type CreateServerReturnType = Omit<
  * // "http://localhost:8545/healthcheck"
  * ```
  */
-export function create(
-  parameters: CreateServerParameters,
+export function create<instance extends Instance = Instance>(
+  parameters: CreateServerParameters<instance>,
 ): CreateServerReturnType {
   const { host = '::', instance, limit, port } = parameters
 
@@ -91,9 +99,9 @@ export function create(
 
       if (typeof id === 'number') {
         if (path === '/') {
-          const { host, port } = pool.get(id) || (await pool.start(id))
+          const instance = pool.get(id) || (await pool.start(id))
           return proxy.web(request, response, {
-            target: `http://${host}:${port}`,
+            target: httpProxyTarget(instance.endpoints.default),
           })
         }
         if (path === '/destroy') {
@@ -101,8 +109,8 @@ export function create(
           return done(response, 200)
         }
         if (path === '/start') {
-          const { host, port } = await pool.start(id)
-          return done(response, 200, { host, port })
+          const instance = await pool.start(id)
+          return done(response, 200, instanceDescriptor(instance))
         }
         if (path === '/stop') {
           await pool.stop(id)
@@ -110,7 +118,12 @@ export function create(
         }
         if (path === '/restart') {
           await pool.restart(id)
-          return done(response, 200)
+          const instance = pool.get(id)
+          return done(
+            response,
+            200,
+            instance ? instanceDescriptor(instance) : undefined,
+          )
         }
         if (path === '/messages') {
           const messages = pool.get(id)?.messages.get() || []
@@ -154,10 +167,16 @@ export function create(
     const { id, path } = extractPath(url)
 
     if (typeof id === 'number' && path === '/') {
-      const { host, port } = pool.get(id) || (await pool.start(id))
-      proxy.ws(request, socket, head, {
-        target: `ws://${host}:${port}`,
-      })
+      try {
+        const instance = pool.get(id) || (await pool.start(id))
+        proxy.ws(request, socket, head, {
+          target: websocketProxyTarget(instance.endpoints.default),
+        })
+      } catch (error) {
+        socket.destroy(
+          error instanceof Error ? error : new Error(String(error)),
+        )
+      }
       return
     }
 
@@ -181,6 +200,31 @@ export function create(
       ])
     },
   })
+}
+
+function httpProxyTarget(endpoint: Endpoint) {
+  if (endpoint.protocol !== 'http' && endpoint.protocol !== 'https')
+    throw new Error(`Cannot proxy ${endpoint.protocol} endpoint over HTTP.`)
+  return `${endpoint.protocol}://${endpoint.host}:${endpoint.port}`
+}
+
+function websocketProxyTarget(endpoint: Endpoint) {
+  const protocol = websocketProtocols[endpoint.protocol]
+  if (!protocol)
+    throw new Error(
+      `Cannot proxy ${endpoint.protocol} endpoint over WebSocket.`,
+    )
+  return `${protocol}://${endpoint.host}:${endpoint.port}`
+}
+
+function instanceDescriptor(
+  instance: Pick<Instance, 'endpoints' | 'host' | 'port'>,
+) {
+  return {
+    endpoints: instance.endpoints,
+    host: instance.host,
+    port: instance.port,
+  }
 }
 
 function done(res: ServerResponse, statusCode: number, json?: unknown) {

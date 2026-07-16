@@ -1,5 +1,5 @@
 import { Instance } from 'prool'
-import { expect, test } from 'vitest'
+import { expect, expectTypeOf, test, vi } from 'vitest'
 
 test('default', async () => {
   let started = false
@@ -327,6 +327,86 @@ test('behavior: dynamic host/port via setEndpoint', async () => {
   expect(instance.port).toEqual(9999)
 })
 
+test('behavior: named endpoints', async () => {
+  const foo = Instance.define(() => {
+    return {
+      endpoints: {
+        default: {
+          host: 'endpoint.localhost',
+          port: 3100,
+          protocol: 'https' as const,
+        },
+        metrics: {
+          host: 'localhost',
+          port: 9090,
+          protocol: 'http' as const,
+        },
+      },
+      name: 'foo',
+      host: 'localhost',
+      port: 3000,
+      async start(_, { setEndpoint }) {
+        setEndpoint?.({ host: '127.0.0.1', port: 4000 })
+        setEndpoint?.('metrics', {
+          host: '127.0.0.1',
+          port: 5000,
+          protocol: 'http',
+        })
+        expectTypeOf<NonNullable<typeof setEndpoint>>().toBeCallableWith(
+          'metrics',
+          {
+            host: '127.0.0.1',
+            port: 5000,
+            protocol: 'http',
+          },
+        )
+        expectTypeOf<NonNullable<typeof setEndpoint>>().toBeCallableWith(
+          // @ts-expect-error metrics uses HTTP.
+          'metrics',
+          {
+            host: '127.0.0.1',
+            port: 5000,
+            protocol: 'tcp',
+          },
+        )
+        expectTypeOf<NonNullable<typeof setEndpoint>>().toBeCallableWith(
+          // @ts-expect-error missing is not a declared endpoint.
+          'missing',
+          { host: '127.0.0.1', port: 5000, protocol: 'http' },
+        )
+      },
+      async stop() {},
+    }
+  })
+
+  const instance = foo()
+  const endpoints = instance.endpoints
+
+  expect(instance.endpoint('default')).toEqual({
+    host: 'endpoint.localhost',
+    port: 3100,
+    protocol: 'https',
+  })
+  expect(instance.endpoint('metrics')).toEqual({
+    host: 'localhost',
+    port: 9090,
+    protocol: 'http',
+  })
+  expectTypeOf(instance.endpoint('metrics').protocol).toEqualTypeOf<'http'>()
+
+  await instance.start()
+
+  expect(instance.host).toEqual('127.0.0.1')
+  expect(instance.port).toEqual(4000)
+  expect(instance.endpoint('default').protocol).toBe('https')
+  expect(instance.endpoint('default')).toBe(endpoints.default)
+  expect(instance.endpoint('metrics')).toEqual({
+    host: '127.0.0.1',
+    port: 5000,
+    protocol: 'http',
+  })
+})
+
 test('behavior: start() returning void keeps original host/port', async () => {
   const foo = Instance.define(() => {
     return {
@@ -379,4 +459,68 @@ test('options: timeout', async () => {
   await expect(() => instance_2.stop()).rejects.toThrow(
     'Instance "bar" failed to stop in time',
   )
+})
+
+test('options: clears settled start timeout', async () => {
+  vi.useFakeTimers()
+  try {
+    let starts = 0
+    const release = Promise.withResolvers<void>()
+    const foo = Instance.define(() => ({
+      host: 'localhost',
+      name: 'foo',
+      port: 3000,
+      async start() {
+        starts++
+        if (starts === 2) await release.promise
+      },
+      async stop() {},
+    }))
+    const instance = foo({ timeout: 100 })
+
+    await instance.start()
+    await instance.stop()
+    await vi.advanceTimersByTimeAsync(60)
+
+    const started = expect(instance.start()).resolves.toBeTypeOf('function')
+    await vi.advanceTimersByTimeAsync(50)
+    release.resolve()
+
+    await started
+    await instance.stop()
+  } finally {
+    vi.useRealTimers()
+  }
+})
+
+test('options: clears settled stop timeout', async () => {
+  vi.useFakeTimers()
+  try {
+    let stops = 0
+    const release = Promise.withResolvers<void>()
+    const foo = Instance.define(() => ({
+      host: 'localhost',
+      name: 'foo',
+      port: 3000,
+      async start() {},
+      async stop() {
+        stops++
+        if (stops === 2) await release.promise
+      },
+    }))
+    const instance = foo({ timeout: 100 })
+
+    await instance.start()
+    await instance.stop()
+    await instance.start()
+    await vi.advanceTimersByTimeAsync(60)
+
+    const stopped = expect(instance.stop()).resolves.toBeUndefined()
+    await vi.advanceTimersByTimeAsync(50)
+    release.resolve()
+
+    await stopped
+  } finally {
+    vi.useRealTimers()
+  }
 })

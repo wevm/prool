@@ -4,6 +4,7 @@ import {
   PullPolicy,
   type StartedNetwork,
   type StartedTestContainer,
+  type TestContainer,
   Wait,
 } from 'testcontainers'
 import * as Instance from '../Instance.js'
@@ -14,7 +15,123 @@ import {
 } from '../instances/tempoZone.js'
 import * as ContainerOptions from './containerOptions.js'
 
-export type { Instance, InstanceOptions } from '../Instance.js'
+export type { Endpoint, Instance, InstanceOptions } from '../Instance.js'
+
+/**
+ * Defines an instance backed by a Testcontainers container.
+ *
+ * @example
+ * ```ts
+ * const instance = Instance.testcontainer({
+ *   name: 'service',
+ *   container: () => new GenericContainer('service:latest')
+ *     .withExposedPorts(8080, 9090),
+ *   endpoints: {
+ *     default: { protocol: 'http', containerPort: 8080 },
+ *     metrics: { protocol: 'http', containerPort: 9090 },
+ *   },
+ * })
+ * ```
+ */
+export function testcontainer<
+  const endpointDefinitions extends testcontainer.EndpointDefinitions,
+>(
+  parameters: testcontainer.Parameters<endpointDefinitions>,
+  options?: Instance.InstanceOptions,
+): Instance.Instance<undefined, testcontainer.Endpoints<endpointDefinitions>> {
+  const initialEndpoints = Object.fromEntries(
+    Object.entries(parameters.endpoints).map(([name, endpoint]) => [
+      name,
+      {
+        host: 'localhost',
+        port: endpoint.containerPort,
+        protocol: endpoint.protocol,
+      },
+    ]),
+  ) as testcontainer.Endpoints<endpointDefinitions>
+
+  const definition = Instance.define<
+    undefined,
+    undefined,
+    testcontainer.Endpoints<endpointDefinitions>
+  >(() => {
+    let container: StartedTestContainer | undefined
+
+    async function stopContainer() {
+      if (!container) return
+      const started = container
+      await started.stop()
+      if (container === started) container = undefined
+    }
+
+    return {
+      endpoints: initialEndpoints,
+      host: initialEndpoints.default.host,
+      name: parameters.name,
+      port: initialEndpoints.default.port,
+      async start(_, { setEndpoint }) {
+        await stopContainer()
+        const started = await parameters.container().start()
+        container = started
+
+        try {
+          const host = started.getHost()
+          const endpoints = Object.entries(parameters.endpoints).map(
+            ([name, definition]) =>
+              [
+                name,
+                {
+                  host,
+                  port: started.getMappedPort(definition.containerPort),
+                  protocol: definition.protocol,
+                },
+              ] as const,
+          )
+          const applyEndpoint = setEndpoint as
+            | ((name: string, endpoint: Instance.Endpoint) => void)
+            | undefined
+          for (const [name, endpoint] of endpoints)
+            applyEndpoint?.(name, endpoint)
+        } catch (error) {
+          const [result] = await Promise.allSettled([started.stop()])
+          if (result?.status === 'fulfilled') container = undefined
+          throw error
+        }
+      },
+      async stop() {
+        await stopContainer()
+      },
+    }
+  })
+
+  return definition(options)
+}
+
+export declare namespace testcontainer {
+  export type EndpointDefinition<
+    protocol extends Instance.Endpoint.Protocol = Instance.Endpoint.Protocol,
+  > = {
+    containerPort: number
+    protocol: protocol
+  }
+
+  export type EndpointDefinitions = {
+    default: EndpointDefinition
+    [name: string]: EndpointDefinition
+  }
+
+  export type Endpoints<definitions extends EndpointDefinitions> = {
+    [name in keyof definitions]: Instance.Endpoint<
+      definitions[name]['protocol']
+    >
+  }
+
+  export type Parameters<definitions extends EndpointDefinitions> = {
+    container: () => TestContainer
+    endpoints: definitions
+    name: string
+  }
+}
 
 /**
  * Defines a Tempo instance.
@@ -217,15 +334,31 @@ export const tempoZone = Instance.define(
           }
         },
       },
+      endpoints: {
+        default: {
+          host: args.host ?? 'localhost',
+          port: args.port ?? 9545,
+          protocol: 'http' as const,
+        },
+        l1: undefined as Instance.Endpoint<'ws'> | undefined,
+        privateRpc: {
+          host: args.host ?? 'localhost',
+          port:
+            (args['privateRpc'] as { port?: number } | undefined)?.port ??
+            (args.port ?? 9545) + 3,
+          protocol: 'http' as const,
+        },
+      },
       host: args.host ?? 'localhost',
       name,
       port: args.port ?? 9545,
       async start({ port = args.port }, { emitter, setEndpoint }) {
         const containerPort = port ?? 9545
         // Mirrors the `zoneCommand` default; serves authenticated `eth_*` + `zone_*`.
-        privateRpcPort =
+        const effectivePrivateRpcPort =
           (args['privateRpc'] as { port?: number } | undefined)?.port ??
           containerPort + 3
+        privateRpcPort = effectivePrivateRpcPort
         const timeout = startupTimeout ?? tempoZoneStartupTimeout
         const includeL1Log = (message: string) => {
           if (log !== 'warn' && log !== 'error') return true
@@ -298,7 +431,7 @@ export const tempoZone = Instance.define(
             .withPullPolicy(PullPolicy.alwaysPull())
             // The public image currently publishes only linux/amd64.
             .withPlatform('linux/amd64')
-            .withExposedPorts(containerPort, privateRpcPort)
+            .withExposedPorts(containerPort, effectivePrivateRpcPort)
             .withExtraHosts([
               { host: 'host.docker.internal', ipAddress: 'host-gateway' },
             ])
@@ -317,7 +450,7 @@ export const tempoZone = Instance.define(
               }),
             )
             .withWaitStrategy(
-              Wait.forHttp('/', privateRpcPort, {
+              Wait.forHttp('/', effectivePrivateRpcPort, {
                 abortOnContainerExit: true,
               })
                 .withMethod('POST')
@@ -330,10 +463,27 @@ export const tempoZone = Instance.define(
           c.start()
             .then((started) => {
               container = started
-              setEndpoint?.({
-                host: started.getHost(),
+              const host = started.getHost()
+              const defaultEndpoint = {
+                host,
                 port: started.getMappedPort(containerPort),
-              })
+              }
+              const privateRpcEndpoint = {
+                host,
+                port: started.getMappedPort(effectivePrivateRpcPort),
+                protocol: 'http' as const,
+              }
+              const l1Endpoint = l1Container
+                ? {
+                    host: l1Container.getHost(),
+                    port: l1Container.getMappedPort(l1WsPort),
+                    protocol: 'ws' as const,
+                  }
+                : undefined
+
+              setEndpoint?.(defaultEndpoint)
+              setEndpoint?.('privateRpc', privateRpcEndpoint)
+              if (l1Endpoint) setEndpoint?.('l1', l1Endpoint)
               promise.resolve()
             })
             .catch(promise.reject)

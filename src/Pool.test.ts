@@ -1,10 +1,17 @@
 import getPort from 'get-port'
 import { Instance, Pool, Server } from 'prool'
-import { afterEach, beforeAll, describe, expect, test } from 'vitest'
+import {
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  expectTypeOf,
+  test,
+} from 'vitest'
 
 import { altoOptions } from '../test/utils.js'
 
-let pool: ReturnType<typeof Pool.define>
+let pool: ReturnType<typeof Pool.define> | undefined
 const port = await getPort()
 
 beforeAll(() =>
@@ -19,10 +26,38 @@ beforeAll(() =>
 
 afterEach(async () => {
   try {
-    await pool.stopAll()
+    await pool?.stopAll()
   } catch (err) {
     console.error(err)
   }
+})
+
+test('preserves named endpoint types', async () => {
+  const foo = Instance.define(() => ({
+    endpoints: {
+      metrics: {
+        host: 'localhost',
+        port: 9090,
+        protocol: 'http' as const,
+      },
+    },
+    host: 'localhost',
+    name: 'foo',
+    port: 3000,
+    async start() {},
+    async stop() {},
+  }))
+  const namedPool = Pool.define({ instance: foo() })
+
+  const instance = await namedPool.start(1)
+
+  expect(instance.endpoint('metrics')).toEqual({
+    host: 'localhost',
+    port: 9090,
+    protocol: 'http',
+  })
+  expectTypeOf(instance.endpoint('metrics').protocol).toEqualTypeOf<'http'>()
+  await namedPool.destroyAll()
 })
 
 describe.each([
@@ -274,7 +309,7 @@ describe.each([
     await pool.start(1)
     await pool.start(2)
 
-    await expect(() => pool.start(3)).rejects.toThrowError(
+    await expect(() => pool!.start(3)).rejects.toThrowError(
       'Instance limit of 2 reached.',
     )
   })

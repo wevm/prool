@@ -127,6 +127,8 @@ test('behavior: faucet funds address', { timeout: 120_000 }, async () => {
 })
 
 const zonePort = await getPort()
+const zoneImage =
+  'ghcr.io/tempoxyz/tempo-zone@sha256:dfc5e922c0ea9eebfa3345aa2ddb3df6f9070d20526348366f1746472a1959e2'
 
 describe('tempoZone', () => {
   const defineZoneInstance = (
@@ -140,11 +142,17 @@ describe('tempoZone', () => {
     return instance
   }
 
-  test('default image with quiet logs', { timeout: 600_000 }, async () => {
-    const instance = defineZoneInstance({ log: 'warn' })
+  test('named endpoints', { timeout: 600_000 }, async () => {
+    const instance = defineZoneInstance({ image: zoneImage, log: 'warn' })
 
     await instance.start()
     expect(instance.status).toEqual('started')
+    expect(instance.endpoint('default')).toEqual({
+      host: instance.host,
+      port: instance.port,
+      protocol: 'http',
+    })
+    expect(instance.endpoint('l1')).toMatchObject({ protocol: 'ws' })
 
     const rpc = async (method: string, params: unknown[]) => {
       const response = await fetch(`http://${instance.host}:${instance.port}`, {
@@ -171,6 +179,10 @@ describe('tempoZone', () => {
     // Private RPC rejects unauthenticated requests after becoming reachable.
     const { privateRpc } = instance._internal
     expect(privateRpc).toBeDefined()
+    expect(instance.endpoint('privateRpc')).toEqual({
+      ...privateRpc,
+      protocol: 'http',
+    })
     const response = await fetch(
       `http://${privateRpc!.host}:${privateRpc!.port}`,
       {
