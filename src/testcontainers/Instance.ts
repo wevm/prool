@@ -18,6 +18,167 @@ import * as ContainerOptions from './containerOptions.js'
 export type { Endpoint, Instance, InstanceOptions } from '../Instance.js'
 
 /**
+ * Defines an instance backed by a Docker Compose environment.
+ *
+ * @example
+ * ```ts
+ * const instance = Instance.compose({
+ *   name: 'services',
+ *   environment: () => new DockerComposeEnvironment('.', 'compose.yml'),
+ *   services: ['api'],
+ *   endpoints: {
+ *     default: { container: 'api-1', protocol: 'http', port: 8080 },
+ *   },
+ * })
+ * const pool = Pool.define({ instance })
+ * await pool.start(Number(process.env.VITEST_POOL_ID ?? 1))
+ * ```
+ */
+export function compose<
+  const endpointDefinitions extends compose.EndpointDefinitions,
+>(
+  parameters: compose.Parameters<endpointDefinitions>,
+  options?: Instance.InstanceOptions,
+): Instance.Instance<undefined, compose.Endpoints<endpointDefinitions>> {
+  const initialEndpoints = Object.fromEntries(
+    Object.entries(parameters.endpoints).flatMap(([name, endpoint]) =>
+      endpoint
+        ? [
+            [
+              name,
+              {
+                host: 'localhost',
+                port: endpoint.port,
+                protocol: endpoint.protocol,
+              },
+            ],
+          ]
+        : [],
+    ),
+  ) as compose.Endpoints<endpointDefinitions>
+
+  const definition = Instance.define<
+    undefined,
+    undefined,
+    compose.Endpoints<endpointDefinitions>
+  >(() => {
+    let environment: compose.StartedEnvironment | undefined
+
+    async function stopEnvironment() {
+      if (!environment) return
+      const started = environment
+      await started.down(parameters.down)
+      if (environment === started) environment = undefined
+    }
+
+    return {
+      endpoints: initialEndpoints,
+      host: initialEndpoints.default.host,
+      name: parameters.name,
+      port: initialEndpoints.default.port,
+      async start(_, { setEndpoint }) {
+        await stopEnvironment()
+        const started = await parameters
+          .environment()
+          .up(parameters.services ? [...parameters.services] : undefined)
+        environment = started
+
+        try {
+          const endpoints = Object.entries(parameters.endpoints).flatMap(
+            ([name, definition]) => {
+              if (!definition) return []
+              const container = started.getContainer(definition.container)
+              return [
+                [
+                  name,
+                  {
+                    host: container.getHost(),
+                    port: container.getMappedPort(definition.port),
+                    protocol: definition.protocol,
+                  },
+                ] as const,
+              ]
+            },
+          )
+          const applyEndpoint = setEndpoint as
+            | ((name: string, endpoint: Instance.Endpoint) => void)
+            | undefined
+          for (const [name, endpoint] of endpoints)
+            applyEndpoint?.(name, endpoint)
+        } catch (error) {
+          const [result] = await Promise.allSettled([
+            started.down(parameters.down),
+          ])
+          if (result?.status === 'fulfilled') environment = undefined
+          throw error
+        }
+      },
+      async stop() {
+        await stopEnvironment()
+      },
+    }
+  })
+
+  return definition(options)
+}
+
+export declare namespace compose {
+  export type EndpointDefinition<
+    protocol extends Instance.Endpoint.Protocol = Instance.Endpoint.Protocol,
+  > = {
+    container: string
+    port: number
+    protocol: protocol
+  }
+
+  export type EndpointDefinitions = {
+    default: EndpointDefinition
+    [name: string]: EndpointDefinition | undefined
+  }
+
+  export type Endpoints<definitions extends EndpointDefinitions> = {
+    default: Instance.Endpoint<definitions['default']['protocol']>
+  } & {
+    [name in Exclude<keyof definitions, 'default'>]: Endpoint<definitions[name]>
+  }
+
+  export type Endpoint<definition extends EndpointDefinition | undefined> =
+    definition extends EndpointDefinition
+      ? Instance.Endpoint<definition['protocol']>
+      : undefined
+
+  export type DownOptions = {
+    removeVolumes?: boolean | undefined
+    timeout?: number | undefined
+  }
+
+  export type Environment = {
+    up(services?: string[] | undefined): Promise<StartedEnvironment>
+  }
+
+  export type Parameters<definitions extends EndpointDefinitions> = {
+    /** Options passed to `docker compose down`. */
+    down?: DownOptions | undefined
+    /** Container ports exposed as named instance endpoints. */
+    endpoints: definitions
+    /** Creates a fresh Compose environment for each pooled instance. */
+    environment: () => Environment
+    /** Instance name reported by Prool. */
+    name: string
+    /** Compose services to start. Dependencies start automatically. */
+    services?: readonly string[] | undefined
+  }
+
+  export type StartedEnvironment = {
+    down(options?: DownOptions | undefined): Promise<unknown>
+    getContainer(name: string): {
+      getHost(): string
+      getMappedPort(port: number): number
+    }
+  }
+}
+
+/**
  * Defines an instance backed by a Testcontainers container.
  *
  * @example
