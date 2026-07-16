@@ -1,5 +1,5 @@
 ---
-'prool': minor
+'prool': patch
 ---
 
 Added typed named endpoints, Server discovery, and generic Testcontainers-backed instances.
