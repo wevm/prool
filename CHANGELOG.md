@@ -1,5 +1,11 @@
 # prool
 
+## 0.2.10
+
+### Patch Changes
+
+- [#95](https://github.com/wevm/prool/pull/95) [`f009e9e`](https://github.com/wevm/prool/commit/f009e9e5d0664cf6672da78598971c5feaffa1f0) Thanks [@jxom](https://github.com/jxom)! - Added pooled Docker Compose instances with named service endpoints.
+
 ## 0.2.9
 
 ### Patch Changes
