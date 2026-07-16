@@ -16,6 +16,90 @@ beforeAll(async () => {
   }).start()
 })
 
+test('request: lifecycle endpoint discovery', async () => {
+  const foo = Instance.define(() => {
+    let starts = 0
+    return {
+      endpoints: {
+        metrics: {
+          host: 'localhost',
+          port: 9090,
+          protocol: 'http' as const,
+        },
+      },
+      host: 'localhost',
+      name: 'foo',
+      port: 3000,
+      async start(_, { setEndpoint }) {
+        starts++
+        setEndpoint?.('metrics', {
+          host: '127.0.0.1',
+          port: 9090 + starts,
+          protocol: 'http',
+        })
+      },
+      async stop() {},
+    }
+  })
+  const server = Server.create({ instance: foo() })
+  const stop = await server.start()
+  const { port } = server.address()!
+
+  const start = await fetch(`http://localhost:${port}/1/start`).then(
+    (response) => response.json(),
+  )
+  expect(start).toMatchObject({
+    endpoints: {
+      default: { protocol: 'http' },
+      metrics: {
+        host: '127.0.0.1',
+        port: 9091,
+        protocol: 'http',
+      },
+    },
+  })
+  expect(start).toMatchObject({
+    host: start.endpoints.default.host,
+    port: start.endpoints.default.port,
+  })
+
+  const restart = await fetch(`http://localhost:${port}/1/restart`).then(
+    (response) => response.json(),
+  )
+  expect(restart.endpoints.metrics.port).toBe(9092)
+
+  await stop()
+})
+
+test('request: rejects a TCP default proxy', async () => {
+  const database = Instance.define(() => ({
+    endpoints: {
+      default: {
+        host: 'localhost',
+        port: 5432,
+        protocol: 'tcp' as const,
+      },
+    },
+    host: 'localhost',
+    name: 'database',
+    port: 5432,
+    async start() {},
+    async stop() {},
+  }))
+  const server = Server.create({ instance: database() })
+  const stop = await server.start()
+  const { port } = server.address()!
+
+  const response = await fetch(`http://localhost:${port}/1`)
+
+  expect(response.status).toBe(400)
+  expect(await response.json()).toEqual({
+    message: 'Cannot proxy tcp endpoint over HTTP.',
+  })
+
+  await stop()
+})
+
 describe.each([
   { instance: Instance.anvil({ port: await getPort() }) },
   { instance: Instance.tempo({ port: await getPort() }) },
@@ -96,6 +180,11 @@ describe.each([
     const json = (await response.json()) as any
     expect(json.host).toBeDefined()
     expect(json.port).toBeDefined()
+    expect(json.endpoints.default).toEqual({
+      host: json.host,
+      port: json.port,
+      protocol: 'http',
+    })
 
     const response_err = await fetch(`http://localhost:${port}/1/start`)
     expect(response_err.status).toBe(400)

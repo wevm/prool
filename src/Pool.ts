@@ -2,14 +2,17 @@ import getPort from 'get-port'
 
 import type { Instance } from './Instance.js'
 
-type Instance_ = Omit<Instance, 'create'>
+type StartedInstance<instance extends Instance> = ReturnType<instance['create']>
 
-export type Pool<key extends number | string = number | string> = Pick<
-  Map<key, Instance_>,
+export type Pool<
+  key extends number | string = number | string,
+  instance extends Instance = Instance,
+> = Pick<
+  Map<key, StartedInstance<instance>>,
   'entries' | 'keys' | 'forEach' | 'get' | 'has' | 'size' | 'values'
 > & {
   _internal: {
-    instance: Instance_ | ((key: key) => Instance_)
+    instance: instance | ((key: key) => instance)
   }
   destroy(key: key): Promise<void>
   destroyAll(): Promise<void>
@@ -17,7 +20,7 @@ export type Pool<key extends number | string = number | string> = Pick<
   start(
     key: key,
     options?: { port?: number | undefined } | undefined,
-  ): Promise<Instance_>
+  ): Promise<StartedInstance<instance>>
   stop(key: key): Promise<void>
   stopAll(): Promise<void>
 }
@@ -36,12 +39,15 @@ export type Pool<key extends number | string = number | string> = Pick<
  * const instance_3 = await pool.start(3)
  * ```
  */
-export function define<key extends number | string = number>(
-  parameters: define.Parameters<key>,
-): define.ReturnType<key> {
+export function define<
+  key extends number | string = number,
+  instance extends Instance = Instance,
+>(
+  parameters: define.Parameters<key, instance>,
+): define.ReturnType<key, instance> {
   const { limit } = parameters
 
-  type Instance_ = Omit<Instance, 'create'>
+  type Instance_ = StartedInstance<instance>
   const instances = new Map<key, Instance_>()
 
   // Define promise instances for mutators to avoid race conditions, and return
@@ -130,7 +136,8 @@ export function define<key extends number | string = number>(
           : parameters.instance
       const { port = await getPort() } = options
 
-      const instance_ = instances.get(key) || instance.create({ port })
+      const instance_ =
+        instances.get(key) || (instance.create({ port }) as Instance_)
       instance_
         .start()
         .then(() => {
@@ -190,13 +197,18 @@ export function define<key extends number | string = number>(
 }
 
 export declare namespace define {
-  export type Parameters<key extends number | string = number | string> = {
+  export type Parameters<
+    key extends number | string = number | string,
+    instance extends Instance = Instance,
+  > = {
     /** Instance for the pool. */
-    instance: Instance | ((key: key) => Instance)
+    instance: instance | ((key: key) => instance)
     /** The maximum number of instances that can be started. */
     limit?: number | undefined
   }
 
-  export type ReturnType<key extends number | string = number | string> =
-    Pool<key>
+  export type ReturnType<
+    key extends number | string = number | string,
+    instance extends Instance = Instance,
+  > = Pool<key, instance>
 }

@@ -13,8 +13,32 @@ type EventTypes = {
   stdout: [message: string]
 }
 
+export type Endpoint<protocol extends Endpoint.Protocol = Endpoint.Protocol> = {
+  /** Host the endpoint is available on. */
+  host: string
+  /** Port the endpoint is available on. */
+  port: number
+  /** Transport protocol used by the endpoint. */
+  protocol: protocol
+}
+
+export declare namespace Endpoint {
+  export type Protocol = 'http' | 'https' | 'tcp' | 'ws' | 'wss'
+}
+
+type EndpointMap = Record<string, Endpoint | undefined>
+
+type InstanceEndpoints<endpoints extends EndpointMap> = Readonly<
+  {
+    default: endpoints extends { default: infer endpoint extends Endpoint }
+      ? endpoint
+      : Endpoint
+  } & Omit<endpoints, 'default'>
+>
+
 export type Instance<
   _internal extends object | undefined = object | undefined,
+  endpoints extends EndpointMap = EndpointMap,
 > = Pick<
   EventEmitter<EventTypes>,
   | 'addListener'
@@ -30,7 +54,9 @@ export type Instance<
    */
   create(
     parameters?: { port?: number | undefined } | undefined,
-  ): Omit<Instance<_internal>, 'create'>
+  ): Omit<Instance<_internal, endpoints>, 'create'>
+  /** Named endpoints. `host` and `port` alias `default`. */
+  endpoints: InstanceEndpoints<endpoints>
   /**
    * Host the instance is running on.
    */
@@ -113,11 +139,14 @@ export type InstanceOptions = {
 export function define<
   _internal extends object | undefined,
   parameters = undefined,
+  endpoints extends EndpointMap = {},
 >(
-  fn: define.DefineFn<parameters, _internal>,
-): define.ReturnType<_internal, parameters> {
+  fn: define.DefineFn<parameters, _internal, endpoints>,
+): define.ReturnType<_internal, parameters, endpoints> {
   return (...[parametersOrOptions, options_]) => {
-    function create(createParameters: Parameters<Instance['create']>[0] = {}) {
+    function create(
+      createParameters: { port?: number | undefined } = {},
+    ): Omit<Instance<_internal, endpoints>, 'create'> {
       const parameters = parametersOrOptions as parameters
       const options = options_ || parametersOrOptions || {}
 
@@ -126,8 +155,32 @@ export function define<
         ...instance,
         ...createParameters,
       }
-      let host = instance.host
-      let port = createParameters?.port ?? instance.port
+      const initialEndpoints = instance.endpoints as EndpointMap | undefined
+      const endpointMap: EndpointMap & { default: Endpoint } = {
+        ...initialEndpoints,
+        default: {
+          host: initialEndpoints?.['default']?.host ?? instance.host,
+          port:
+            createParameters.port ??
+            initialEndpoints?.['default']?.port ??
+            instance.port,
+          protocol: initialEndpoints?.['default']?.protocol ?? 'http',
+        },
+      }
+      const setEndpoint = ((
+        ...args:
+          | [endpoint: Partial<Endpoint>]
+          | [name: string, endpoint: Endpoint]
+      ) => {
+        if (typeof args[0] === 'string') {
+          endpointMap[args[0]] = args[1]
+          return
+        }
+        endpointMap.default = {
+          ...endpointMap.default,
+          ...args[0],
+        }
+      }) as define.SetEndpoint<endpoints>
       const { messageBuffer = 20, timeout } = options
 
       let restartResolver = Promise.withResolvers<void>()
@@ -162,12 +215,13 @@ export function define<
           },
         },
         get host() {
-          return host
+          return endpointMap.default.host
         },
         name,
         get port() {
-          return port
+          return endpointMap.default.port
         },
+        endpoints: endpointMap as InstanceEndpoints<endpoints>,
         get status() {
           if (restarting) return 'restarting'
           return status
@@ -179,10 +233,13 @@ export function define<
               `Instance "${name}" is not in an idle or stopped state. Status: ${status}`,
             )
 
+          const resolver = Promise.withResolvers<() => void>()
+          startResolver = resolver
+
+          let timer: NodeJS.Timeout | undefined
           if (typeof timeout === 'number') {
-            const timer = setTimeout(() => {
-              clearTimeout(timer)
-              startResolver.reject(
+            timer = setTimeout(() => {
+              resolver.reject(
                 new Error(`Instance "${name}" failed to start in time.`),
               )
             }, timeout)
@@ -195,41 +252,43 @@ export function define<
           status = 'starting'
           start(
             {
-              port,
+              port: endpointMap.default.port,
             },
             {
               emitter,
-              setEndpoint(endpoint) {
-                if (endpoint.host) host = endpoint.host
-                if (endpoint.port) port = endpoint.port
-              },
+              setEndpoint,
               status: this.status,
             },
           )
             .then(() => {
+              if (timer) clearTimeout(timer)
               status = 'started'
 
               stopResolver = Promise.withResolvers<void>()
-              startResolver.resolve(this.stop.bind(this))
+              resolver.resolve(this.stop.bind(this))
             })
             .catch((error) => {
+              if (timer) clearTimeout(timer)
               status = 'idle'
               this.messages.clear()
               emitter.off('message', onMessage)
-              startResolver.reject(error)
+              resolver.reject(error)
             })
 
-          return startResolver.promise
+          return resolver.promise
         },
         async stop() {
           if (status === 'stopping') return stopResolver.promise
           if (status === 'starting')
             throw new Error(`Instance "${name}" is starting.`)
 
+          const resolver = Promise.withResolvers<void>()
+          stopResolver = resolver
+
+          let timer: NodeJS.Timeout | undefined
           if (typeof timeout === 'number') {
-            const timer = setTimeout(() => {
-              clearTimeout(timer)
-              stopResolver.reject(
+            timer = setTimeout(() => {
+              resolver.reject(
                 new Error(`Instance "${name}" failed to stop in time.`),
               )
             }, timeout)
@@ -241,6 +300,7 @@ export function define<
             status: this.status,
           })
             .then((...args) => {
+              if (timer) clearTimeout(timer)
               status = 'stopped'
               this.messages.clear()
 
@@ -249,14 +309,15 @@ export function define<
               emitter.off('exit', onExit)
 
               startResolver = Promise.withResolvers<() => void>()
-              stopResolver.resolve(...args)
+              resolver.resolve(...args)
             })
             .catch((error) => {
+              if (timer) clearTimeout(timer)
               status = 'started'
-              stopResolver.reject(error)
+              resolver.reject(error)
             })
 
-          return stopResolver.promise
+          return resolver.promise
         },
         async restart() {
           if (restarting) return restartResolver.promise
@@ -292,11 +353,13 @@ export declare namespace define {
   export type DefineFn<
     parameters,
     _internal extends object | undefined = object | undefined,
+    endpoints extends EndpointMap = {},
   > = (parameters: parameters) => Pick<Instance, 'host' | 'name' | 'port'> & {
     _internal?: _internal | undefined
+    endpoints?: endpoints | undefined
     start(
       options: InstanceStartOptions,
-      options_internal: InstanceStartOptions_internal,
+      options_internal: InstanceStartOptions_internal<endpoints>,
     ): Promise<void>
     stop(options_internal: InstanceStopOptions_internal): Promise<void>
   }
@@ -304,15 +367,26 @@ export declare namespace define {
   export type ReturnType<
     _internal extends object | undefined = object | undefined,
     parameters = undefined,
+    endpoints extends EndpointMap = {},
   > = (
     ...parameters: parameters extends undefined
       ? [options?: InstanceOptions]
       : [parameters: parameters, options?: InstanceOptions]
-  ) => Instance<_internal>
+  ) => Instance<_internal, endpoints>
 
-  export type InstanceStartOptions_internal = {
+  export type SetEndpoint<endpoints extends EndpointMap = EndpointMap> = {
+    (endpoint: Partial<InstanceEndpoints<endpoints>['default']>): void
+    <name extends keyof endpoints & string>(
+      name: name,
+      endpoint: Exclude<endpoints[name], undefined>,
+    ): void
+  }
+
+  export type InstanceStartOptions_internal<
+    endpoints extends EndpointMap = EndpointMap,
+  > = {
     emitter: EventEmitter<EventTypes>
-    setEndpoint?(endpoint: { host?: string; port?: number }): void
+    setEndpoint?: SetEndpoint<endpoints>
     status: Instance['status']
   }
 
