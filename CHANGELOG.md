@@ -1,5 +1,28 @@
 # prool
 
+## 0.2.9
+
+### Patch Changes
+
+- [#92](https://github.com/wevm/prool/pull/92) [`57d3d08`](https://github.com/wevm/prool/commit/57d3d08f0c3a455bf9f4690e214d6ee475d3bbed) Thanks [@jxom](https://github.com/jxom)! - Added typed named endpoints, Server discovery, and generic Testcontainers-backed instances.
+
+  ```ts
+  import { Instance } from "prool/testcontainers";
+  import { GenericContainer } from "testcontainers";
+
+  const service = Instance.testcontainer({
+    name: "service",
+    container: () => new GenericContainer("service:latest"),
+    endpoints: {
+      default: { protocol: "http", port: 8080 },
+      metrics: { protocol: "http", port: 9090 },
+    },
+  });
+
+  await service.start();
+  service.endpoints.metrics;
+  ```
+
 ## 0.2.8
 
 ### Patch Changes
