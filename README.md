@@ -263,7 +263,6 @@ import { Instance, Pool } from 'prool'
 
 const pool = Pool.create({
   instance: Instance.anvil(),
-  limit: 2,
 })
 const lease = await pool.acquire()
 try {
@@ -279,7 +278,7 @@ await pool.close()
 | Name       | Description                              | Type         |
 | ---------- | ---------------------------------------- | ------------ |
 | `instance` | Instance to lease.                       | `Instance`   |
-| `limit`    | Maximum number of concurrent leases.     | `number`     |
+| `limit`    | Maximum concurrent leases. Defaults to half the available logical CPUs. | `number`     |
 | `reset`    | Resets an instance before its next lease. | `(instance: Instance) => Promise<void> \| void` |
 | returns    | Exclusive lease pool.                    | `LeasePool`  |
 

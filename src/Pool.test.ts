@@ -1,3 +1,4 @@
+import * as os from 'node:os'
 import getPort from 'get-port'
 import { Instance, Pool, Server } from 'prool'
 import {
@@ -119,14 +120,16 @@ describe('create', () => {
     })()
   }
 
-  test('leases and reuses instances', async () => {
+  test('defaults to half the available logical CPUs', async () => {
     const starts: number[] = []
     const leasePool = Pool.create({
       instance: instance({ start: (id) => starts.push(id) }),
-      limit: 1,
     })
+    const limit = Math.max(1, Math.floor(os.availableParallelism() / 2))
 
-    const first = await leasePool.acquire()
+    const leases = await Promise.all(
+      Array.from({ length: limit }, () => leasePool.acquire()),
+    )
     const waiting = leasePool.acquire()
     let acquired = false
     waiting.then(() => {
@@ -136,16 +139,19 @@ describe('create', () => {
 
     expect(acquired).toBe(false)
     expectTypeOf(
-      first.instance.endpoints.metrics.protocol,
+      leases[0]!.instance.endpoints.metrics.protocol,
     ).toEqualTypeOf<'http'>()
 
-    await first.release()
-    const second = await waiting
+    await leases[0]!.release()
+    const next = await waiting
 
-    expect(second.instance).toBe(first.instance)
-    expect(starts).toHaveLength(1)
+    expect(next.instance).toBe(leases[0]!.instance)
+    expect(starts).toHaveLength(limit)
 
-    await second.release()
+    await Promise.all([
+      next.release(),
+      ...leases.slice(1).map((lease) => lease.release()),
+    ])
     await leasePool.close()
   })
 

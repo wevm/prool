@@ -1,3 +1,4 @@
+import * as os from 'node:os'
 import getPort from 'get-port'
 
 import type { Instance } from './Instance.js'
@@ -41,7 +42,7 @@ export type Pool<
  *
  * @example
  * ```ts
- * const pool = Pool.create({ instance: anvil(), limit: 2 })
+ * const pool = Pool.create({ instance: anvil() })
  * const lease = await pool.acquire()
  * try {
  *   // Use lease.instance.
@@ -54,18 +55,17 @@ export type Pool<
 export function create<instance extends Instance = Instance>(
   parameters: create.Parameters<instance>,
 ): create.ReturnType<instance> {
-  if (!Number.isSafeInteger(parameters.limit) || parameters.limit < 1)
+  const limit =
+    parameters.limit ?? Math.max(1, Math.floor(os.availableParallelism() / 2))
+  if (!Number.isSafeInteger(limit) || limit < 1)
     throw new Error('Pool limit must be a positive integer.')
 
-  const available = Array.from(
-    { length: parameters.limit },
-    (_, index) => index + 1,
-  )
+  const available = Array.from({ length: limit }, (_, index) => index + 1)
   const leases = new Set<number>()
   const operations = new Set<Promise<unknown>>()
   const pool = define<number, instance>({
     instance: parameters.instance,
-    limit: parameters.limit,
+    limit,
   })
   const waiters: PromiseWithResolvers<Lease<instance>>[] = []
   let closePromise: Promise<void> | undefined
@@ -170,8 +170,8 @@ export declare namespace create {
   export type Parameters<instance extends Instance = Instance> = {
     /** Instance to lease. */
     instance: instance
-    /** Maximum number of concurrent leases. */
-    limit: number
+    /** Maximum concurrent leases. Defaults to half the available logical CPUs. */
+    limit?: number | undefined
     /** Resets an instance before it is leased again. */
     reset?:
       | ((instance: StartedInstance<instance>) => Promise<void> | void)
