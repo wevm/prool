@@ -62,6 +62,7 @@ test('request: lifecycle endpoint discovery', async () => {
   expect(start).toMatchObject({
     host: start.endpoints.default.host,
     port: start.endpoints.default.port,
+    url: `http://${start.endpoints.default.host}:${start.endpoints.default.port}`,
   })
 
   const restart = await fetch(`http://localhost:${port}/1/restart`).then(
@@ -110,6 +111,7 @@ test('request: leases pooled instances', async () => {
     },
     host: '127.0.0.1',
     token: expect.any(String),
+    url: `http://127.0.0.1:${first.port}`,
   })
 
   const waiting = fetch(`${url}/acquire`, { method: 'POST' })
@@ -308,6 +310,7 @@ describe.each([
     const json = (await response.json()) as any
     expect(json.host).toBeDefined()
     expect(json.port).toBeDefined()
+    expect(json.url).toBe(`http://${json.host}:${json.port}`)
     expect(json.endpoints.default).toEqual({
       host: json.host,
       port: json.port,

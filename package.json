@@ -48,6 +48,11 @@
       "src": "./src/testcontainers/index.ts",
       "types": "./dist/testcontainers/index.d.ts",
       "default": "./dist/testcontainers/index.js"
+    },
+    "./vitest": {
+      "src": "./src/vitest/index.ts",
+      "types": "./dist/vitest/index.d.ts",
+      "default": "./dist/vitest/index.js"
     }
   },
   "dependencies": {

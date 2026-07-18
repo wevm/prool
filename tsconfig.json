@@ -8,7 +8,8 @@
     "target": "esnext",
     "paths": {
       "prool": ["./src/index.ts"],
-      "prool/testcontainers": ["./src/testcontainers/index.ts"]
+      "prool/testcontainers": ["./src/testcontainers/index.ts"],
+      "prool/vitest": ["./src/vitest/index.ts"]
     },
     "types": ["node", "vitest/globals"],
 

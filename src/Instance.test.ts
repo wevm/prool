@@ -321,10 +321,12 @@ test('behavior: dynamic host/port via setEndpoint', async () => {
   const instance = foo()
   expect(instance.host).toEqual('localhost')
   expect(instance.port).toEqual(3000)
+  expect(instance.url).toEqual('http://localhost:3000')
 
   await instance.start()
   expect(instance.host).toEqual('192.168.1.100')
   expect(instance.port).toEqual(9999)
+  expect(instance.url).toEqual('http://192.168.1.100:9999')
 })
 
 test('behavior: named endpoints', async () => {
@@ -387,6 +389,7 @@ test('behavior: named endpoints', async () => {
     port: 3100,
     protocol: 'https',
   })
+  expect(instance.url).toBe('https://endpoint.localhost:3100')
   expect(instance.endpoints.metrics).toEqual({
     host: 'localhost',
     port: 9090,
@@ -398,6 +401,7 @@ test('behavior: named endpoints', async () => {
 
   expect(instance.host).toEqual('127.0.0.1')
   expect(instance.port).toEqual(4000)
+  expect(instance.url).toEqual('https://127.0.0.1:4000')
   expect(instance.endpoints.default.protocol).toBe('https')
   expect(instance.endpoints.default).toBe(endpoints.default)
   expect(instance.endpoints.metrics).toEqual({

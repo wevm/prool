@@ -319,12 +319,13 @@ function websocketProxyTarget(endpoint: Endpoint) {
 }
 
 function instanceDescriptor(
-  instance: Pick<Instance, 'endpoints' | 'host' | 'port'>,
+  instance: Pick<Instance, 'endpoints' | 'host' | 'port' | 'url'>,
 ) {
   return {
     endpoints: instance.endpoints,
     host: instance.host,
     port: instance.port,
+    url: instance.url,
   }
 }
 
