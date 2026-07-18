@@ -18,20 +18,21 @@ const websocketProtocols: Partial<Record<Endpoint.Protocol, 'ws' | 'wss'>> = {
   wss: 'wss',
 }
 
+type AddressParameters = {
+  /** Host to run the server on. */
+  host?: string | undefined
+  /** Port to run the server on. */
+  port?: number | undefined
+}
+
 export type CreateServerParameters<instance extends Instance = Instance> =
-  Pool.define.Parameters<number, instance> &
-    (
-      | {
-          /** Host to run the server on. */
-          host?: string | undefined
-          /** Port to run the server on. */
-          port: number
-        }
-      | {
-          host?: undefined
-          port?: undefined
-        }
-    )
+  Pool.define.Parameters<number, instance> & AddressParameters
+
+export type CreateLeaseServerParameters<instance extends Instance = Instance> =
+  {
+    /** Exclusively leased instance pool. */
+    pool: Pool.LeasePool<instance>
+  } & AddressParameters
 
 export type CreateServerReturnType = Omit<
   Server<typeof IncomingMessage, typeof ServerResponse>,
@@ -43,11 +44,11 @@ export type CreateServerReturnType = Omit<
 }
 
 /**
- * Creates a server that manages a pool of instances via a proxy.
+ * Creates a server for a keyed instance proxy or an exclusive lease pool.
  *
  * @example
  * ```
- * import { Instance, Server } from 'prool'
+ * import { Instance, Pool, Server } from 'prool'
  *
  * const server = Server.create({
  *  instance: Instance.anvil(),
@@ -63,12 +64,27 @@ export type CreateServerReturnType = Omit<
  * // "http://localhost:8545/n/stop"
  * // "http://localhost:8545/n/restart"
  * // "http://localhost:8545/healthcheck"
+ *
+ * const pool = Pool.create({ instance: Instance.anvil(), limit: 2 })
+ * const leaseServer = Server.create({ pool })
+ * await leaseServer.start()
+ * // POST /acquire, then POST /release/:token.
  * ```
  */
 export function create<instance extends Instance = Instance>(
   parameters: CreateServerParameters<instance>,
+): CreateServerReturnType
+export function create<instance extends Instance = Instance>(
+  parameters: CreateLeaseServerParameters<instance>,
+): CreateServerReturnType
+export function create<instance extends Instance = Instance>(
+  parameters:
+    | CreateLeaseServerParameters<instance>
+    | CreateServerParameters<instance>,
 ): CreateServerReturnType {
-  const { host = '::', instance, limit, port } = parameters
+  if ('pool' in parameters) return createLeaseServer(parameters)
+
+  const { host, instance, limit, port } = parameters
 
   const pool = Pool.define({ instance, limit })
   const proxy = createProxyServer({
@@ -187,17 +203,102 @@ export function create<instance extends Instance = Instance>(
   return Object.assign(server as any, {
     start() {
       return new Promise<() => Promise<void>>((resolve) => {
-        if (port) server.listen(port, host, () => resolve(this.stop))
+        if (host !== undefined || port !== undefined)
+          server.listen(port ?? 0, host ?? '::', () => resolve(this.stop))
         else server.listen(() => resolve(this.stop))
       })
     },
     async stop() {
-      await Promise.allSettled([
+      await settle([
         new Promise<void>((resolve, reject) =>
           server.close((error) => (error ? reject(error) : resolve())),
         ),
         pool.destroyAll(),
       ])
+    },
+  })
+}
+
+function createLeaseServer<instance extends Instance = Instance>(
+  parameters: CreateLeaseServerParameters<instance>,
+): CreateServerReturnType {
+  const { host, pool, port } = parameters
+  const leases = new Map<string, Pool.Lease<instance>>()
+  const server = createServer_(async (request, response) => {
+    try {
+      if (request.method === 'OPTIONS') {
+        response.writeHead(200, {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Max-Age': '86400',
+        })
+        response.end()
+        return
+      }
+
+      const path = new URL(request.url ?? '/', 'http://localhost').pathname
+      if (request.method === 'POST' && path === '/acquire') {
+        let disconnected = false
+        let lease: Pool.Lease<instance> | undefined
+        let token: string | undefined
+        function release() {
+          disconnected = true
+          if (!lease) return
+          if (token) leases.delete(token)
+          void lease.release().catch(() => {})
+        }
+        request.once('aborted', release)
+        response.once('close', () => {
+          if (!response.writableFinished) release()
+        })
+        lease = await pool.acquire()
+        if (disconnected || request.destroyed || response.destroyed) {
+          await lease.release()
+          return
+        }
+        token = crypto.randomUUID()
+        leases.set(token, lease)
+        return done(response, 200, {
+          ...instanceDescriptor(lease.instance),
+          token,
+        })
+      }
+      if (request.method === 'POST' && path.startsWith('/release/')) {
+        const token = path.slice('/release/'.length)
+        const lease = leases.get(token)
+        if (!lease) return done(response, 404)
+        leases.delete(token)
+        await lease.release()
+        return done(response, 204)
+      }
+      if (path === '/healthcheck') return done(response, 200)
+      return done(response, 404)
+    } catch (error) {
+      if (response.destroyed) return
+      return done(response, 400, { message: (error as Error).message })
+    }
+  })
+
+  return Object.assign(server as any, {
+    start() {
+      return new Promise<() => Promise<void>>((resolve) => {
+        if (host !== undefined || port !== undefined)
+          server.listen(port ?? 0, host ?? '::', () => resolve(this.stop))
+        else server.listen(() => resolve(this.stop))
+      })
+    },
+    async stop() {
+      try {
+        await settle([
+          new Promise<void>((resolve, reject) =>
+            server.close((error) => (error ? reject(error) : resolve())),
+          ),
+          pool.close(),
+        ])
+      } finally {
+        leases.clear()
+      }
     },
   })
 }
@@ -236,4 +337,12 @@ function done(res: ServerResponse, statusCode: number, json?: unknown) {
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     })
     .end(json ? JSON.stringify(json) : undefined)
+}
+
+async function settle(promises: readonly Promise<unknown>[]) {
+  const errors: unknown[] = []
+  for (const result of await Promise.allSettled(promises))
+    if (result.status === 'rejected') errors.push(result.reason)
+  if (errors.length === 1) throw errors[0]
+  if (errors.length > 1) throw new AggregateError(errors, 'Server stop failed.')
 }

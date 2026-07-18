@@ -1,20 +1,21 @@
+import { request } from 'node:http'
 import getPort from 'get-port'
-import { Instance, Server } from 'prool'
-import { beforeAll, describe, expect, test } from 'vitest'
+import { Instance, Pool, Server } from 'prool'
+import { afterAll, describe, expect, test, vi } from 'vitest'
 import { type MessageEvent, WebSocket } from 'ws'
 import { altoOptions } from '../test/utils.js'
 
-const port = await getPort()
-
-beforeAll(async () => {
-  await Server.create({
-    instance: Instance.anvil({
-      chainId: 1,
-      forkUrl: process.env['VITE_FORK_URL'] ?? 'https://eth.merkle.io',
-    }),
-    port,
-  }).start()
+const executionServer = Server.create({
+  instance: Instance.anvil({
+    chainId: 1,
+    forkUrl:
+      process.env['VITE_FORK_URL'] ?? 'https://ethereum-rpc.publicnode.com',
+  }),
 })
+const stopExecutionServer = await executionServer.start()
+const port = executionServer.address()!.port
+
+afterAll(stopExecutionServer)
 
 test('request: lifecycle endpoint discovery', async () => {
   const foo = Instance.define(() => {
@@ -69,6 +70,133 @@ test('request: lifecycle endpoint discovery', async () => {
   expect(restart.endpoints.metrics.port).toBe(9092)
 
   await stop()
+})
+
+test('request: leases pooled instances', async () => {
+  let instances = 0
+  const reset = vi.fn(async () => {})
+  const foo = Instance.define(() => {
+    const id = ++instances
+    return {
+      endpoints: {
+        database: {
+          host: 'localhost',
+          port: 5432,
+          protocol: 'tcp' as const,
+        },
+      },
+      host: 'localhost',
+      name: 'foo',
+      port: 3000,
+      async start(_, { setEndpoint }) {
+        setEndpoint?.({ host: '127.0.0.1', port: 3000 + id })
+      },
+      async stop() {},
+    }
+  })
+  const pool = Pool.create({ instance: foo(), limit: 1, reset })
+  const server = Server.create({ host: '127.0.0.1', pool, port: 0 })
+  const stop = await server.start()
+  expect(server.address()!.address).toBe('127.0.0.1')
+  const url = `http://localhost:${server.address()!.port}`
+
+  const first = await fetch(`${url}/acquire`, { method: 'POST' }).then(
+    (response) => response.json(),
+  )
+  expect(first).toMatchObject({
+    endpoints: {
+      database: { port: 5432, protocol: 'tcp' },
+      default: { host: '127.0.0.1', protocol: 'http' },
+    },
+    host: '127.0.0.1',
+    token: expect.any(String),
+  })
+
+  const waiting = fetch(`${url}/acquire`, { method: 'POST' })
+  expect(
+    await Promise.race([
+      waiting.then(() => true),
+      new Promise<false>((resolve) => setTimeout(() => resolve(false), 20)),
+    ]),
+  ).toBe(false)
+
+  const released = await fetch(`${url}/release/${first.token}`, {
+    method: 'POST',
+  })
+  expect(released.status).toBe(204)
+
+  const second = await waiting.then((response) => response.json())
+  expect(second.port).toBe(first.port)
+  expect(second.token).not.toBe(first.token)
+  expect(reset).toHaveBeenCalledOnce()
+
+  expect(
+    (
+      await fetch(`${url}/release/${second.token}`, {
+        method: 'POST',
+      })
+    ).status,
+  ).toBe(204)
+  expect(
+    (
+      await fetch(`${url}/release/${second.token}`, {
+        method: 'POST',
+      })
+    ).status,
+  ).toBe(404)
+
+  await stop()
+})
+
+test('request: releases a lease when acquisition disconnects', async () => {
+  const reset = vi.fn(async () => {})
+  const foo = Instance.define(() => ({
+    host: 'localhost',
+    name: 'foo',
+    port: 3000,
+    async start() {},
+    async stop() {},
+  }))
+  const pool = Pool.create({ instance: foo(), limit: 1, reset })
+  const first = await pool.acquire()
+  const acquire = vi.spyOn(pool, 'acquire')
+  const server = Server.create({ pool })
+  const stop = await server.start()
+  const url = `http://localhost:${server.address()!.port}`
+  const request_ = request(`${url}/acquire`, { method: 'POST' })
+  const disconnected = new Promise<void>((resolve) => {
+    request_.once('error', () => resolve())
+  })
+  request_.end()
+
+  await vi.waitFor(() => expect(acquire).toHaveBeenCalledOnce())
+  request_.destroy(new Error('disconnected'))
+  await disconnected
+  await new Promise((resolve) => setTimeout(resolve, 20))
+  await first.release()
+  await vi.waitFor(() => expect(reset).toHaveBeenCalledTimes(2))
+
+  const next = await pool.acquire()
+  await next.release()
+  await stop()
+})
+
+test('request: reports lease pool teardown failures', async () => {
+  const foo = Instance.define(() => ({
+    host: 'localhost',
+    name: 'foo',
+    port: 3000,
+    async start() {},
+    async stop() {
+      throw new Error('stop failed')
+    },
+  }))
+  const pool = Pool.create({ instance: foo(), limit: 1 })
+  await pool.acquire()
+  const server = Server.create({ pool })
+  await server.start()
+
+  await expect(server.stop()).rejects.toThrowError('stop failed')
 })
 
 test('request: rejects a TCP default proxy', async () => {
