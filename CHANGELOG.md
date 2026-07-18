@@ -1,5 +1,11 @@
 # prool
 
+## 0.2.11
+
+### Patch Changes
+
+- [#97](https://github.com/wevm/prool/pull/97) [`d04ba81`](https://github.com/wevm/prool/commit/d04ba815312ae57ed407272beaf5ece587d0282f) Thanks [@jxom](https://github.com/jxom)! - Added waitable instance leases with a default of half the available logical CPUs, HTTP broker support, pool race fixes, and zero-second Docker Compose teardown.
+
 ## 0.2.10
 
 ### Patch Changes
