@@ -18,7 +18,8 @@ const defineInstance = (parameters: Partial<Instance.alto.Parameters> = {}) => {
 
 beforeAll(() =>
   Instance.anvil({
-    forkUrl: process.env['VITE_FORK_URL'] ?? 'https://eth.merkle.io',
+    forkUrl:
+      process.env['VITE_FORK_URL'] ?? 'https://ethereum-rpc.publicnode.com',
     port,
   }).start(),
 )

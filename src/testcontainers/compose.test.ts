@@ -195,3 +195,26 @@ test('retains the environment when stopping fails', async () => {
   await instance.stop()
   expect(down).toHaveBeenCalledTimes(2)
 })
+
+test('forwards a zero-second teardown grace period', async () => {
+  const down = vi.fn(async () => {})
+  const instance = Instance.compose({
+    down: { timeout: 0 },
+    endpoints: {
+      default: { container: 'api-1', port: 8080, protocol: 'http' },
+    },
+    environment: () =>
+      environment({
+        down,
+        host: '127.0.0.1',
+        port: 8080,
+        services: () => {},
+      }),
+    name: 'services',
+  })
+
+  await instance.start()
+  await instance.stop()
+
+  expect(down).toHaveBeenCalledWith({ timeout: 1 })
+})

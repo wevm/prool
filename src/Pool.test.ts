@@ -1,28 +1,29 @@
 import getPort from 'get-port'
 import { Instance, Pool, Server } from 'prool'
 import {
+  afterAll,
   afterEach,
-  beforeAll,
   describe,
   expect,
   expectTypeOf,
   test,
+  vi,
 } from 'vitest'
 
 import { altoOptions } from '../test/utils.js'
 
 let pool: ReturnType<typeof Pool.define> | undefined
-const port = await getPort()
+const executionServer = Server.create({
+  instance: Instance.anvil({
+    chainId: 1,
+    forkUrl:
+      process.env['VITE_FORK_URL'] ?? 'https://ethereum-rpc.publicnode.com',
+  }),
+})
+const stopExecutionServer = await executionServer.start()
+const port = executionServer.address()!.port
 
-beforeAll(() =>
-  Server.create({
-    instance: Instance.anvil({
-      chainId: 1,
-      forkUrl: process.env['VITE_FORK_URL'] ?? 'https://eth.merkle.io',
-    }),
-    port,
-  }).start(),
-)
+afterAll(stopExecutionServer)
 
 afterEach(async () => {
   try {
@@ -58,6 +59,189 @@ test('preserves named endpoint types', async () => {
   })
   expectTypeOf(instance.endpoints.metrics.protocol).toEqualTypeOf<'http'>()
   await namedPool.destroyAll()
+})
+
+test('enforces the instance limit across concurrent starts', async () => {
+  const started = Promise.withResolvers<void>()
+  const release = Promise.withResolvers<void>()
+  const instance = Instance.define(() => ({
+    host: 'localhost',
+    name: 'foo',
+    port: 3000,
+    async start() {
+      started.resolve()
+      await release.promise
+    },
+    async stop() {},
+  }))()
+  const limitedPool = Pool.define({ instance, limit: 1 })
+
+  const first = limitedPool.start(1)
+  await started.promise
+  const limited = expect(limitedPool.start(2)).rejects.toThrowError(
+    'Instance limit of 1 reached.',
+  )
+
+  release.resolve()
+  await limited
+  await first
+  await limitedPool.destroyAll()
+})
+
+describe('create', () => {
+  function instance(
+    parameters: {
+      start?: ((id: number) => void) | undefined
+      stop?: ((id: number) => void) | undefined
+    } = {},
+  ) {
+    let id = 0
+    return Instance.define(() => {
+      const value = ++id
+      return {
+        endpoints: {
+          metrics: {
+            host: 'localhost',
+            port: 9000 + value,
+            protocol: 'http' as const,
+          },
+        },
+        host: 'localhost',
+        name: 'foo',
+        port: 3000 + value,
+        async start() {
+          parameters.start?.(value)
+        },
+        async stop() {
+          parameters.stop?.(value)
+        },
+      }
+    })()
+  }
+
+  test('leases and reuses instances', async () => {
+    const starts: number[] = []
+    const leasePool = Pool.create({
+      instance: instance({ start: (id) => starts.push(id) }),
+      limit: 1,
+    })
+
+    const first = await leasePool.acquire()
+    const waiting = leasePool.acquire()
+    let acquired = false
+    waiting.then(() => {
+      acquired = true
+    })
+    await Promise.resolve()
+
+    expect(acquired).toBe(false)
+    expectTypeOf(
+      first.instance.endpoints.metrics.protocol,
+    ).toEqualTypeOf<'http'>()
+
+    await first.release()
+    const second = await waiting
+
+    expect(second.instance).toBe(first.instance)
+    expect(starts).toHaveLength(1)
+
+    await second.release()
+    await leasePool.close()
+  })
+
+  test('serves waiters in order after resetting', async () => {
+    const reset = vi.fn(async () => {})
+    const leasePool = Pool.create({ instance: instance(), limit: 1, reset })
+    const first = await leasePool.acquire()
+    const order: number[] = []
+    const second = leasePool.acquire().then((lease) => {
+      order.push(2)
+      return lease
+    })
+    const third = leasePool.acquire().then((lease) => {
+      order.push(3)
+      return lease
+    })
+
+    await first.release()
+    const lease_2 = await second
+    expect(reset).toHaveBeenCalledWith(first.instance)
+    expect(order).toEqual([2])
+
+    await lease_2.release()
+    const lease_3 = await third
+    expect(order).toEqual([2, 3])
+
+    await lease_3.release()
+    await leasePool.close()
+  })
+
+  test('replaces an instance when reset fails', async () => {
+    const stops: number[] = []
+    const reset = vi
+      .fn(async () => {})
+      .mockRejectedValueOnce(new Error('reset failed'))
+      .mockRejectedValueOnce(new Error('reset failed again'))
+    const leasePool = Pool.create({
+      instance: instance({ stop: (id) => stops.push(id) }),
+      limit: 1,
+      reset,
+    })
+    const first = await leasePool.acquire()
+
+    await expect(first.release()).rejects.toThrowError('reset failed')
+    const second = await leasePool.acquire()
+
+    expect(second.instance).not.toBe(first.instance)
+    expect(stops).toHaveLength(1)
+
+    await expect(second.release()).rejects.toThrowError('reset failed again')
+    const third = await leasePool.acquire()
+    expect(third.instance).not.toBe(second.instance)
+    expect(stops).toHaveLength(2)
+
+    await third.release()
+    await leasePool.close()
+  })
+
+  test('releases a limit reservation after setup fails', async () => {
+    let creates = 0
+    const source = Instance.define(() => {
+      creates++
+      if (creates === 2) throw new Error('create failed')
+      return {
+        host: 'localhost',
+        name: 'foo',
+        port: 3000,
+        async start() {},
+        async stop() {},
+      }
+    })()
+    const limitedPool = Pool.define({ instance: source, limit: 1 })
+
+    await expect(limitedPool.start(1)).rejects.toThrowError('create failed')
+    await expect(limitedPool.start(2)).resolves.toBeDefined()
+
+    await limitedPool.destroyAll()
+  })
+
+  test('closes pending acquisitions', async () => {
+    const leasePool = Pool.create({ instance: instance(), limit: 1 })
+    const lease = await leasePool.acquire()
+    const waiting = leasePool.acquire()
+
+    await leasePool.close()
+
+    await expect(waiting).rejects.toThrowError('Pool is closed.')
+    await expect(leasePool.acquire()).rejects.toThrowError('Pool is closed.')
+    await lease.release()
+  })
+
+  test('requires a positive integer limit', () => {
+    expect(() => Pool.create({ instance: instance(), limit: 0 })).toThrowError(
+      'Pool limit must be a positive integer.',
+    )
+  })
 })
 
 describe.each([

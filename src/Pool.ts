@@ -4,6 +4,17 @@ import type { Instance } from './Instance.js'
 
 type StartedInstance<instance extends Instance> = ReturnType<instance['create']>
 
+export type Lease<instance extends Instance = Instance> = {
+  instance: StartedInstance<instance>
+  release(): Promise<void>
+}
+
+export type LeasePool<instance extends Instance = Instance> = {
+  acquire(): Promise<Lease<instance>>
+  close(): Promise<void>
+  readonly size: number
+}
+
 export type Pool<
   key extends number | string = number | string,
   instance extends Instance = Instance,
@@ -23,6 +34,152 @@ export type Pool<
   ): Promise<StartedInstance<instance>>
   stop(key: key): Promise<void>
   stopAll(): Promise<void>
+}
+
+/**
+ * Creates a pool of exclusively leased instances.
+ *
+ * @example
+ * ```ts
+ * const pool = Pool.create({ instance: anvil(), limit: 2 })
+ * const lease = await pool.acquire()
+ * try {
+ *   // Use lease.instance.
+ * } finally {
+ *   await lease.release()
+ * }
+ * await pool.close()
+ * ```
+ */
+export function create<instance extends Instance = Instance>(
+  parameters: create.Parameters<instance>,
+): create.ReturnType<instance> {
+  if (!Number.isSafeInteger(parameters.limit) || parameters.limit < 1)
+    throw new Error('Pool limit must be a positive integer.')
+
+  const available = Array.from(
+    { length: parameters.limit },
+    (_, index) => index + 1,
+  )
+  const leases = new Set<number>()
+  const operations = new Set<Promise<unknown>>()
+  const pool = define<number, instance>({
+    instance: parameters.instance,
+    limit: parameters.limit,
+  })
+  const waiters: PromiseWithResolvers<Lease<instance>>[] = []
+  let closePromise: Promise<void> | undefined
+  let closed = false
+
+  function rejectWaiters(error: Error) {
+    for (const waiter of waiters) waiter.reject(error)
+    waiters.length = 0
+  }
+
+  function track<const value>(promise: Promise<value>): Promise<value> {
+    operations.add(promise)
+    promise.then(
+      () => operations.delete(promise),
+      () => operations.delete(promise),
+    )
+    return promise
+  }
+
+  async function grant(slot: number): Promise<Lease<instance>> {
+    const instance_ = pool.get(slot) ?? (await pool.start(slot))
+    if (closed) throw new Error('Pool is closed.')
+    leases.add(slot)
+    let releasePromise: Promise<void> | undefined
+    return {
+      instance: instance_,
+      release() {
+        releasePromise ??= track(release(slot, instance_))
+        return releasePromise
+      },
+    }
+  }
+
+  function dispatch(slot: number) {
+    if (closed) return
+    const waiter = waiters.shift()
+    if (!waiter) {
+      available.push(slot)
+      return
+    }
+    track(grant(slot)).then(waiter.resolve, (error) => {
+      waiter.reject(error)
+      dispatch(slot)
+    })
+  }
+
+  async function release(slot: number, instance_: StartedInstance<instance>) {
+    if (!leases.delete(slot) || closed) return
+    try {
+      await parameters.reset?.(instance_)
+    } catch (error) {
+      try {
+        await pool.destroy(slot)
+      } catch (destroyError) {
+        const failure = new AggregateError(
+          [error, destroyError],
+          'Failed to reset or destroy pooled instance.',
+        )
+        closed = true
+        rejectWaiters(failure)
+        throw failure
+      }
+      dispatch(slot)
+      throw error
+    }
+    dispatch(slot)
+  }
+
+  return {
+    async acquire() {
+      if (closed) throw new Error('Pool is closed.')
+      const slot = available.shift()
+      if (slot === undefined) {
+        const waiter = Promise.withResolvers<Lease<instance>>()
+        waiters.push(waiter)
+        return waiter.promise
+      }
+      try {
+        return await track(grant(slot))
+      } catch (error) {
+        dispatch(slot)
+        throw error
+      }
+    },
+    close() {
+      if (closePromise) return closePromise
+      closed = true
+      rejectWaiters(new Error('Pool is closed.'))
+      closePromise = (async () => {
+        await Promise.allSettled([...operations])
+        await pool.destroyAll()
+      })()
+      return closePromise
+    },
+    get size() {
+      return pool.size
+    },
+  }
+}
+
+export declare namespace create {
+  export type Parameters<instance extends Instance = Instance> = {
+    /** Instance to lease. */
+    instance: instance
+    /** Maximum number of concurrent leases. */
+    limit: number
+    /** Resets an instance before it is leased again. */
+    reset?:
+      | ((instance: StartedInstance<instance>) => Promise<void> | void)
+      | undefined
+  }
+
+  export type ReturnType<instance extends Instance = Instance> =
+    LeasePool<instance>
 }
 
 /**
@@ -48,6 +205,7 @@ export function define<
   const { limit } = parameters
 
   type Instance_ = StartedInstance<instance>
+  const creating = new Set<key>()
   const instances = new Map<key, Instance_>()
 
   // Define promise instances for mutators to avoid race conditions, and return
@@ -78,9 +236,13 @@ export function define<
       this.stop(key)
         .then(() => {
           instances.delete(key)
+          promises.destroy.delete(key)
           resolver.resolve()
         })
-        .catch(resolver.reject)
+        .catch((error) => {
+          promises.destroy.delete(key)
+          resolver.reject(error)
+        })
 
       return resolver.promise
     },
@@ -96,7 +258,10 @@ export function define<
           promises.destroyAll = undefined
           resolver.resolve()
         })
-        .catch(resolver.reject)
+        .catch((error) => {
+          promises.destroyAll = undefined
+          resolver.reject(error)
+        })
 
       return resolver.promise
     },
@@ -113,9 +278,14 @@ export function define<
 
       instance_
         .restart()
-        .then(resolver.resolve)
-        .catch(resolver.reject)
-        .finally(() => promises.restart.delete(key))
+        .then(() => {
+          promises.restart.delete(key)
+          resolver.resolve()
+        })
+        .catch((error) => {
+          promises.restart.delete(key)
+          resolver.reject(error)
+        })
 
       return resolver.promise
     },
@@ -125,27 +295,40 @@ export function define<
 
       const resolver = Promise.withResolvers<Instance_>()
 
-      if (limit && instances.size >= limit)
+      const isNew = !instances.has(key)
+      if (isNew && limit && instances.size + creating.size >= limit)
         throw new Error(`Instance limit of ${limit} reached.`)
 
       promises.start.set(key, resolver.promise)
+      if (isNew) creating.add(key)
 
-      const instance =
-        typeof parameters.instance === 'function'
-          ? parameters.instance(key)
-          : parameters.instance
-      const { port = await getPort() } = options
+      try {
+        const instance =
+          typeof parameters.instance === 'function'
+            ? parameters.instance(key)
+            : parameters.instance
+        const { port = await getPort() } = options
 
-      const instance_ =
-        instances.get(key) || (instance.create({ port }) as Instance_)
-      instance_
-        .start()
-        .then(() => {
-          instances.set(key, instance_)
-          resolver.resolve(instance_)
-        })
-        .catch(resolver.reject)
-        .finally(() => promises.start.delete(key))
+        const instance_ =
+          instances.get(key) || (instance.create({ port }) as Instance_)
+        instance_
+          .start()
+          .then(() => {
+            instances.set(key, instance_)
+            creating.delete(key)
+            promises.start.delete(key)
+            resolver.resolve(instance_)
+          })
+          .catch((error) => {
+            creating.delete(key)
+            promises.start.delete(key)
+            resolver.reject(error)
+          })
+      } catch (error) {
+        creating.delete(key)
+        promises.start.delete(key)
+        resolver.reject(error)
+      }
 
       return resolver.promise
     },
@@ -161,9 +344,14 @@ export function define<
       promises.stop.set(key, resolver.promise)
       instance_
         .stop()
-        .then(resolver.resolve)
-        .catch(resolver.reject)
-        .finally(() => promises.stop.delete(key))
+        .then(() => {
+          promises.stop.delete(key)
+          resolver.resolve()
+        })
+        .catch((error) => {
+          promises.stop.delete(key)
+          resolver.reject(error)
+        })
 
       return resolver.promise
     },
@@ -179,7 +367,10 @@ export function define<
           promises.stopAll = undefined
           resolver.resolve()
         })
-        .catch(resolver.reject)
+        .catch((error) => {
+          promises.stopAll = undefined
+          resolver.reject(error)
+        })
 
       return resolver.promise
     },

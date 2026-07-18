@@ -52,6 +52,7 @@ You can also create your own custom instances by using the [`Instance.define` fu
 - [Reference](#reference)
   - [`Server.create`](#servercreate)
   - [`Instance.define`](#instancedefine)
+  - [`Pool.create`](#poolcreate)
   - [`Pool.define`](#pooldefine)
 
 
@@ -162,7 +163,7 @@ await bundlerServer.start()
 
 ### `Server.create`
 
-Creates a server that manages a pool of instances via a proxy.
+Creates a server for a keyed instance proxy or an exclusive lease pool.
 
 #### Usage
 
@@ -191,12 +192,29 @@ await executionServer.start()
 - `/:key/restart`: Restart instance at `key`.
 - `/healthcheck`: Healthcheck endpoint.
 
+A lease pool exposes `POST /acquire` and `POST /release/:token` instead:
+
+```ts
+import { Instance, Pool, Server } from 'prool'
+
+const pool = Pool.create({
+  instance: Instance.anvil(),
+  limit: 2,
+  async reset(instance) {
+    // Reset application state before reuse.
+  },
+})
+const server = Server.create({ pool })
+await server.start()
+```
+
 #### API
 
 | Name       | Description                                              | Type                                    |
 | ---------- | -------------------------------------------------------- | --------------------------------------- |
 | `instance` | Instance for the server.                                 | `Instance \| (key: number) => Instance` |
 | `limit`    | Number of instances that can be instantiated in the pool | `number`                                |
+| `pool`     | Exclusive lease pool.                                    | `LeasePool`                             |
 | `host`     | Host for the server.                                     | `string`                                |
 | `port`     | Port for the server.                                     | `number`                                |
 | returns    | Server                                                   | `Server.Server`                         |
@@ -231,6 +249,39 @@ const foo = Instance.define((parameters: FooParameters) => {
 | ------- | -------------------- | ------------------ |
 | `fn`    | Instance definition. | `DefineInstanceFn` |
 | returns | Instance.            | `Instance`         |
+
+### `Pool.create`
+
+Creates a bounded pool of exclusively leased instances. Acquisitions wait in order when every instance is busy.
+
+If `reset` fails, the instance is destroyed and the release rejects before the slot becomes available again.
+
+#### Usage
+
+```ts
+import { Instance, Pool } from 'prool'
+
+const pool = Pool.create({
+  instance: Instance.anvil(),
+  limit: 2,
+})
+const lease = await pool.acquire()
+try {
+  await fetch(`http://${lease.instance.host}:${lease.instance.port}`)
+} finally {
+  await lease.release()
+}
+await pool.close()
+```
+
+#### API
+
+| Name       | Description                              | Type         |
+| ---------- | ---------------------------------------- | ------------ |
+| `instance` | Instance to lease.                       | `Instance`   |
+| `limit`    | Maximum number of concurrent leases.     | `number`     |
+| `reset`    | Resets an instance before its next lease. | `(instance: Instance) => Promise<void> \| void` |
+| returns    | Exclusive lease pool.                    | `LeasePool`  |
 
 ### `Pool.define`
 

@@ -40,6 +40,7 @@ export function compose<
   parameters: compose.Parameters<endpointDefinitions>,
   options?: Instance.InstanceOptions,
 ): Instance.Instance<undefined, compose.Endpoints<endpointDefinitions>> {
+  const down = composeDownOptions(parameters.down)
   const initialEndpoints = Object.fromEntries(
     Object.entries(parameters.endpoints).flatMap(([name, endpoint]) =>
       endpoint
@@ -67,7 +68,7 @@ export function compose<
     async function stopEnvironment() {
       if (!environment) return
       const started = environment
-      await started.down(parameters.down)
+      await started.down(down)
       if (environment === started) environment = undefined
     }
 
@@ -106,9 +107,7 @@ export function compose<
           for (const [name, endpoint] of endpoints)
             applyEndpoint?.(name, endpoint)
         } catch (error) {
-          const [result] = await Promise.allSettled([
-            started.down(parameters.down),
-          ])
+          const [result] = await Promise.allSettled([started.down(down)])
           if (result?.status === 'fulfilled') environment = undefined
           throw error
         }
@@ -148,7 +147,9 @@ export declare namespace compose {
       : undefined
 
   export type DownOptions = {
+    /** Removes Compose volumes. */
     removeVolumes?: boolean | undefined
+    /** Grace period in milliseconds. Zero kills containers immediately. */
     timeout?: number | undefined
   }
 
@@ -176,6 +177,12 @@ export declare namespace compose {
       getMappedPort(port: number): number
     }
   }
+}
+
+function composeDownOptions(options: compose.DownOptions | undefined) {
+  if (options?.timeout !== 0) return options
+  // Testcontainers omits zero; one millisecond becomes Compose's zero-second grace.
+  return { ...options, timeout: 1 }
 }
 
 /**
