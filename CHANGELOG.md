@@ -1,5 +1,11 @@
 # prool
 
+## 0.2.13
+
+### Patch Changes
+
+- [#101](https://github.com/wevm/prool/pull/101) [`8929695`](https://github.com/wevm/prool/commit/892969585c720d21877e476a63c036423165d744) Thanks [@jxom](https://github.com/jxom)! - Added lazy Vitest server setup with worker-scoped controls and fixed lifecycle teardown races.
+
 ## 0.2.12
 
 ### Patch Changes
