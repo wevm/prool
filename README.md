@@ -54,6 +54,7 @@ You can also create your own custom instances by using the [`Instance.define` fu
   - [`Instance.define`](#instancedefine)
   - [`Pool.create`](#poolcreate)
   - [`Pool.define`](#pooldefine)
+  - [Vitest](#vitest)
 
 
 ## Install
@@ -266,7 +267,7 @@ const pool = Pool.create({
 })
 const lease = await pool.acquire()
 try {
-  await fetch(`http://${lease.instance.host}:${lease.instance.port}`)
+  await fetch(lease.instance.url)
 } finally {
   await lease.release()
 }
@@ -306,6 +307,55 @@ const instance_3 = await pool.start(3)
 | `instance` | Instance for the pool.                                   | `Instance` |
 | `limit`    | Number of instances that can be instantiated in the pool | `number`   |
 | returns    | Pool.                                                    | `Pool`     |
+
+### Vitest
+
+`Pool.setup` starts one instance per Vitest Node worker and runs `setup` with the instances and Vitest project. `Pool.get` selects the current worker's value from a provided array. Configure the global setup on each project that uses the instances.
+
+#### Config
+
+```ts
+import { defineConfig } from 'vitest/config'
+
+export default defineConfig({
+  test: {
+    globalSetup: './test/setup.global.ts',
+  },
+})
+```
+
+#### Global setup
+
+```ts
+import { Instance } from 'prool'
+import { Pool } from 'prool/vitest'
+import type { TestProject } from 'vitest/node'
+
+declare module 'vitest' {
+  export interface ProvidedContext {
+    rpcUrls: readonly string[]
+  }
+}
+
+export default Pool.setup({
+  instance: Instance.anvil(),
+  setup(instances, project: TestProject) {
+    project.provide(
+      'rpcUrls',
+      instances.map((instance) => instance.url),
+    )
+  },
+})
+```
+
+#### Worker
+
+```ts
+import { Pool } from 'prool/vitest'
+import { inject } from 'vitest'
+
+export const rpcUrl = Pool.get(inject('rpcUrls'))
+```
 
 ## Authors
 

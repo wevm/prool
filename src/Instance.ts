@@ -71,6 +71,8 @@ export type Instance<
    * Port the instance is running on.
    */
   port: number
+  /** URL of the default endpoint. */
+  url: string
   /**
    * Set of messages emitted from the `"message"` event stored in-memory,
    * with length {@link InstanceOptions`messageBuffer`}.
@@ -220,6 +222,10 @@ export function define<
         name,
         get port() {
           return endpointMap.default.port
+        },
+        get url() {
+          const { host, port, protocol } = endpointMap.default
+          return `${protocol}://${host}:${port}`
         },
         endpoints: endpointMap as InstanceEndpoints<endpoints>,
         get status() {
