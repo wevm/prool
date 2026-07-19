@@ -310,7 +310,9 @@ const instance_3 = await pool.start(3)
 
 ### Vitest
 
-`Pool.setup` starts one instance per Vitest Node worker and runs `setup` with the instances and Vitest project. `Pool.get` selects the current worker's value from a provided array. Configure the global setup on each project that uses the instances.
+`Server.setup` starts one lazy keyed proxy for a Vitest project. Each worker can
+use `Server.get` to address, reset, or restart its own instance. `Pool.setup`
+eagerly starts one direct instance per worker instead.
 
 #### Config
 
@@ -320,11 +322,46 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     globalSetup: './test/setup.global.ts',
+    setupFiles: './test/setup.ts',
   },
 })
 ```
 
-#### Global setup
+#### Lazy Server
+
+```ts
+import { Instance } from 'prool'
+import { Server } from 'prool/vitest'
+import type { TestProject } from 'vitest/node'
+
+declare module 'vitest' {
+  export interface ProvidedContext {
+    anvil: Server.Context
+  }
+}
+
+export default Server.setup({
+  instance: Instance.anvil(),
+  setup(server, project: TestProject) {
+    project.provide('anvil', server)
+  },
+})
+```
+
+```ts
+import { Server } from 'prool/vitest'
+import { inject } from 'vitest'
+
+const anvil = Server.get(inject('anvil'))
+await anvil.reset({ signal: AbortSignal.timeout(30_000) })
+
+export const rpcUrl = anvil.url
+```
+
+`reset` destroys only that worker's instance, and its next request starts a
+fresh one. `restart` retains the pooled instance and endpoint.
+
+#### Eager Pool
 
 ```ts
 import { Instance } from 'prool'
@@ -347,8 +384,6 @@ export default Pool.setup({
   },
 })
 ```
-
-#### Worker
 
 ```ts
 import { Pool } from 'prool/vitest'
