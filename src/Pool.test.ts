@@ -89,6 +89,178 @@ test('enforces the instance limit across concurrent starts', async () => {
   await limitedPool.destroyAll()
 })
 
+test('destroys an instance while it is starting', async () => {
+  const starting = Promise.withResolvers<void>()
+  const release = Promise.withResolvers<void>()
+  let stops = 0
+  const instance = Instance.define(() => ({
+    host: 'localhost',
+    name: 'foo',
+    port: 3000,
+    async start() {
+      starting.resolve()
+      await release.promise
+    },
+    async stop() {
+      stops++
+    },
+  }))()
+  const pool = Pool.define({ instance })
+
+  const start = pool.start(1)
+  await starting.promise
+  const destroy = pool.destroy(1)
+  release.resolve()
+  await Promise.all([start, destroy])
+
+  expect(stops).toBe(1)
+  expect(pool.size).toBe(0)
+})
+
+test('destroys pending starts and rejects new ones in destroyAll', async () => {
+  const starting = Promise.withResolvers<void>()
+  const release = Promise.withResolvers<void>()
+  let stops = 0
+  const instance = Instance.define(() => ({
+    host: 'localhost',
+    name: 'foo',
+    port: 3000,
+    async start() {
+      starting.resolve()
+      await release.promise
+    },
+    async stop() {
+      stops++
+    },
+  }))()
+  const pool = Pool.define({ instance })
+
+  const start = pool.start(1)
+  await starting.promise
+  const destroy = pool.destroyAll()
+  await expect(pool.start(2)).rejects.toThrowError(
+    'Cannot start an instance while destroying the pool.',
+  )
+  release.resolve()
+  await Promise.all([start, destroy])
+
+  expect(stops).toBe(1)
+  expect(pool.size).toBe(0)
+})
+
+test('starts a fresh instance after an in-progress destroy', async () => {
+  const stopping = Promise.withResolvers<void>()
+  const release = Promise.withResolvers<void>()
+  let starts = 0
+  let firstStop = true
+  const instance = Instance.define(() => ({
+    host: 'localhost',
+    name: 'foo',
+    port: 3000,
+    async start() {
+      starts++
+    },
+    async stop() {
+      if (!firstStop) return
+      firstStop = false
+      stopping.resolve()
+      await release.promise
+    },
+  }))()
+  const pool = Pool.define({ instance })
+
+  const first = await pool.start(1)
+  const destroy = pool.destroy(1)
+  await stopping.promise
+  const start = pool.start(1)
+  release.resolve()
+  await destroy
+  const second = await start
+
+  expect(second).not.toBe(first)
+  expect(starts).toBe(2)
+  expect(pool.size).toBe(1)
+  await pool.destroyAll()
+})
+
+test('rejects a pending start when destroyAll joins its destroy', async () => {
+  const stopping = Promise.withResolvers<void>()
+  const release = Promise.withResolvers<void>()
+  let firstStop = true
+  const instance = Instance.define(() => ({
+    host: 'localhost',
+    name: 'foo',
+    port: 3000,
+    async start() {},
+    async stop() {
+      if (!firstStop) return
+      firstStop = false
+      stopping.resolve()
+      await release.promise
+    },
+  }))()
+  const pool = Pool.define({ instance })
+
+  await pool.start(1)
+  const destroy = pool.destroy(1)
+  await stopping.promise
+  const start = pool.start(1)
+  const destroyAll = pool.destroyAll()
+  release.resolve()
+
+  await expect(start).rejects.toThrowError(
+    'Cannot start an instance while destroying the pool.',
+  )
+  await Promise.all([destroy, destroyAll])
+  expect(pool.size).toBe(0)
+})
+
+test('waits for every destroyAll failure before accepting starts', async () => {
+  const failed = Promise.withResolvers<void>()
+  const stopping = Promise.withResolvers<void>()
+  const release = Promise.withResolvers<void>()
+  const failures = new Set<number>()
+  const pool = Pool.define({
+    instance: (key) =>
+      Instance.define(() => ({
+        host: 'localhost',
+        name: 'foo',
+        port: 3000,
+        async start() {},
+        async stop() {
+          if (failures.has(key)) return
+          failures.add(key)
+          if (key === 1) {
+            failed.resolve()
+            throw new Error('stop 1 failed')
+          }
+          stopping.resolve()
+          await release.promise
+          throw new Error('stop 2 failed')
+        },
+      }))(),
+  })
+
+  await pool.start(1)
+  await pool.start(2)
+  const destroy = pool.destroyAll()
+  await Promise.all([failed.promise, stopping.promise])
+  await expect(pool.start(3)).rejects.toThrowError(
+    'Cannot start an instance while destroying the pool.',
+  )
+  release.resolve()
+
+  const error = await destroy.catch((error) => error)
+  expect(error).toBeInstanceOf(AggregateError)
+  expect(error.errors.map((error: Error) => error.message)).toEqual([
+    'stop 1 failed',
+    'stop 2 failed',
+  ])
+
+  await pool.destroyAll()
+  expect(pool.size).toBe(0)
+})
+
 describe('create', () => {
   function instance(
     parameters: {

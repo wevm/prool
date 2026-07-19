@@ -233,7 +233,14 @@ export function define<
 
       promises.destroy.set(key, resolver.promise)
 
-      this.stop(key)
+      const operation = (async () => {
+        await Promise.allSettled([
+          promises.restart.get(key),
+          promises.start.get(key),
+        ])
+        await this.stop(key)
+      })()
+      operation
         .then(() => {
           instances.delete(key)
           promises.destroy.delete(key)
@@ -253,19 +260,28 @@ export function define<
 
       promises.destroyAll = resolver.promise
 
-      Promise.all([...instances.keys()].map((key) => this.destroy(key)))
-        .then(() => {
+      const keys = new Set([...instances.keys(), ...creating])
+      Promise.allSettled([...keys].map((key) => this.destroy(key))).then(
+        (results) => {
+          const errors = results.flatMap((result) =>
+            result.status === 'rejected' ? [result.reason] : [],
+          )
           promises.destroyAll = undefined
-          resolver.resolve()
-        })
-        .catch((error) => {
-          promises.destroyAll = undefined
-          resolver.reject(error)
-        })
+          if (errors.length === 0) resolver.resolve()
+          else if (errors.length === 1) resolver.reject(errors[0])
+          else
+            resolver.reject(
+              new AggregateError(errors, 'Failed to destroy pool.'),
+            )
+        },
+      )
 
       return resolver.promise
     },
     async restart(key) {
+      const destroyPromise = promises.destroy.get(key)
+      if (destroyPromise) await destroyPromise
+
       const restartPromise = promises.restart.get(key)
       if (restartPromise) return restartPromise
 
@@ -290,6 +306,15 @@ export function define<
       return resolver.promise
     },
     async start(key, options = {}) {
+      if (promises.destroyAll)
+        throw new Error('Cannot start an instance while destroying the pool.')
+
+      const destroyPromise = promises.destroy.get(key)
+      if (destroyPromise) await destroyPromise
+
+      if (promises.destroyAll)
+        throw new Error('Cannot start an instance while destroying the pool.')
+
       const startPromise = promises.start.get(key)
       if (startPromise) return startPromise
 
