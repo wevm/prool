@@ -1,5 +1,11 @@
 # prool
 
+## 0.2.12
+
+### Patch Changes
+
+- [#99](https://github.com/wevm/prool/pull/99) [`7168397`](https://github.com/wevm/prool/commit/71683973360079eceff9a05e9d4af4ac14f340f7) Thanks [@jxom](https://github.com/jxom)! - Added Vitest pool helpers and a derived `Instance.url` property.
+
 ## 0.2.11
 
 ### Patch Changes
