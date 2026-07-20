@@ -1,5 +1,17 @@
 # prool
 
+## 0.2.14
+
+### Patch Changes
+
+- [#103](https://github.com/wevm/prool/pull/103) [`f982fa0`](https://github.com/wevm/prool/commit/f982fa044d13394a8810a28326012558ede13d8e) Thanks [@jxom](https://github.com/jxom)! - Added `Sweep.compose` to `prool/testcontainers` for removing Compose containers and networks orphaned by interrupted runs.
+
+  ```ts
+  import { Sweep } from "prool/testcontainers";
+
+  await Sweep.compose({ composeFile: "test/compose.yaml" });
+  ```
+
 ## 0.2.13
 
 ### Patch Changes
