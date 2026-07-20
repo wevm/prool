@@ -1,5 +1,5 @@
 ---
-'prool': minor
+'prool': patch
 ---
 
 Added `Sweep.compose` to `prool/testcontainers` for removing Compose containers and networks orphaned by interrupted runs.
