@@ -58,7 +58,14 @@ jobs:
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Run tests
-        run: pnpm test --bail=1
+        run: |
+          if [[ -n "$VITE_FORK_URL" ]]; then
+            pnpm test --bail=1
+          else
+            pnpm test --bail=1 \
+              --exclude src/instances/alto.test.ts \
+              --testNamePattern="^(?!.*instance: alto)(?!.*instance: 'alto')"
+          fi
         env:
           VITE_FORK_URL: ${{ secrets.VITE_FORK_URL }}
 
