@@ -135,7 +135,7 @@ import { Instance } from 'prool/testcontainers'
 
 const server = Server.create({
   instance: Instance.tempoLocalnet({
-    blockTime: '200ms',
+    blockTime: '1ms',
     image: 'ghcr.io/tempoxyz/tempo-localnet:latest',
   }),
 })
