@@ -125,9 +125,7 @@ await server.start()
 
 #### Bootstrapped localnet container
 
-Use the Tempo localnet image when tests need deterministic accounts, the
-canonical TIP-20 faucet, Fee AMM pools, and Stablecoin DEX liquidity. The
-instance waits for the image health check before accepting requests.
+Use the Tempo localnet image when tests need deterministic accounts, the canonical TIP-20 faucet, Fee AMM pools, and Stablecoin DEX liquidity. The instance waits for the image health check before accepting requests.
 
 ```ts
 import { Server } from 'prool'
@@ -143,8 +141,7 @@ const server = Server.create({
 await server.start()
 ```
 
-Pin `image` to a release tag or digest in CI. Pass `bare: true` for tests that
-need an unbootstrapped development node.
+Pin `image` to a release tag or digest in CI. Pass `bare: true` for tests that need an unbootstrapped development node.
 
 ### Alto (Bundler Node)
 
