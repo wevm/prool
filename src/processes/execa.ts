@@ -29,14 +29,16 @@ export type Process = {
 export function execa(parameters: execa.Parameters): execa.ReturnType {
   const { name } = parameters
 
-  const errorMessages: string[] = []
   let process: Process_internal
 
-  async function stop(signal?: keyof SignalConstants | number) {
-    process.kill(signal)
+  async function stop(
+    child: Process_internal,
+    signal?: keyof SignalConstants | number,
+  ) {
+    child.kill(signal)
     // Process may have exited on its own; 'exit' will not re-fire.
-    if (process.exitCode !== null || process.signalCode !== null) return
-    return new Promise((resolve) => process.once('exit', resolve))
+    if (child.exitCode !== null || child.signalCode !== null) return
+    return new Promise((resolve) => child.once('exit', resolve))
   }
 
   return {
@@ -48,18 +50,21 @@ export function execa(parameters: execa.Parameters): execa.ReturnType {
     name,
     start(command, { emitter, resolver, status }) {
       const { promise, resolve, reject } = Promise.withResolvers<void>()
+      const errorMessages: string[] = []
 
-      process = command(
+      const child = command(
         exec({
           cleanup: true,
           reject: false,
         }) as any,
       ) as unknown as Process_internal
+      process = child
 
       resolver({
-        process,
+        process: child,
         async reject(data) {
-          await stop()
+          // Shutdown output can arrive after another process has started.
+          await stop(child)
           reject(
             new Error(`Failed to start process "${name}": ${data.toString()}`),
           )
@@ -70,12 +75,12 @@ export function execa(parameters: execa.Parameters): execa.ReturnType {
         },
       })
 
-      process.stdout.on('data', (data) => {
+      child.stdout.on('data', (data) => {
         const message = stripColors(data.toString())
         emitter.emit('message', message)
         emitter.emit('stdout', message)
       })
-      process.stderr.on('data', async (data) => {
+      child.stderr.on('data', async (data) => {
         const message = stripColors(data.toString())
 
         errorMessages.push(message)
@@ -84,30 +89,28 @@ export function execa(parameters: execa.Parameters): execa.ReturnType {
         emitter.emit('message', message)
         emitter.emit('stderr', message)
       })
-      process.on('close', () => process.removeAllListeners())
-      process.on('exit', (code, signal) => {
+      child.on('close', () => child.removeAllListeners())
+      child.on('exit', (code, signal) => {
         emitter.emit('exit', code, signal)
 
-        if (!code) {
-          process.removeAllListeners()
-          if (status === 'starting')
-            reject(
-              new Error(
-                `Failed to start process "${name}": ${
-                  errorMessages.length > 0
-                    ? `\n\n${errorMessages.join('\n')}`
-                    : 'exited'
-                }`,
-              ),
-            )
-        }
+        child.removeAllListeners()
+        if (status === 'starting')
+          reject(
+            new Error(
+              `Failed to start process "${name}": ${
+                errorMessages.length > 0
+                  ? `\n\n${errorMessages.join('\n')}`
+                  : 'exited'
+              }`,
+            ),
+          )
       })
 
       return promise
     },
     async stop() {
       process.removeAllListeners()
-      await stop()
+      await stop(process)
     },
   }
 }

@@ -1,7 +1,8 @@
+import * as NodeProcess from 'node:process'
 import { EventEmitter } from 'eventemitter3'
 import getPort from 'get-port'
-import { afterEach, expect, test } from 'vitest'
-import { execa } from './execa.js'
+import { afterEach, describe, expect, test } from 'vitest'
+import { type ExecaStartOptions, execa } from './execa.js'
 
 const processes: execa.ReturnType[] = []
 function createProcess() {
@@ -12,6 +13,53 @@ function createProcess() {
 
 afterEach(async () => {
   for (const process of processes) await process.stop().catch(() => {})
+})
+
+describe('execa', () => {
+  test.each([0, 1])('rejects exit code %s before readiness', async (code) => {
+    const process = createProcess()
+    const emitter: ExecaStartOptions['emitter'] = new EventEmitter()
+    await expect(
+      process.start(
+        ($) => $`${NodeProcess.execPath} -e ${`process.exit(${code})`}`,
+        {
+          emitter,
+          status: 'starting',
+          resolver() {},
+        },
+      ),
+    ).rejects.toThrowError('Failed to start process "foo": exited')
+  })
+
+  test('keeps a restarted process alive after a previous resolver rejects', async () => {
+    const process = createProcess()
+    const emitter: ExecaStartOptions['emitter'] = new EventEmitter()
+    const previousReject =
+      Promise.withResolvers<(data: string) => Promise<void>>()
+    const script = "process.stdout.write('ready'); setInterval(() => {}, 1000)"
+    await process.start(($) => $`${NodeProcess.execPath} -e ${script}`, {
+      emitter,
+      status: 'starting',
+      resolver({ process, reject, resolve }) {
+        previousReject.resolve(reject)
+        process.stdout.once('data', resolve)
+      },
+    })
+    await process.stop()
+    await process.start(($) => $`${NodeProcess.execPath} -e ${script}`, {
+      emitter,
+      status: 'starting',
+      resolver({ process, resolve }) {
+        process.stdout.once('data', resolve)
+      },
+    })
+
+    const current = process._internal.process
+    await (await previousReject.promise)('shutting down')
+    expect(current.killed).toBe(false)
+    expect(current.exitCode).toBeNull()
+    expect(current.signalCode).toBeNull()
+  })
 })
 
 test('default', async () => {
