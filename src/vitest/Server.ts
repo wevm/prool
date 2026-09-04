@@ -21,8 +21,20 @@ export type Server = {
   restart(options?: ControlOptions | undefined): Promise<void>
 }
 
-/** Returns the server URL and controls for the current Vitest pool. */
-export function get(context: Context): Server {
+/** Returns worker-scoped URLs and controls for one server or named servers. */
+export function get(context: Context): Server
+export function get<const contexts extends Record<string, Context>>(
+  context: contexts,
+): { [name in keyof contexts]: Server }
+export function get(
+  context: Context | Record<string, Context>,
+): Server | Record<string, Server> {
+  if (typeof context.url !== 'string')
+    return Object.fromEntries(
+      Object.entries(context as Record<string, Context>).map(
+        ([name, value]) => [name, get(value)],
+      ),
+    )
   const url = `${context.url.replace(/\/+$/, '')}/${Pool.poolId()}`
   return {
     url,
@@ -31,36 +43,82 @@ export function get(context: Context): Server {
   }
 }
 
-/** Creates Vitest global setup with a lazy keyed instance server. */
+/** Creates lazy keyed servers with an isolated instance per name and worker. */
+export function setup<
+  const instances extends Record<
+    string,
+    Instance | ((poolId: number) => Instance)
+  >,
+  project extends setup.Project = setup.Project,
+>(
+  parameters: setup.NamedParameters<instances, project>,
+): setup.ReturnType<project>
 export function setup<
   instance extends Instance = Instance,
   project extends setup.Project = setup.Project,
->(parameters: setup.Parameters<instance, project>): setup.ReturnType<project> {
+>(parameters: setup.Parameters<instance, project>): setup.ReturnType<project>
+export function setup<
+  const instances extends Record<
+    string,
+    Instance | ((poolId: number) => Instance)
+  >,
+  instance extends Instance = Instance,
+  project extends setup.Project = setup.Project,
+>(
+  parameters:
+    | setup.Parameters<instance, project>
+    | setup.NamedParameters<instances, project>,
+): setup.ReturnType<project> {
   return async (project) => {
     const { maxWorkers } = project.config
     if (!Number.isSafeInteger(maxWorkers) || maxWorkers < 1)
       throw new Error('Vitest maxWorkers must be a positive integer.')
 
-    const { setup: setup_, ...serverParameters } = parameters
-    const server = ProolServer.create({
-      ...serverParameters,
-      host: serverParameters.host ?? '127.0.0.1',
-      limit: maxWorkers,
-    })
-    await server.start()
+    const definitions =
+      'instances' in parameters
+        ? parameters.instances
+        : { default: parameters.instance }
+    const servers: ProolServer.CreateServerReturnType[] = []
+    const contexts: [string, Context][] = []
 
-    const address = server.address()!
-    const host = address.address.includes(':')
-      ? `[${address.address}]`
-      : address.address
-    const context = { url: `http://${host}:${address.port}` }
+    async function stop() {
+      const results = await Promise.allSettled(
+        servers.map((server) => server.stop()),
+      )
+      const errors = results.flatMap((result) =>
+        result.status === 'rejected' ? [result.reason] : [],
+      )
+      if (errors.length === 1) throw errors[0]
+      if (errors.length > 1)
+        throw new AggregateError(errors, 'Failed to stop Vitest servers.')
+    }
 
     try {
-      await setup_(context, project)
-      return () => server.stop()
+      for (const [name, instance] of Object.entries(definitions)) {
+        const server = ProolServer.create({
+          instance,
+          host: parameters.host ?? '127.0.0.1',
+          port: 'instances' in parameters ? 0 : parameters.port,
+          limit: maxWorkers,
+        })
+        await server.start()
+        servers.push(server)
+        const address = server.address()!
+        const host = address.address.includes(':')
+          ? `[${address.address}]`
+          : address.address
+        contexts.push([name, { url: `http://${host}:${address.port}` }])
+      }
+      if ('instances' in parameters)
+        await parameters.setup(
+          Object.fromEntries(contexts) as setup.Contexts<instances>,
+          project,
+        )
+      else await parameters.setup(contexts[0]![1], project)
+      return stop
     } catch (error) {
       try {
-        await server.stop()
+        await stop()
       } catch (stopError) {
         throw new AggregateError(
           [error, stopError],
@@ -73,6 +131,22 @@ export function setup<
 }
 
 export declare namespace setup {
+  /** Serializable server contexts keyed by instance name. */
+  export type Contexts<instances> = { [name in keyof instances]: Context }
+
+  /** Options for named lazy servers, each bound to an available port. */
+  export type NamedParameters<
+    instances extends Record<string, Instance | ((poolId: number) => Instance)>,
+    project extends Project = Project,
+  > = {
+    /** Definitions or worker-ID factories keyed by instance name. */
+    instances: instances
+    /** Host for every proxy server. Defaults to `127.0.0.1`. */
+    host?: string | undefined
+    /** Provides named serializable contexts after every proxy starts. */
+    setup(contexts: Contexts<instances>, project: project): Promise<void> | void
+  }
+
   /** Options for setting up a lazy Vitest instance server. */
   export type Parameters<
     instance extends Instance = Instance,

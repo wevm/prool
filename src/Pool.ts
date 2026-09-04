@@ -332,7 +332,9 @@ export function define<
           typeof parameters.instance === 'function'
             ? parameters.instance(key)
             : parameters.instance
-        const { port = await getPort() } = options
+        // An IPv6-only probe can select a port already bound by an IPv4 node.
+        const host = instance.host.includes(':') ? instance.host : '0.0.0.0'
+        const { port = await getPort({ host }) } = options
 
         const instance_ =
           instances.get(key) || (instance.create({ port }) as Instance_)

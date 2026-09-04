@@ -1,5 +1,6 @@
+import * as Net from 'node:net'
 import * as os from 'node:os'
-import getPort from 'get-port'
+import getPort, * as Ports from 'get-port'
 import { Instance, Pool, Server } from 'prool'
 import {
   afterAll,
@@ -12,6 +13,8 @@ import {
 } from 'vitest'
 
 import { altoOptions } from '../test/utils.js'
+
+vi.mock('get-port', { spy: true })
 
 let pool: ReturnType<typeof Pool.define> | undefined
 const executionServer = Server.create({
@@ -32,6 +35,53 @@ afterEach(async () => {
   } catch (err) {
     console.error(err)
   }
+})
+
+describe('start', () => {
+  test('avoids ports occupied by IPv4 listeners', async () => {
+    const occupied = Net.createServer()
+    await new Promise<void>((resolve) => occupied.listen(0, '0.0.0.0', resolve))
+    const address = occupied.address() as Net.AddressInfo
+    const { default: allocate } =
+      await vi.importActual<typeof Ports>('get-port')
+    // Model a platform where an IPv6-only ephemeral allocation overlaps IPv4.
+    const spy = vi
+      .mocked(Ports.default)
+      .mockImplementationOnce((options) =>
+        options?.host === '0.0.0.0'
+          ? allocate(options)
+          : Promise.resolve(address.port),
+      )
+    const instance = Instance.define(() => {
+      const server = Net.createServer()
+      return {
+        name: 'ipv4',
+        host: '127.0.0.1',
+        port: 0,
+        async start({ port }) {
+          await new Promise<void>((resolve, reject) => {
+            server.once('error', reject)
+            server.listen(port, '0.0.0.0', resolve)
+          })
+        },
+        async stop() {
+          await new Promise<void>((resolve, reject) =>
+            server.close((error) => (error ? reject(error) : resolve())),
+          )
+        },
+      }
+    })()
+    const pool = Pool.define({ instance })
+    try {
+      const started = await pool.start(1)
+      expect(started.status).toBe('started')
+      expect(started.port).not.toBe(address.port)
+    } finally {
+      spy.mockReset()
+      await pool.destroyAll()
+      await new Promise<void>((resolve) => occupied.close(() => resolve()))
+    }
+  })
 })
 
 test('preserves named endpoint types', async () => {

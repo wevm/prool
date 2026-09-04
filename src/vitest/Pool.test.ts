@@ -45,6 +45,121 @@ describe('poolId', () => {
 })
 
 describe('setup', () => {
+  test('starts each named instance for every worker', async () => {
+    const stopped: string[] = []
+    const definition = Instance.define((name: string) => ({
+      host: 'localhost',
+      name,
+      port: 3000,
+      async start() {},
+      async stop() {
+        stopped.push(name)
+      },
+    }))
+    const { context, project } = testProject(2)
+    const setup = Pool.setup({
+      instances: {
+        l1: (id) => definition(`l1-${id}`),
+        l2: (id) => definition(`l2-${id}`),
+      },
+      setup(instances, project) {
+        expect(instances.map(({ l1, l2 }) => [l1.name, l2.name])).toEqual([
+          ['l1-1', 'l2-1'],
+          ['l1-2', 'l2-2'],
+        ])
+        expect(
+          new Set(instances.flatMap(({ l1, l2 }) => [l1.url, l2.url])).size,
+        ).toBe(4)
+        project.provide(
+          'names',
+          instances.map(({ l1, l2 }) => ({ l1: l1.name, l2: l2.name })),
+        )
+      },
+    })
+    const teardown = await setup(project)
+    try {
+      vi.stubEnv('VITEST_POOL_ID', '2')
+      expect(
+        Pool.get(context.get('names') as readonly { l1: string; l2: string }[]),
+      ).toEqual({ l1: 'l1-2', l2: 'l2-2' })
+    } finally {
+      await teardown()
+    }
+    expect(stopped.sort()).toEqual(['l1-1', 'l1-2', 'l2-1', 'l2-2'])
+  })
+
+  test('waits for late starts before cleaning up a failed named setup', async () => {
+    const stopped: string[] = []
+    const failed = Promise.withResolvers<void>()
+    const late = Promise.withResolvers<void>()
+    const definition = Instance.define((name: string) => ({
+      host: 'localhost',
+      name,
+      port: 3000,
+      async start() {
+        if (name === 'l1-1') {
+          failed.resolve()
+          throw new Error('start failed')
+        }
+        await late.promise
+      },
+      async stop() {
+        stopped.push(name)
+      },
+    }))
+    const callback = vi.fn()
+    const setup = Pool.setup({
+      instances: {
+        l1: (id) => definition(`l1-${id}`),
+        l2: (id) => definition(`l2-${id}`),
+      },
+      setup: callback,
+    })
+    const result = setup(testProject(2).project).catch(
+      (error: unknown) => error,
+    )
+    await failed.promise
+    expect(stopped).toEqual([])
+    late.resolve()
+    expect(await result).toEqual(new Error('start failed'))
+    expect(callback).not.toHaveBeenCalled()
+    expect(stopped.sort()).toEqual(['l1-2', 'l2-1', 'l2-2'])
+  })
+
+  test.each([
+    false,
+    true,
+  ])('cleans up named pools after callback failure, stop failure: %s', async (failStop) => {
+    const stopped: string[] = []
+    const definition = Instance.define((name: string) => ({
+      host: 'localhost',
+      name,
+      port: 3000,
+      async start() {},
+      async stop() {
+        stopped.push(name)
+        if (failStop && name === 'l1') throw new Error('stop failed')
+      },
+    }))
+    const setup = Pool.setup({
+      instances: { l1: definition('l1'), l2: definition('l2') },
+      setup() {
+        throw new Error('setup failed')
+      },
+    })
+    const error = await setup(testProject(1).project).catch(
+      (error: unknown) => error,
+    )
+    if (failStop) {
+      expect(error).toBeInstanceOf(AggregateError)
+      expect((error as AggregateError).errors).toEqual([
+        new Error('setup failed'),
+        new Error('stop failed'),
+      ])
+    } else expect(error).toEqual(new Error('setup failed'))
+    expect(stopped.sort()).toEqual(['l1', 'l2'])
+  })
+
   test('starts one instance per worker and provides setup context', async () => {
     const started: number[] = []
     const stopped: number[] = []
