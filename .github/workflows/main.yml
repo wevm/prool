@@ -1,7 +1,7 @@
 name: Main
 on:
   push:
-    branches: [main]
+    branches: [main, jxom/base-localnet]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -10,11 +10,13 @@ concurrency:
 jobs:
   verify:
     name: Verify
+    if: github.ref == 'refs/heads/main'
     uses: ./.github/workflows/verify.yml
     secrets: inherit
 
   changesets:
     name: Changesets
+    if: github.ref == 'refs/heads/main'
     permissions:
       contents: write
       id-token: write
@@ -43,6 +45,8 @@ jobs:
   release-images:
     name: Release images
     needs: verify
+    # Bootstrap the first image from this branch before verification can pull it.
+    if: ${{ !cancelled() && (github.ref == 'refs/heads/jxom/base-localnet' || needs.verify.result == 'success') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     permissions:
