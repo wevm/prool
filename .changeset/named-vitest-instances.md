@@ -1,5 +1,5 @@
 ---
-'prool': minor
+'prool': patch
 ---
 
 Added named instances to Vitest server and pool setup with worker isolation and independent server lifecycle controls.
