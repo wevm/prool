@@ -334,6 +334,14 @@ const instance_3 = await pool.start(3)
 use `Server.get` to address, reset, or restart its own instance. `Pool.setup`
 eagerly starts one direct instance per worker instead.
 
+Both helpers also accept named `instances` instead of `instance`. Each name
+gets its own isolated instance per worker. The single-instance API is unchanged.
+Concurrent tests within one worker still share that worker's instances.
+
+Both helpers clean up all named resources during teardown or failed setup.
+Eager pools wait for pending starts before cleanup. Teardown attempts every
+named resource even when another teardown fails, and reports cleanup errors.
+
 #### Config
 
 ```ts
@@ -381,6 +389,46 @@ export const rpcUrl = anvil.url
 `reset` destroys only that worker's instance, and its next request starts a
 fresh one. `restart` retains the pooled instance and endpoint.
 
+For multiple instances, pass named `instances` to start one lazy proxy per name.
+Each proxy binds to an automatically assigned port, and each pool allows up to
+`maxWorkers` instances. Definitions can also be factories that receive the
+worker's pool ID.
+
+```ts
+// test/setup.global.ts
+import { Instance } from 'prool'
+import { Server } from 'prool/vitest'
+import type { TestProject } from 'vitest/node'
+
+declare module 'vitest' {
+  export interface ProvidedContext {
+    chains: { l1: Server.Context; l2: Server.Context }
+  }
+}
+
+export default Server.setup({
+  instances: {
+    l1: Instance.anvil(),
+    l2: Instance.anvil(),
+  },
+  setup(chains, project: TestProject) {
+    project.provide('chains', chains)
+  },
+})
+```
+
+```ts
+// test/setup.ts
+import { Server } from 'prool/vitest'
+import { inject } from 'vitest'
+
+export const { l1, l2 } = Server.get(inject('chains'))
+await Promise.all([l1.reset(), l2.reset()])
+```
+
+`l1.url` and `l2.url` address separate instances for the current worker.
+Resetting or restarting one does not affect the other names or workers.
+
 #### Eager Pool
 
 ```ts
@@ -410,6 +458,44 @@ import { Pool } from 'prool/vitest'
 import { inject } from 'vitest'
 
 export const rpcUrl = Pool.get(inject('rpcUrls'))
+```
+
+For multiple instances, pass named `instances`. The setup callback receives an
+array of named records, ordered by worker ID. Provide serializable values such
+as URLs; `Pool.get` selects the current worker's record.
+
+```ts
+// test/setup.global.ts
+import { Instance } from 'prool'
+import { Pool } from 'prool/vitest'
+import type { TestProject } from 'vitest/node'
+
+declare module 'vitest' {
+  export interface ProvidedContext {
+    chainUrls: readonly { l1: string; l2: string }[]
+  }
+}
+
+export default Pool.setup({
+  instances: {
+    l1: Instance.anvil(),
+    l2: Instance.anvil(),
+  },
+  setup(instances, project: TestProject) {
+    project.provide(
+      'chainUrls',
+      instances.map(({ l1, l2 }) => ({ l1: l1.url, l2: l2.url })),
+    )
+  },
+})
+```
+
+```ts
+// test/setup.ts
+import { Pool } from 'prool/vitest'
+import { inject } from 'vitest'
+
+export const { l1, l2 } = Pool.get(inject('chainUrls'))
 ```
 
 ## Authors
