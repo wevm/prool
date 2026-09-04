@@ -1,0 +1,113 @@
+diff --git a/etc/systems/src/l2/in_process_builder.rs b/etc/systems/src/l2/in_process_builder.rs
+--- a/etc/systems/src/l2/in_process_builder.rs
++++ b/etc/systems/src/l2/in_process_builder.rs
+@@ -13,6 +13,7 @@
+ use base_builder_core::{BuilderConfig, test_utils::get_available_port};
+ use base_builder_multiplex::MultiplexingServiceBuilder;
+ use base_execution_chainspec::BaseChainSpec;
++use base_execution_eip8130_rpc_node::{Eip8130RpcExtension, Eip8130RpcMode};
+ use base_execution_txpool::{
+     BasePooledTransaction, BuilderApiImpl, BuilderApiServer, DEFAULT_MAX_VALIDITY_PREDICATES,
+ };
+@@ -186,6 +187,8 @@
+         let accept_validity_transactions = config.enable_experimental_validity_transactions;
+         let extra_extensions = config.extra_extensions;
+         let mut hooks = NodeHooks::new();
++        hooks = Box::new(Eip8130RpcExtension::new(Eip8130RpcMode::Register))
++            .apply(hooks);
+         if accept_validity_transactions {
+             hooks = Box::new(SendRawTransactionValidityExtension::from_config(
+                 DEFAULT_MAX_VALIDITY_PREDICATES,
+@@ -393,4 +396,4 @@
+-    rpc.http_addr = Ipv4Addr::LOCALHOST.into();
++    rpc.http_addr = Ipv4Addr::UNSPECIFIED.into();
+     rpc.ws_addr = Ipv4Addr::LOCALHOST.into();
+     rpc.auth_jwtsecret = Some(jwt_path.to_path_buf());
+     // Match docker-compose `--rpc.eth-proof-window=1209600` (reth default is 0).
+diff --git a/etc/systems/src/l2/in_process_client.rs b/etc/systems/src/l2/in_process_client.rs
+--- a/etc/systems/src/l2/in_process_client.rs
++++ b/etc/systems/src/l2/in_process_client.rs
+@@ -11,6 +11,7 @@
+ use base_execution_cli::{
+     ExecutionUpgradeSignal, ExecutionUpgradeSignalConfig, ExecutionUpgradeSignalRuntimeExtension,
+ };
++use base_execution_eip8130_rpc_node::{Eip8130RpcExtension, Eip8130RpcMode};
+ use base_execution_txpool::DEFAULT_MAX_VALIDITY_PREDICATES;
+ use base_flashblocks::FlashblocksConfig;
+ use base_flashblocks_node::FlashblocksExtension;
+@@ -188,6 +188,7 @@
+             };
+         rpc_args.auth_ipc_path = unique_ipc_path;
+         rpc_args.auth_jwtsecret = Some(jwt_path);
++        rpc_args.http_addr = std::net::Ipv4Addr::UNSPECIFIED.into();
+         rpc_args.rpc_eth_proof_window = 1_209_600;
+         if let Some(port) = config.http_port {
+             rpc_args.http_port = port;
+@@ -247,4 +249,10 @@
+         let (mut extensions, flashblocks_config) = Self::build_extensions(&config)?;
++        let eip8130_rpc_mode = if flashblocks_config.is_some() {
++            Eip8130RpcMode::Defer
++        } else {
++            Eip8130RpcMode::Register
++        };
++        extensions.push(Box::new(Eip8130RpcExtension::new(eip8130_rpc_mode)));
+         extensions.extend(config.extra_extensions);
+         // Flashblocks extension must be installed last: it uses `replace_configured`, which
+         // overwrites RPC methods (e.g. `eth_getTransactionCount`, `eth_subscribe`) that
+diff --git a/etc/systems/src/lib.rs b/etc/systems/src/lib.rs
+--- a/etc/systems/src/lib.rs
++++ b/etc/systems/src/lib.rs
+@@ -14,2 +14,4 @@
++pub mod prool_fixture;
++
+ mod utils;
+ pub use utils::unique_name;
+diff --git a/etc/systems/src/l2/snapshot_stack.rs b/etc/systems/src/l2/snapshot_stack.rs
+--- a/etc/systems/src/l2/snapshot_stack.rs
++++ b/etc/systems/src/l2/snapshot_stack.rs
+@@ -66,3 +66,3 @@
+         let block_interval = config.snapshot.block_interval;
+-        let canonical_rollup_config = Arc::new(ChainConfig::mainnet().rollup_config());
++        let canonical_rollup_config = Arc::new(crate::prool_fixture::rollup_config());
+         let first_block_timestamp = Self::schedule_anchor(SystemTime::now())?;
+@@ -224,3 +224,3 @@
+     ) -> Result<RollupConfig> {
+-        let mut config = ChainConfig::mainnet().rollup_config();
++        let mut config = crate::prool_fixture::rollup_config();
+         let first_block_number = boundary_number
+@@ -254,3 +254,7 @@
+     ) -> BaseChainSpec {
+-        let mut chain_spec = BaseChainSpec::mainnet();
++        let mut chain_spec = if crate::prool_fixture::enabled() {
++            crate::prool_fixture::chain_spec()
++        } else {
++            BaseChainSpec::mainnet()
++        };
+         if block_interval == DevnetBlockInterval::TwoHundredMilliseconds {
+@@ -336,3 +340,3 @@
+             self.builder.rpc_url()?,
+-            Arc::new(ChainConfig::mainnet().rollup_config()),
++            Arc::new(crate::prool_fixture::rollup_config()),
+             ChainConfig::mainnet().chain_id,
+diff --git a/etc/systems/Cargo.toml b/etc/systems/Cargo.toml
+--- a/etc/systems/Cargo.toml
++++ b/etc/systems/Cargo.toml
+@@ -26,6 +26,7 @@
+ base-builder-multiplex.workspace = true
+ base-tx-forwarding.workspace = true
+ base-execution-cli.workspace = true
++base-execution-eip8130-rpc-node.workspace = true
+ base-txpool-tracing.workspace = true
+ base-upgrade-signal.workspace = true
+ base-batcher-encoder.workspace = true
+diff --git a/Cargo.lock b/Cargo.lock
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -6271,6 +6271,7 @@
+  "base-consensus-sources",
+  "base-execution-chainspec",
+  "base-execution-cli",
++ "base-execution-eip8130-rpc-node",
+  "base-execution-rpc",
+  "base-execution-txpool",
+  "base-flashblocks",

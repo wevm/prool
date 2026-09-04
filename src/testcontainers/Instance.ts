@@ -16,6 +16,7 @@ import {
 import * as ContainerOptions from './containerOptions.js'
 
 export type { Endpoint, Instance, InstanceOptions } from '../Instance.js'
+export { base } from './instances/base.js'
 
 /**
  * Defines an instance backed by a Docker Compose environment.

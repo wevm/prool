@@ -23,7 +23,7 @@ jobs:
 
   test:
     name: Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       TEMPO_VERSION: v1.5.0
     steps:
@@ -56,6 +56,15 @@ jobs:
 
       - name: Add Tempo to PATH
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Pull images
+        env:
+          BASE_IMAGE: ${{ vars.BASE_IMAGE }}
+        run: |
+          : "${BASE_IMAGE:?Set the BASE_IMAGE repository variable to a published GHCR image digest}"
+          source docker/base/config.env
+          docker pull --platform linux/amd64 "$BASE_IMAGE"
+          docker tag "$BASE_IMAGE" "prool-base-localnet:$BASE_REVISION"
 
       - name: Run tests
         run: |

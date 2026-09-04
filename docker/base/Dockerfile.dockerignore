@@ -1,0 +1,7 @@
+**
+!docker/
+!docker/base/
+!docker/base/devnet.patch
+!docker/base/fixture.rs
+!docker/base/prepare-fixture.rs
+!docker/base/entrypoint.sh

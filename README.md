@@ -143,6 +143,14 @@ await server.start()
 
 Pin `image` to a release tag or digest in CI. Pass `bare: true` for tests that need an unbootstrapped development node.
 
+### Base (Execution Node)
+
+```ts
+import { Instance } from 'prool/testcontainers'
+
+const instance = Instance.base()
+```
+
 ### Alto (Bundler Node)
 
 #### Requirements
