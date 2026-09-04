@@ -1,5 +1,25 @@
 # prool
 
+## 0.2.15
+
+### Patch Changes
+
+- [#107](https://github.com/wevm/prool/pull/107) [`1c26fa8`](https://github.com/wevm/prool/commit/1c26fa8e46ca9af40aec74228a552d08d8a130f1) Thanks [@jxom](https://github.com/jxom)! - Added named instances to Vitest server and pool setup with worker isolation and independent server lifecycle controls.
+
+  ```ts
+  import { Instance } from "prool";
+  import { Server } from "prool/vitest";
+
+  export default Server.setup({
+    instances: { l1: Instance.anvil(), l2: Instance.anvil() },
+    setup(chains, project) {
+      project.provide("chains", chains);
+    },
+  });
+  ```
+
+- [#107](https://github.com/wevm/prool/pull/107) [`1c26fa8`](https://github.com/wevm/prool/commit/1c26fa8e46ca9af40aec74228a552d08d8a130f1) Thanks [@jxom](https://github.com/jxom)! - Fixed IPv4 pool port allocation, process restart races, and startup rejection when a child exits before becoming ready.
+
 ## 0.2.14
 
 ### Patch Changes
