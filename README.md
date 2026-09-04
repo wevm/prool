@@ -123,26 +123,6 @@ await server.start()
 // "http://localhost:8545/n"
 ```
 
-#### Bootstrapped localnet container
-
-Use the Tempo localnet image when tests need deterministic accounts, the canonical TIP-20 faucet, Fee AMM pools, and Stablecoin DEX liquidity. The instance waits for the image health check before accepting requests.
-
-```ts
-import { Server } from 'prool'
-import { Instance } from 'prool/testcontainers'
-
-const server = Server.create({
-  instance: Instance.tempoLocalnet({
-    blockTime: '1ms',
-    image: 'ghcr.io/tempoxyz/tempo-localnet:latest',
-  }),
-})
-
-await server.start()
-```
-
-Pin `image` to a release tag or digest in CI. Pass `bare: true` for tests that need an unbootstrapped development node.
-
 ### Alto (Bundler Node)
 
 #### Requirements
