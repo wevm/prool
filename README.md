@@ -98,6 +98,31 @@ await server.start()
 // "http://localhost:8545/n"
 ```
 
+#### Viem Test Client
+
+```ts
+import { Instance, Server } from 'prool'
+import { createTestClient, http } from 'viem'
+import { foundry } from 'viem/chains'
+
+const server = Server.create({
+  instance: Instance.anvil(),
+})
+await server.start()
+
+const client = createTestClient({
+  chain: foundry,
+  mode: 'anvil',
+  transport: http('http://localhost:8545/1'),
+})
+
+await client.mine({ blocks: 1 })
+```
+
+The server lazily starts the Anvil instance for `/1` when the test client sends
+its first request. To start it eagerly, request `http://localhost:8545/1/start`
+before creating the client.
+
 ### Tempo (Execution Node)
 
 #### Requirements
