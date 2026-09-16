@@ -202,3 +202,21 @@ describe('tempoZone', () => {
     expect(instance.status).toEqual('stopped')
   })
 })
+
+test('behavior: selects hardfork', { timeout: slowTestTimeout }, async () => {
+  const instance = defineInstance({ hardfork: 'T10' })
+  await instance.start()
+  const response = await fetch(instance.url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'tempo_forkSchedule',
+      params: [],
+    }),
+  })
+  const { result, error } = await response.json()
+  expect(error).toBeUndefined()
+  expect(result.active).toBe('T10')
+})
