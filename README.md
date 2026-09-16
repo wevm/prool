@@ -123,22 +123,6 @@ await server.start()
 // "http://localhost:8545/n"
 ```
 
-Set `hardfork` to activate a specific Tempo fork and all earlier forks from genesis:
-
-```ts
-import { Instance } from 'prool'
-
-const instance = Instance.tempo({ hardfork: 'T10' })
-await instance.start()
-```
-
-The same option is available on `Instance.tempo` from `prool/testcontainers`.
-Prool exports genesis from the selected binary or image, disables later Tempo forks,
-and starts the node with the modified genesis. The fork must be present in that
-genesis or startup fails. When `chain` is omitted, `hardfork` uses the dev genesis.
-Genesis allocations and Ethereum fork settings are preserved. Without `hardfork`,
-the node's existing defaults apply.
-
 ### Alto (Bundler Node)
 
 #### Requirements
