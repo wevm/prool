@@ -1,5 +1,18 @@
 # prool
 
+## 0.2.16
+
+### Patch Changes
+
+- [#110](https://github.com/wevm/prool/pull/110) [`4bf95e2`](https://github.com/wevm/prool/commit/4bf95e25e27aee75abafd5493d71dc594ee430ab) Thanks [@jxom](https://github.com/jxom)! - Added a Tempo `hardfork` option that activates the selected fork and earlier forks at genesis while disabling later forks for binary and container instances.
+
+  ```ts
+  import { Instance } from "prool";
+
+  const instance = Instance.tempo({ hardfork: "T10" });
+  await instance.start();
+  ```
+
 ## 0.2.15
 
 ### Patch Changes
