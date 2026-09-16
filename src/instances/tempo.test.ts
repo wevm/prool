@@ -1,4 +1,5 @@
 import * as os from 'node:os'
+import * as path from 'node:path'
 import getPort from 'get-port'
 import { Instance } from 'prool'
 import { afterEach, expect, test } from 'vitest'
@@ -205,3 +206,70 @@ test('command: behavior: http port override', () => {
     `"node --authrpc.port 8575 --datadir <tmpdir>/.prool/tempo.8545 --dev --dev.block-time 50ms --engine.disable-precompile-cache --engine.legacy-state-root --faucet.address 0x20c0000000000000000000000000000000000000 0x20c0000000000000000000000000000000000001 0x20c0000000000000000000000000000000000002 0x20c0000000000000000000000000000000000003 --faucet.amount 1000000000000 --faucet.enabled --faucet.private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --faucet.node-address http://localhost:1337 --http.addr 0.0.0.0 --http.api all --http.corsdomain * --http.port 1337 --port 8555 --ws --ws.addr 0.0.0.0 --ws.api all --ws.port 1337"`,
   )
 })
+
+test(
+  'behavior: selects hardfork across restarts',
+  { timeout: slowTestTimeout },
+  async () => {
+    const instance = defineInstance({ hardfork: 'T9', port: await getPort() })
+    for (let i = 0; i < 2; i++) {
+      await instance.start()
+      const response = await fetch(instance.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'tempo_forkSchedule',
+          params: [],
+        }),
+      })
+      const { result, error } = await response.json()
+      expect(error).toBeUndefined()
+      expect(result.active).toBe('T9')
+      await instance.stop()
+    }
+  },
+)
+
+test('behavior: rejects unsupported hardfork', async () => {
+  const instance = defineInstance({ hardfork: 'T999' })
+  await expect(instance.start()).rejects.toThrow(
+    'Hardfork "T999" is not present in the Tempo genesis.',
+  )
+})
+
+test('command: explicit datadir overrides hardfork directory', () => {
+  const args = command({ datadir: '/custom/tempo', hardfork: 'T9', port: 8545 })
+  expect(args[args.indexOf('--datadir') + 1]).toBe('/custom/tempo')
+})
+
+test(
+  'behavior: isolates hardforks on the same port',
+  { timeout: slowTestTimeout },
+  async () => {
+    const port = await getPort()
+    for (const hardfork of ['T9', 'T10', 'T9'] as const) {
+      const instance = defineInstance({ hardfork, port })
+      await instance.start()
+      const args = instance._internal.process.spawnargs
+      expect(args[args.indexOf('--datadir') + 1]).toBe(
+        path.join(os.tmpdir(), '.prool', `tempo.${port}.${hardfork}`),
+      )
+      const response = await fetch(instance.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'tempo_forkSchedule',
+          params: [],
+        }),
+      })
+      const { result, error } = await response.json()
+      expect(error).toBeUndefined()
+      expect(result.active).toBe(hardfork)
+      await instance.stop()
+    }
+  },
+)

@@ -1,14 +1,21 @@
+import * as fs from 'node:fs/promises'
 import * as os from 'node:os'
 import * as path from 'node:path'
+import { execa as exec } from 'execa'
 import * as Instance from '../Instance.js'
+import { configureGenesis } from '../internal/tempoGenesis.js'
 import { deepAssign, toArgs } from '../internal/utils.js'
 import { execa } from '../processes/execa.js'
 
 export function command(parameters: tempo.Parameters): string[] {
-  const { blockMaxTransactions, blockTime, mnemonic, port, ...rest } =
+  const { blockMaxTransactions, blockTime, hardfork, mnemonic, port, ...rest } =
     parameters
 
-  const datadir = path.join(os.tmpdir(), '.prool', `tempo.${port}`)
+  const datadir = path.join(
+    os.tmpdir(),
+    '.prool',
+    hardfork === undefined ? `tempo.${port}` : `tempo.${port}.${hardfork}`,
+  )
   const defaultParameters = {
     authrpc: {
       port: port! + 30,
@@ -89,7 +96,7 @@ export function command(parameters: tempo.Parameters): string[] {
  * ```
  */
 export const tempo = Instance.define((parameters?: tempo.Parameters) => {
-  const { binary = 'tempo', log: log_, ...args } = parameters || {}
+  const { binary = 'tempo', hardfork, log: log_, ...args } = parameters || {}
 
   const log = (() => {
     try {
@@ -114,36 +121,56 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
     name,
     port: args.port ?? 8545,
     async start({ port = args.port }, options) {
-      return await process.start(
-        ($) =>
-          $({
-            env: {
-              RUST_LOG,
+      let directory: string | undefined
+      let chain = args.chain
+      try {
+        if (hardfork !== undefined) {
+          const { stdout } = await exec(binary, [
+            '-q',
+            'dump-genesis',
+            '--chain',
+            chain ?? 'dev',
+          ])
+          const genesis = configureGenesis(stdout, hardfork)
+          directory = await fs.mkdtemp(
+            path.join(os.tmpdir(), 'prool-tempo-genesis-'),
+          )
+          chain = path.join(directory, 'genesis.json')
+          await fs.writeFile(chain, genesis)
+        }
+        return await process.start(
+          ($) =>
+            $({
+              env: {
+                RUST_LOG,
+              },
+            })`${[binary, ...command({ ...args, chain, hardfork, port })]}`,
+          {
+            ...options,
+            // Resolve when the process is listening via consensus engine message.
+            resolver({ process, reject, resolve }) {
+              process.stdout.on('data', (data) => {
+                const message = data.toString()
+                if (log) console.log(message)
+                if (
+                  message.includes(
+                    'Received new payload from consensus engine',
+                  ) ||
+                  message.includes('Received block from consensus engine')
+                )
+                  resolve()
+                if (message.includes('shutting down')) reject('shutting down')
+              })
+              process.stderr.on('data', (data) => {
+                const message = data.toString()
+                if (log) console.error(message)
+              })
             },
-          })`${[binary, ...command({ ...args, port })]}`,
-        {
-          ...options,
-          // Resolve when the process is listening via consensus engine message.
-          resolver({ process, reject, resolve }) {
-            process.stdout.on('data', (data) => {
-              const message = data.toString()
-              if (log) console.log(message)
-              if (
-                message.includes(
-                  'Received new payload from consensus engine',
-                ) ||
-                message.includes('Received block from consensus engine')
-              )
-                resolve()
-              if (message.includes('shutting down')) reject('shutting down')
-            })
-            process.stderr.on('data', (data) => {
-              const message = data.toString()
-              if (log) console.error(message)
-            })
           },
-        },
-      )
+        )
+      } finally {
+        if (directory) await fs.rm(directory, { recursive: true, force: true })
+      }
     },
     async stop() {
       await process.stop()
@@ -183,6 +210,12 @@ export declare namespace tempo {
      * The path to the data dir for all reth files and subdirectories.
      */
     datadir?: string | undefined
+    /**
+     * Activates this Tempo hardfork and earlier forks at genesis, disabling later forks.
+     * Must be present in the selected chain's genesis. Defaults to the dev chain
+     * when set without `chain`. Preserves genesis allocations.
+     */
+    hardfork?: `T${number}` | 'T1A' | 'T1B' | 'T1C' | undefined
     /**
      * Faucet options.
      */

@@ -13,6 +13,7 @@ import {
   type tempoZone as core_tempoZone,
   command as zoneCommand,
 } from '../instances/tempoZone.js'
+import { configureGenesis } from '../internal/tempoGenesis.js'
 import * as ContainerOptions from './containerOptions.js'
 
 export type { Endpoint, Instance, InstanceOptions } from '../Instance.js'
@@ -323,6 +324,7 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
   const {
     containerName = `tempo.${crypto.randomUUID()}`,
     image = 'ghcr.io/tempoxyz/tempo:latest',
+    hardfork,
     log: log_,
     startupTimeout,
     ...args
@@ -352,6 +354,30 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
 
       const containerPort = port ?? 8545
 
+      let genesis: string | undefined
+      const chain =
+        hardfork === undefined ? args.chain : '/tmp/prool-genesis.json'
+      if (hardfork !== undefined) {
+        const exporter = await new GenericContainer(image)
+          .withPullPolicy(PullPolicy.alwaysPull())
+          .withPlatform('linux/x86_64')
+          .withAutoRemove(false)
+          .withCommand(['-q', 'dump-genesis', '--chain', args.chain ?? 'dev'])
+          .withWaitStrategy(Wait.forOneShotStartup())
+          .withStartupTimeout(
+            ContainerOptions.resolveStartupTimeout(startupTimeout),
+          )
+          .start()
+        try {
+          let output = ''
+          for await (const chunk of await exporter.logs())
+            output += chunk.toString()
+          genesis = configureGenesis(output, hardfork)
+        } finally {
+          await exporter.stop()
+        }
+      }
+
       const c = new GenericContainer(image)
         .withPullPolicy(PullPolicy.alwaysPull())
         .withPlatform('linux/x86_64')
@@ -361,7 +387,7 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
         ])
         .withName(containerName)
         .withEnvironment({ RUST_LOG })
-        .withCommand(command({ ...args, port: containerPort }))
+        .withCommand(command({ ...args, chain, port: containerPort }))
         .withWaitStrategy(
           Wait.forLogMessage(
             /Received (block|new payload) from consensus engine/,
@@ -387,6 +413,9 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
           ContainerOptions.resolveStartupTimeout(startupTimeout),
         )
 
+      if (genesis !== undefined)
+        c.withCopyContentToContainer([{ content: genesis, target: chain! }])
+
       c.start()
         .then((started) => {
           container = started
@@ -410,6 +439,7 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
 
 export declare namespace tempo {
   export type Parameters = Omit<core_tempo.Parameters, 'binary'> &
+    Pick<core_tempo.Parameters, 'chain' | 'hardfork'> &
     ContainerOptions.Parameters & {
       /**
        * Name of the container.
