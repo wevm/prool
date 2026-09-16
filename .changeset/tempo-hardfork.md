@@ -1,5 +1,5 @@
 ---
-"prool": minor
+"prool": patch
 ---
 
 Added a Tempo `hardfork` option that activates the selected fork and earlier forks at genesis while disabling later forks for binary and container instances.
