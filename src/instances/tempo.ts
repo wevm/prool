@@ -8,16 +8,14 @@ import { deepAssign, toArgs } from '../internal/utils.js'
 import { execa } from '../processes/execa.js'
 
 export function command(parameters: tempo.Parameters): string[] {
-  const {
-    blockMaxTransactions,
-    blockTime,
-    hardfork: _,
-    mnemonic,
-    port,
-    ...rest
-  } = parameters
+  const { blockMaxTransactions, blockTime, hardfork, mnemonic, port, ...rest } =
+    parameters
 
-  const datadir = path.join(os.tmpdir(), '.prool', `tempo.${port}`)
+  const datadir = path.join(
+    os.tmpdir(),
+    '.prool',
+    hardfork === undefined ? `tempo.${port}` : `tempo.${port}.${hardfork}`,
+  )
   const defaultParameters = {
     authrpc: {
       port: port! + 30,
@@ -146,7 +144,7 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
               env: {
                 RUST_LOG,
               },
-            })`${[binary, ...command({ ...args, chain, port })]}`,
+            })`${[binary, ...command({ ...args, chain, hardfork, port })]}`,
           {
             ...options,
             // Resolve when the process is listening via consensus engine message.
