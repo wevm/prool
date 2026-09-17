@@ -1,6 +1,8 @@
 import { Instance } from 'prool'
 import { afterEach, expect, test } from 'vitest'
 
+import { anvil } from './anvil.js'
+
 const instances: Instance.Instance[] = []
 const timestamp = 1717114065
 
@@ -38,6 +40,14 @@ test('default', async () => {
   expect(messages.join('')).toBeDefined()
   expect(stdouts.join('')).toBeDefined()
   expect(instance.messages.get()).toMatchInlineSnapshot('[]')
+})
+
+test('behavior: ignores silent option', () => {
+  const instance = anvil({
+    silent: true,
+  } as anvil.Parameters & { silent: boolean })
+
+  expect(instance._internal.args).not.toHaveProperty('silent')
 })
 
 test('behavior: instance errored (duplicate ports)', async () => {
