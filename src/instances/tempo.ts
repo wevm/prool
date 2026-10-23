@@ -1,9 +1,10 @@
+import * as crypto from 'node:crypto'
 import * as fs from 'node:fs/promises'
 import * as os from 'node:os'
 import * as path from 'node:path'
 import { execa as exec } from 'execa'
 import * as Instance from '../Instance.js'
-import { configureGenesis } from '../internal/tempoGenesis.js'
+import { type Genesis, prepareGenesis } from '../internal/tempoGenesis.js'
 import { deepAssign, toArgs } from '../internal/utils.js'
 import { execa } from '../processes/execa.js'
 
@@ -96,7 +97,13 @@ export function command(parameters: tempo.Parameters): string[] {
  * ```
  */
 export const tempo = Instance.define((parameters?: tempo.Parameters) => {
-  const { binary = 'tempo', hardfork, log: log_, ...args } = parameters || {}
+  const {
+    binary = 'tempo',
+    genesis: transform,
+    hardfork,
+    log: log_,
+    ...args
+  } = parameters || {}
 
   const log = (() => {
     try {
@@ -123,20 +130,34 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
     async start({ port = args.port }, options) {
       let directory: string | undefined
       let chain = args.chain
+      let datadir = args.datadir
       try {
-        if (hardfork !== undefined) {
+        if (hardfork !== undefined || transform !== undefined) {
           const { stdout } = await exec(binary, [
             '-q',
             'dump-genesis',
             '--chain',
             chain ?? 'dev',
           ])
-          const genesis = configureGenesis(stdout, hardfork)
+          const genesis = prepareGenesis(stdout, { hardfork, transform })
           directory = await fs.mkdtemp(
             path.join(os.tmpdir(), 'prool-tempo-genesis-'),
           )
           chain = path.join(directory, 'genesis.json')
           await fs.writeFile(chain, genesis)
+          // A node's data holds its genesis, so a changed genesis starts from data of its own.
+          if (transform !== undefined && datadir === undefined) {
+            const digest = crypto
+              .createHash('sha256')
+              .update(genesis)
+              .digest('hex')
+              .slice(0, 16)
+            datadir = path.join(
+              os.tmpdir(),
+              '.prool',
+              `tempo.${port}.genesis-${digest}`,
+            )
+          }
         }
         return await process.start(
           ($) =>
@@ -144,7 +165,7 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
               env: {
                 RUST_LOG,
               },
-            })`${[binary, ...command({ ...args, chain, hardfork, port })]}`,
+            })`${[binary, ...command({ ...args, chain, datadir, hardfork, port })]}`,
           {
             ...options,
             // Resolve when the process is listening via consensus engine message.
@@ -210,6 +231,20 @@ export declare namespace tempo {
      * The path to the data dir for all reth files and subdirectories.
      */
     datadir?: string | undefined
+    /**
+     * Changes the selected chain's genesis before the node starts, such as to set a field of its
+     * `config`. Receives the genesis after `hardfork` applies, and returns the genesis that the node
+     * starts from. Defaults to the dev chain when set without `chain`.
+     *
+     * @example
+     * ```ts
+     * genesis: (genesis) => ({
+     *   ...genesis,
+     *   config: { ...genesis.config, configurableAccountRecoveryFactory: '0x…' },
+     * })
+     * ```
+     */
+    genesis?: ((genesis: Genesis) => Genesis) | undefined
     /**
      * Activates this Tempo hardfork and earlier forks at genesis, disabling later forks.
      * Must be present in the selected chain's genesis. Defaults to the dev chain

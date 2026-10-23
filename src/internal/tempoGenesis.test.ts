@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { configureGenesis } from './tempoGenesis.js'
+import { configureGenesis, prepareGenesis } from './tempoGenesis.js'
 
 const genesis = JSON.stringify({
   config: {
@@ -51,4 +51,28 @@ test('rejects a fork absent from genesis', () => {
   expect(() => configureGenesis(genesis, 'T99')).toThrow(
     'Hardfork "T99" is not present in the Tempo genesis.',
   )
+})
+
+test('applies the hardfork, then the transform', () => {
+  const prepared = JSON.parse(
+    prepareGenesis(genesis, {
+      hardfork: 'T1',
+      transform: (value) => ({
+        ...value,
+        config: { ...value.config, recoveryFactory: '0x7171', t0Time: 5 },
+      }),
+    }),
+  )
+  expect(prepared.config).toEqual({
+    chainId: 1337,
+    pragueTime: 0,
+    recoveryFactory: '0x7171',
+    t0Time: 5,
+    t1Time: 0,
+  })
+  expect(prepared.alloc).toEqual({ '0x1234': { balance: '0x1', code: '0x00' } })
+})
+
+test('returns the genesis unchanged without a hardfork or transform', () => {
+  expect(prepareGenesis(genesis, {})).toBe(genesis)
 })

@@ -13,7 +13,7 @@ import {
   type tempoZone as core_tempoZone,
   command as zoneCommand,
 } from '../instances/tempoZone.js'
-import { configureGenesis } from '../internal/tempoGenesis.js'
+import { prepareGenesis } from '../internal/tempoGenesis.js'
 import * as ContainerOptions from './containerOptions.js'
 
 export type { Endpoint, Instance, InstanceOptions } from '../Instance.js'
@@ -323,6 +323,7 @@ export declare namespace testcontainer {
 export const tempo = Instance.define((parameters?: tempo.Parameters) => {
   const {
     containerName = `tempo.${crypto.randomUUID()}`,
+    genesis: transform,
     image = 'ghcr.io/tempoxyz/tempo:latest',
     hardfork,
     log: log_,
@@ -355,9 +356,9 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
       const containerPort = port ?? 8545
 
       let genesis: string | undefined
-      const chain =
-        hardfork === undefined ? args.chain : '/tmp/prool-genesis.json'
-      if (hardfork !== undefined) {
+      const prepared = hardfork !== undefined || transform !== undefined
+      const chain = prepared ? '/tmp/prool-genesis.json' : args.chain
+      if (prepared) {
         const exporter = await new GenericContainer(image)
           .withPullPolicy(PullPolicy.alwaysPull())
           .withPlatform('linux/x86_64')
@@ -372,7 +373,7 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
           let output = ''
           for await (const chunk of await exporter.logs())
             output += chunk.toString()
-          genesis = configureGenesis(output, hardfork)
+          genesis = prepareGenesis(output, { hardfork, transform })
         } finally {
           await exporter.stop()
         }
@@ -439,7 +440,7 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
 
 export declare namespace tempo {
   export type Parameters = Omit<core_tempo.Parameters, 'binary'> &
-    Pick<core_tempo.Parameters, 'chain' | 'hardfork'> &
+    Pick<core_tempo.Parameters, 'chain' | 'genesis' | 'hardfork'> &
     ContainerOptions.Parameters & {
       /**
        * Name of the container.
