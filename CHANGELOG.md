@@ -1,5 +1,11 @@
 # prool
 
+## 0.2.17
+
+### Patch Changes
+
+- [#115](https://github.com/wevm/prool/pull/115) [`89c31c4`](https://github.com/wevm/prool/commit/89c31c40c0d23198cbd6ee2a0e09248d79ca651f) Thanks [@jxom](https://github.com/jxom)! - Added `genesis` to the Tempo instances, which changes the selected chain's genesis before the node starts, such as to set a field of its `config`.
+
 ## 0.2.16
 
 ### Patch Changes
