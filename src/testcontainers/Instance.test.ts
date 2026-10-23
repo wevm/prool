@@ -203,6 +203,33 @@ describe('tempoZone', () => {
   })
 })
 
+test(
+  'behavior: starts from a changed genesis',
+  { timeout: slowTestTimeout },
+  async () => {
+    const instance = defineInstance({
+      genesis: (genesis) => ({
+        ...genesis,
+        config: { ...genesis.config, chainId: 1338 },
+      }),
+    })
+    await instance.start()
+    const response = await fetch(instance.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'eth_chainId',
+        params: [],
+      }),
+    })
+    const { result, error } = await response.json()
+    expect(error).toBeUndefined()
+    expect(result).toBe('0x53a')
+  },
+)
+
 test('behavior: selects hardfork', { timeout: slowTestTimeout }, async () => {
   const instance = defineInstance({ hardfork: 'T10' })
   await instance.start()
