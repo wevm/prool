@@ -34,7 +34,7 @@ jobs:
         uses: ./.github/actions/install-dependencies
 
       - name: Set up Foundry
-        uses: foundry-rs/foundry-toolchain@v1
+        uses: wevm/actions/vendor/foundry-rs/foundry-toolchain/v1.9.2@73e899a58d51092d694fbaf94b7a1d8c09bfea28
 
       - name: Cache Tempo binary
         id: cache-tempo
