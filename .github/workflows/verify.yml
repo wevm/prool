@@ -10,7 +10,7 @@ jobs:
 
     steps:
       - name: Clone repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install dependencies
         uses: ./.github/actions/install-dependencies
@@ -28,7 +28,7 @@ jobs:
       TEMPO_VERSION: v1.5.0
     steps:
       - name: Clone repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install dependencies
         uses: ./.github/actions/install-dependencies
@@ -38,7 +38,7 @@ jobs:
 
       - name: Cache Tempo binary
         id: cache-tempo
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.local/bin/tempo
           key: tempo-${{ env.TEMPO_VERSION }}-${{ runner.os }}-${{ runner.arch }}
