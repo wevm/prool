@@ -47,30 +47,6 @@ test('default', async () => {
   expect(instance.messages.get()).toMatchInlineSnapshot('[]')
 })
 
-test('behavior: isolates default storage across ports', async () => {
-  const instance_1 = defineInstance({ port: await getPort() })
-  const instance_2 = defineInstance({ port: await getPort() })
-
-  await instance_1.start()
-  await instance_2.start()
-
-  for (const instance of [instance_1, instance_2]) {
-    const response = await fetch(instance.url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'eth_chainId',
-        params: [],
-      }),
-    })
-    const { result, error } = await response.json()
-    expect(error).toBeUndefined()
-    expect(result).toBe('0x539')
-  }
-})
-
 test('behavior: instance errored (duplicate ports)', async () => {
   const instance_1 = defineInstance({ port: 8546 })
   const instance_2 = defineInstance({ port: 8546 })

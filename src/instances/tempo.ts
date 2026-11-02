@@ -9,23 +9,14 @@ import { deepAssign, toArgs } from '../internal/utils.js'
 import { execa } from '../processes/execa.js'
 
 export function command(parameters: tempo.Parameters): string[] {
-  const {
-    blockMaxTransactions,
-    blockTime,
-    datadir: datadir_,
-    hardfork,
-    mnemonic,
-    port,
-    ...rest
-  } = parameters
+  const { blockMaxTransactions, blockTime, hardfork, mnemonic, port, ...rest } =
+    parameters
 
-  const datadir =
-    datadir_ ??
-    path.join(
-      os.tmpdir(),
-      '.prool',
-      hardfork === undefined ? `tempo.${port}` : `tempo.${port}.${hardfork}`,
-    )
+  const datadir = path.join(
+    os.tmpdir(),
+    '.prool',
+    hardfork === undefined ? `tempo.${port}` : `tempo.${port}.${hardfork}`,
+  )
   const defaultParameters = {
     authrpc: {
       port: port! + 30,
