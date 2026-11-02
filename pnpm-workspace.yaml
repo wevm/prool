@@ -1,0 +1,10 @@
+allowBuilds:
+  cpu-features: false
+  esbuild: false
+  msgpackr-extract: false
+  protobufjs: false
+  ssh2: false
+autoInstallPeers: false
+linkWorkspacePackages: deep
+provenance: true
+strictPeerDependencies: false
