@@ -25,7 +25,7 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     env:
-      TEMPO_VERSION: v1.5.0
+      TEMPO_VERSION: v1.16.1
     steps:
       - name: Clone repository
         uses: actions/checkout@v4
