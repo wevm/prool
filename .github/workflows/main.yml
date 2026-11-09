@@ -24,14 +24,14 @@ jobs:
 
     steps:
       - name: Clone repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install dependencies
         uses: ./.github/actions/install-dependencies
 
       - name: PR or publish
         id: changesets
-        uses: wevm/actions/vendor/changesets/action/v1@6d24d44bb98809270f8d2a19d584f29aeb384be5
+        uses: wevm/actions/vendor/changesets/action/v1@31d7c5bc5f75932a367cf341ca5e26818eb9ec9d
         with:
           title: 'chore: version packages'
           commit: 'chore: version packages'
