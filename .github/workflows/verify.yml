@@ -10,7 +10,7 @@ jobs:
 
     steps:
       - name: Clone repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install dependencies
         uses: ./.github/actions/install-dependencies
@@ -28,17 +28,17 @@ jobs:
       TEMPO_VERSION: v1.5.0
     steps:
       - name: Clone repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install dependencies
         uses: ./.github/actions/install-dependencies
 
       - name: Set up Foundry
-        uses: wevm/actions/vendor/foundry-rs/foundry-toolchain/v1.9.2@8963daf30237417f873c8e2f17e3bf9415e3a7b9
+        uses: wevm/actions/vendor/foundry-rs/foundry-toolchain/v1.9.2@b518cf981b50a4c745a8b7335fc693f34b108a75
 
       - name: Cache Tempo binary
         id: cache-tempo
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.local/bin/tempo
           key: tempo-${{ env.TEMPO_VERSION }}-${{ runner.os }}-${{ runner.arch }}
