@@ -32,7 +32,6 @@ export function command(parameters: tempo.Parameters): string[] {
     ],
     engine: {
       disablePrecompileCache: true,
-      legacyStateRoot: true,
     },
     faucet: {
       address: [
