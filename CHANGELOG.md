@@ -1,5 +1,11 @@
 # prool
 
+## 0.2.18
+
+### Patch Changes
+
+- [#126](https://github.com/wevm/prool/pull/126) [`e654bd3`](https://github.com/wevm/prool/commit/e654bd3fc11097ec90be1edb16ed8a9c0042d533) Thanks [@jxom](https://github.com/jxom)! - Fixed Tempo instances failing to start on current Tempo nodes, such as `ghcr.io/tempoxyz/tempo:latest`, by no longer passing `--engine.legacy-state-root`. Tempo removed the flag, which had no effect since Tempo 1.11. To keep it on an older node, pass `engine: { legacyStateRoot: true }`.
+
 ## 0.2.17
 
 ### Patch Changes
