@@ -257,7 +257,9 @@ export function create<instance extends Instance = Instance>(
           ids.map((id) => () => pool.start(id)),
         )
       } catch (error) {
-        await this.stop().catch(() => {})
+        // Stopping waits for pending starts, so it continues in the background to keep the
+        // timeout a bound on `start()`.
+        this.stop().catch(() => {})
         throw error
       }
       return this.stop

@@ -338,6 +338,20 @@ describe('tempoId', () => {
     await expect(fetch(instance.url)).rejects.toThrow()
   })
 
+  test('serves on the port of create()', async () => {
+    const port = await getPort()
+    const instance = Instance.tempoId({
+      image,
+      pullPolicy: PullPolicy.defaultPolicy(),
+    }).create({ port })
+    instances.push(instance as Instance.Instance)
+    await instance.start()
+
+    expect(instance.url).toBe(`http://localhost:${port}`)
+    const env = await fetch(`${instance.url}/env`).then((r) => r.json())
+    expect(env.PORT).toBe(String(port))
+  })
+
   test('checks an external instance without starting a container', async () => {
     const port = await getPort()
     const container = Instance.tempoId({

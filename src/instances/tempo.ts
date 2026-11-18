@@ -8,6 +8,14 @@ import { type Genesis, prepareGenesis } from '../internal/tempoGenesis.js'
 import { deepAssign, toArgs } from '../internal/utils.js'
 import { execa } from '../processes/execa.js'
 
+/** Dev genesis tokens that the faucet funds by default. */
+export const faucetAddresses = [
+  '0x20c0000000000000000000000000000000000000',
+  '0x20c0000000000000000000000000000000000001',
+  '0x20c0000000000000000000000000000000000002',
+  '0x20c0000000000000000000000000000000000003',
+] as const
+
 export function command(parameters: tempo.Parameters): string[] {
   const { blockMaxTransactions, blockTime, hardfork, mnemonic, port, ...rest } =
     parameters
@@ -34,14 +42,7 @@ export function command(parameters: tempo.Parameters): string[] {
       disablePrecompileCache: true,
     },
     faucet: {
-      address: [
-        '0x20c0000000000000000000000000000000000000',
-        '0x20c0000000000000000000000000000000000001',
-        '0x20c0000000000000000000000000000000000002',
-        '0x20c0000000000000000000000000000000000003',
-        // OUSD
-        '0x20c0000000000000000000006a37da5c996874be',
-      ],
+      address: faucetAddresses,
       amount: '1000000000000',
       enabled: true,
       privateKey:
@@ -258,8 +259,8 @@ export declare namespace tempo {
     faucet?:
       | {
           /**
-           * Token addresses the faucet funds (`--faucet.address`). Replaces the default list:
-           * the dev genesis tokens `0x20c0…0000` to `0x20c0…0003` and OUSD.
+           * Token addresses the faucet funds (`--faucet.address`). Replaces the default list,
+           * the dev genesis tokens `0x20c0…0000` to `0x20c0…0003`.
            */
           address?: readonly string[] | undefined
           /**

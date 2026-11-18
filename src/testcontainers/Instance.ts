@@ -7,7 +7,11 @@ import {
   Wait,
 } from 'testcontainers'
 import * as Instance from '../Instance.js'
-import { command, type tempo as core_tempo } from '../instances/tempo.js'
+import {
+  command,
+  type tempo as core_tempo,
+  faucetAddresses,
+} from '../instances/tempo.js'
 import {
   type tempoZone as core_tempoZone,
   command as zoneCommand,
@@ -310,6 +314,9 @@ export declare namespace testcontainer {
   }
 }
 
+const tempoImage = 'ghcr.io/tempoxyz/tempo:latest'
+const tempoOusd = '0x20c0000000000000000000006a37da5c996874be'
+
 /**
  * Defines a Tempo instance.
  *
@@ -325,7 +332,7 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
   const {
     containerName = `tempo.${crypto.randomUUID()}`,
     genesis: transform,
-    image = 'ghcr.io/tempoxyz/tempo:latest',
+    image = tempoImage,
     hardfork,
     log: log_,
     pullPolicy,
@@ -343,6 +350,7 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
   const RUST_LOG = log && typeof log !== 'boolean' ? log : ''
 
   const name = 'tempo'
+  const faucet = args['faucet'] as core_tempo.Parameters['faucet']
   let container: StartedTestContainer | undefined
 
   return {
@@ -388,7 +396,22 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
         .withExtraHosts([Network.hostGateway])
         .withName(containerName)
         .withEnvironment({ RUST_LOG })
-        .withCommand(command({ ...args, chain, port: containerPort }))
+        .withCommand(
+          command({
+            ...args,
+            chain,
+            // The default image's dev genesis holds OUSD. On a genesis without it, funding fails.
+            ...(image === tempoImage && !faucet?.address
+              ? {
+                  faucet: {
+                    ...faucet,
+                    address: [...faucetAddresses, tempoOusd],
+                  },
+                }
+              : {}),
+            port: containerPort,
+          }),
+        )
         .withWaitStrategy(
           Wait.forLogMessage(
             /Received (block|new payload) from consensus engine/,
@@ -518,7 +541,7 @@ export const tempoId = Instance.define((parameters?: tempoId.Parameters) => {
     host: endpoint.host,
     name: 'tempo-id',
     port: endpoint.port,
-    async start(_, { emitter }) {
+    async start({ port = endpoint.port }, { emitter }) {
       if (external) {
         if (await TempoId.healthy(external.origin)) return
         throw new Error(

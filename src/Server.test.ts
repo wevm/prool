@@ -743,6 +743,27 @@ describe('ready', () => {
     expect(server.listening).toBe(false)
   })
 
+  test('rejects at the timeout while a start hangs', async () => {
+    const release = Promise.withResolvers<void>()
+    const server = Server.create({
+      instance: Instance.define(() => ({
+        host: 'localhost',
+        name: 'hang',
+        port: 3000,
+        start: () => release.promise,
+        async stop() {},
+      }))(),
+      ready: { timeout: 200 },
+    })
+    const started = Date.now()
+    await expect(server.start()).rejects.toThrowError(
+      /did not answer `eth_chainId` within 200ms/,
+    )
+    expect(Date.now() - started).toBeLessThan(2_000)
+    expect(server.listening).toBe(false)
+    release.resolve()
+  })
+
   describe('url', () => {
     test('checks the external URL instead of listening', async () => {
       const start = vi.fn()
