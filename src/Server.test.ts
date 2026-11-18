@@ -1,4 +1,4 @@
-import { request } from 'node:http'
+import { createServer, request } from 'node:http'
 import getPort from 'get-port'
 import { Instance, Pool, Server } from 'prool'
 import { afterAll, describe, expect, test, vi } from 'vitest'
@@ -630,4 +630,160 @@ test('404', async () => {
   expect(response.status).toBe(404)
 
   await stop()
+})
+
+describe('ready', () => {
+  const rpcInstance = Instance.define(
+    (options: {
+      chainId: number
+      failStart?: boolean | undefined
+      // Requests that answer 503 before the node answers.
+      warmup?: number | undefined
+    }) => {
+      let requests = 0
+      let server: ReturnType<typeof createServer> | undefined
+      return {
+        host: '127.0.0.1',
+        name: 'rpc',
+        port: 0,
+        async start({ port }) {
+          if (options.failStart) throw new Error('image not found')
+          server = createServer((_request, response) => {
+            if (++requests <= (options.warmup ?? 0))
+              return void response.writeHead(503).end()
+            response.end(
+              JSON.stringify({
+                id: 1,
+                jsonrpc: '2.0',
+                result: `0x${options.chainId.toString(16)}`,
+              }),
+            )
+          })
+          await new Promise<void>((resolve) =>
+            server!.listen(port, '127.0.0.1', resolve),
+          )
+        },
+        async stop() {
+          await new Promise<void>((resolve) => server?.close(() => resolve()))
+        },
+      }
+    },
+  )
+
+  test('starts nothing without ready', async () => {
+    const start = vi.fn()
+    const server = Server.create({
+      instance: Instance.define(() => ({
+        host: 'localhost',
+        name: 'lazy',
+        port: 3000,
+        start,
+        async stop() {},
+      }))(),
+    })
+    const stop = await server.start()
+    expect(start).not.toHaveBeenCalled()
+    await stop()
+  })
+
+  test('waits until every id answers with the chain ID', async () => {
+    const server = Server.create({
+      instance: rpcInstance({ chainId: 1337, warmup: 2 }),
+      ready: { chainId: 1337, ids: [1, 2], timeout: 10_000 },
+    })
+    const stop = await server.start()
+    try {
+      expect(server.url(2)).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/2$/)
+      const messages = await Promise.all(
+        [1, 2].map((id) =>
+          fetch(server.url(id), { method: 'POST', body: '{}' }).then(
+            (response) => response.json(),
+          ),
+        ),
+      )
+      expect(messages.map((message) => message.result)).toEqual([
+        '0x539',
+        '0x539',
+      ])
+    } finally {
+      await stop()
+    }
+  })
+
+  test('rejects and stops when an instance serves another chain', async () => {
+    const server = Server.create({
+      instance: rpcInstance({ chainId: 1 }),
+      ready: { chainId: 1337, timeout: 10_000 },
+    })
+    await expect(server.start()).rejects.toThrowError(
+      /^Instance at http:\/\/127\.0\.0\.1:\d+\/1 serves chain 1, not chain 1337\.$/,
+    )
+    expect(server.listening).toBe(false)
+  })
+
+  test('rejects at once when an instance fails to start', async () => {
+    const server = Server.create({
+      instance: rpcInstance({ chainId: 1, failStart: true }),
+      ready: { timeout: 60_000 },
+    })
+    const started = Date.now()
+    await expect(server.start()).rejects.toThrowError('image not found')
+    expect(Date.now() - started).toBeLessThan(5_000)
+    expect(server.listening).toBe(false)
+  })
+
+  test('rejects after the timeout', async () => {
+    const server = Server.create({
+      instance: rpcInstance({ chainId: 1, warmup: Number.POSITIVE_INFINITY }),
+      ready: { timeout: 1_000 },
+    })
+    await expect(server.start()).rejects.toThrowError(
+      /did not answer `eth_chainId` within 1000ms \(last: 503 \)\.$/,
+    )
+    expect(server.listening).toBe(false)
+  })
+
+  describe('url', () => {
+    test('checks the external URL instead of listening', async () => {
+      const start = vi.fn()
+      const external = Server.create({
+        instance: rpcInstance({ chainId: 1337 }),
+        ready: { chainId: 1337, ids: [1], timeout: 10_000 },
+      })
+      const stopExternal = await external.start()
+      try {
+        const server = Server.create({
+          instance: Instance.define(() => ({
+            host: 'localhost',
+            name: 'unused',
+            port: 3000,
+            start,
+            async stop() {},
+          }))(),
+          url: external.url(1),
+        })
+        const stop = await server.start()
+        expect(server.listening).toBe(false)
+        expect(server.address()).toBeNull()
+        expect(server.url()).toBe(external.url(1))
+        expect(server.url(2)).toBe(external.url(1))
+        expect(start).not.toHaveBeenCalled()
+        await stop()
+      } finally {
+        await stopExternal()
+      }
+    })
+
+    test('rejects when the external URL does not answer', async () => {
+      const port = await getPort()
+      const server = Server.create({
+        instance: Instance.anvil(),
+        ready: { timeout: 1_000 },
+        url: `http://127.0.0.1:${port}`,
+      })
+      await expect(server.start()).rejects.toThrowError(
+        `Instance at http://127.0.0.1:${port} did not answer \`eth_chainId\` within 1000ms (last: fetch failed).`,
+      )
+    })
+  })
 })

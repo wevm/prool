@@ -39,6 +39,8 @@ export function command(parameters: tempo.Parameters): string[] {
         '0x20c0000000000000000000000000000000000001',
         '0x20c0000000000000000000000000000000000002',
         '0x20c0000000000000000000000000000000000003',
+        // OUSD
+        '0x20c0000000000000000000006a37da5c996874be',
       ],
       amount: '1000000000000',
       enabled: true,
@@ -256,9 +258,10 @@ export declare namespace tempo {
     faucet?:
       | {
           /**
-           * Target token addresses for the faucet to be funding with
+           * Token addresses the faucet funds (`--faucet.address`). Replaces the default list:
+           * the dev genesis tokens `0x20c0…0000` to `0x20c0…0003` and OUSD.
            */
-          addresses?: string[] | undefined
+          address?: readonly string[] | undefined
           /**
            * Amount for each faucet funding transaction
            */

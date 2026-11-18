@@ -1,7 +1,6 @@
 import {
+  Network as DockerNetwork,
   GenericContainer,
-  Network,
-  PullPolicy,
   type StartedNetwork,
   type StartedTestContainer,
   type TestContainer,
@@ -15,6 +14,8 @@ import {
 } from '../instances/tempoZone.js'
 import { prepareGenesis } from '../internal/tempoGenesis.js'
 import * as ContainerOptions from './containerOptions.js'
+import * as Network from './Network.js'
+import * as TempoId from './TempoId.js'
 
 export type { Endpoint, Instance, InstanceOptions } from '../Instance.js'
 
@@ -327,6 +328,7 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
     image = 'ghcr.io/tempoxyz/tempo:latest',
     hardfork,
     log: log_,
+    pullPolicy,
     startupTimeout,
     ...args
   } = parameters || {}
@@ -360,7 +362,7 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
       const chain = prepared ? '/tmp/prool-genesis.json' : args.chain
       if (prepared) {
         const exporter = await new GenericContainer(image)
-          .withPullPolicy(PullPolicy.alwaysPull())
+          .withPullPolicy(ContainerOptions.resolvePullPolicy(pullPolicy))
           .withPlatform('linux/x86_64')
           .withAutoRemove(false)
           .withCommand(['-q', 'dump-genesis', '--chain', args.chain ?? 'dev'])
@@ -380,12 +382,10 @@ export const tempo = Instance.define((parameters?: tempo.Parameters) => {
       }
 
       const c = new GenericContainer(image)
-        .withPullPolicy(PullPolicy.alwaysPull())
+        .withPullPolicy(ContainerOptions.resolvePullPolicy(pullPolicy))
         .withPlatform('linux/x86_64')
         .withExposedPorts(containerPort)
-        .withExtraHosts([
-          { host: 'host.docker.internal', ipAddress: 'host-gateway' },
-        ])
+        .withExtraHosts([Network.hostGateway])
         .withName(containerName)
         .withEnvironment({ RUST_LOG })
         .withCommand(command({ ...args, chain, port: containerPort }))
@@ -461,6 +461,168 @@ export declare namespace tempo {
     }
 }
 
+/**
+ * Defines a Tempo ID instance backed by the `id-dev` image: Tempo ID, its database, and an inbox
+ * that returns each sign-in code (read it with `TempoId.code`).
+ *
+ * The container serves on `port` and publishes the same host port, since Tempo ID bakes its origin
+ * (`http://localhost:${port}`) into every token's issuer. With `url`, starts no container and only
+ * checks the health of the `id-dev` instance at that URL, which must hold the apps itself.
+ *
+ * Pulling `ghcr.io/tempoxyz/id-dev` needs `docker login ghcr.io` with access to the image.
+ *
+ * @example
+ * ```ts
+ * const instance = Instance.tempoId({
+ *   apps: [{ clientId: 'my-app-e2e', name: 'My App', redirectUris: ['http://localhost:5173/callback'] }],
+ *   rpcUrls: { local: { chainId: 1337, url: 'http://127.0.0.1:8545/1' } },
+ *   url: process.env.TEMPO_ID_URL,
+ * })
+ * await instance.start()
+ * const code = await TempoId.code({ email: 'alice@example.org', url: instance.url })
+ * ```
+ */
+export const tempoId = Instance.define((parameters?: tempoId.Parameters) => {
+  const {
+    apps = [],
+    containerName = `tempo-id.${crypto.randomUUID()}`,
+    environment = {},
+    image = 'ghcr.io/tempoxyz/id-dev:latest',
+    log,
+    port = 8787,
+    pullPolicy,
+    resources = [],
+    rpcUrls = {},
+    startupTimeout = 5 * 60_000,
+    url,
+  } = parameters || {}
+
+  const external = url ? new URL(url) : undefined
+  const endpoint = external
+    ? {
+        host: external.hostname,
+        port: Number(
+          external.port || (external.protocol === 'https:' ? 443 : 80),
+        ),
+        protocol: external.protocol === 'https:' ? 'https' : 'http',
+      }
+    : { host: 'localhost', port, protocol: 'http' }
+
+  let container: StartedTestContainer | undefined
+
+  return {
+    _internal: { external: external !== undefined },
+    endpoints: {
+      default: endpoint as Instance.Endpoint<'http' | 'https'>,
+    },
+    host: endpoint.host,
+    name: 'tempo-id',
+    port: endpoint.port,
+    async start(_, { emitter }) {
+      if (external) {
+        if (await TempoId.healthy(external.origin)) return
+        throw new Error(
+          `Tempo ID at ${external.origin} failed its health check. Start an \`id-dev\` instance there, or unset \`url\`.`,
+        )
+      }
+
+      container = await new GenericContainer(image)
+        .withPullPolicy(ContainerOptions.resolvePullPolicy(pullPolicy))
+        .withName(containerName)
+        .withEnvironment({
+          ...environment,
+          ID_DEV_APPS: JSON.stringify(apps),
+          ID_DEV_RESOURCES: JSON.stringify(resources),
+          PORT: String(port),
+          ...(Object.keys(rpcUrls).length > 0
+            ? {
+                RPC_URLS: Object.entries(rpcUrls)
+                  .map(
+                    ([name, { chainId, url }]) =>
+                      `${name}:${chainId}=${Network.reachable(url)}`,
+                  )
+                  .join(','),
+              }
+            : {}),
+        })
+        .withExposedPorts({ container: port, host: port })
+        .withExtraHosts([Network.hostGateway])
+        .withLogConsumer((stream) => {
+          stream.on('data', (data) => {
+            const message = data.toString()
+            emitter.emit('message', message)
+            emitter.emit('stdout', message)
+            if (log) console.log(message)
+          })
+          stream.on('error', (error) => {
+            if (log) console.error(error.message)
+            emitter.emit('message', error.message)
+            emitter.emit('stderr', error.message)
+          })
+        })
+        // Each start applies the migrations.
+        .withStartupTimeout(startupTimeout)
+        .withWaitStrategy(
+          Wait.forHttp('/__id-dev/health', port).forStatusCode(204),
+        )
+        .start()
+    },
+    async stop() {
+      if (!container) return
+      await container.stop()
+      container = undefined
+    },
+  }
+})
+
+export declare namespace tempoId {
+  export type Parameters = Omit<
+    ContainerOptions.Parameters,
+    'startupTimeout'
+  > & {
+    /** Apps that Tempo ID registers at its start (`ID_DEV_APPS`). @default [] */
+    apps?: readonly TempoId.App[] | undefined
+    /** Name of the container. */
+    containerName?: string | undefined
+    /**
+     * Extra container environment, such as `CONFIGURABLE_ACCOUNTS`, `SECRET`, or
+     * `TEMPO_API_URLS`. The other parameters take precedence.
+     */
+    environment?: Record<string, string> | undefined
+    /**
+     * Docker image to use.
+     * @default "ghcr.io/tempoxyz/id-dev:latest"
+     */
+    image?: string | undefined
+    /** Whether to print the container's logs. */
+    log?: boolean | undefined
+    /**
+     * Port the container serves on, and publishes on the same host port.
+     * @default 8787
+     */
+    port?: number | undefined
+    /** Resources that Tempo ID registers after the apps (`ID_DEV_RESOURCES`). @default [] */
+    resources?: readonly TempoId.Resource[] | undefined
+    /**
+     * Extra chains by name (`RPC_URLS`). Loopback URLs are rewritten to `host.docker.internal`
+     * so the container reaches the host.
+     *
+     * @example { local: { chainId: 1337, url: 'http://127.0.0.1:8545/1' } }
+     */
+    rpcUrls?: Record<string, { chainId: number; url: string }> | undefined
+    /**
+     * Startup timeout in milliseconds, which covers the migrations.
+     * @default 300_000
+     */
+    startupTimeout?: number | undefined
+    /**
+     * URL of a running `id-dev` instance. When set, starts no container and only checks its
+     * health.
+     */
+    url?: string | undefined
+  }
+}
+
 const tempoZoneStartupTimeout = 120_000
 
 /**
@@ -485,6 +647,7 @@ export const tempoZone = Instance.define(
       image = 'ghcr.io/tempoxyz/tempo-zone:latest',
       l1: l1Parameters,
       log: log_,
+      pullPolicy,
       startupTimeout,
       ...args
     } = parameters || {}
@@ -598,11 +761,11 @@ export const tempoZone = Instance.define(
           // Start a dev L1 on a shared network unless attaching to an existing one.
           let l1RpcUrl = l1Parameters?.rpcUrl
           if (!l1RpcUrl) {
-            network = await new Network().start()
+            network = await new DockerNetwork().start()
             l1Container = await new GenericContainer(
               l1Parameters?.image ?? 'ghcr.io/tempoxyz/tempo:latest',
             )
-              .withPullPolicy(PullPolicy.alwaysPull())
+              .withPullPolicy(ContainerOptions.resolvePullPolicy(pullPolicy))
               .withPlatform('linux/amd64')
               .withNetwork(network)
               .withNetworkAliases('l1')
@@ -634,13 +797,11 @@ export const tempoZone = Instance.define(
           const promise = Promise.withResolvers<void>()
 
           let c = new GenericContainer(image)
-            .withPullPolicy(PullPolicy.alwaysPull())
+            .withPullPolicy(ContainerOptions.resolvePullPolicy(pullPolicy))
             // The public image currently publishes only linux/amd64.
             .withPlatform('linux/amd64')
             .withExposedPorts(containerPort, effectivePrivateRpcPort)
-            .withExtraHosts([
-              { host: 'host.docker.internal', ipAddress: 'host-gateway' },
-            ])
+            .withExtraHosts([Network.hostGateway])
             .withName(containerName)
             .withEnvironment({ RUST_LOG })
             .withCommand(

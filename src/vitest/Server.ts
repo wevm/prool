@@ -151,7 +151,10 @@ export declare namespace setup {
   export type Parameters<
     instance extends Instance = Instance,
     project extends Project = Project,
-  > = Omit<ProolServer.CreateServerParameters<instance>, 'limit'> & {
+  > = Omit<
+    ProolServer.CreateServerParameters<instance>,
+    'limit' | 'ready' | 'url'
+  > & {
     /** Configures serializable context provided to every worker. */
     setup(context: Context, project: project): Promise<void> | void
   }

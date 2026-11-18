@@ -49,6 +49,11 @@
       "types": "./dist/testcontainers/index.d.ts",
       "default": "./dist/testcontainers/index.js"
     },
+    "./playwright": {
+      "src": "./src/playwright/index.ts",
+      "types": "./dist/playwright/index.d.ts",
+      "default": "./dist/playwright/index.js"
+    },
     "./vitest": {
       "src": "./src/vitest/index.ts",
       "types": "./dist/vitest/index.d.ts",

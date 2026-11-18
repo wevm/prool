@@ -26,7 +26,34 @@ type AddressParameters = {
 }
 
 export type CreateServerParameters<instance extends Instance = Instance> =
-  Pool.define.Parameters<number, instance> & AddressParameters
+  Pool.define.Parameters<number, instance> &
+    AddressParameters & {
+      /**
+       * Waits in `start()` until instances answer `eth_chainId`. Without it, `start()` only
+       * listens, and each instance starts on its first request.
+       */
+      ready?: ReadyParameters | undefined
+      /**
+       * URL of a running instance to use instead. When set, `start()` neither listens nor starts
+       * an instance, and only waits until the URL answers `eth_chainId`.
+       */
+      url?: string | undefined
+    }
+
+export type ReadyParameters = {
+  /** Chain ID that each instance must serve. */
+  chainId?: number | undefined
+  /**
+   * Instance IDs to start and wait for. Ignored with `url`.
+   * @default [1]
+   */
+  ids?: readonly number[] | undefined
+  /**
+   * Longest wait, in milliseconds.
+   * @default 300_000, or 10_000 with `url`
+   */
+  timeout?: number | undefined
+}
 
 export type CreateLeaseServerParameters<instance extends Instance = Instance> =
   {
@@ -34,13 +61,21 @@ export type CreateLeaseServerParameters<instance extends Instance = Instance> =
     pool: Pool.LeasePool<instance>
   } & AddressParameters
 
-export type CreateServerReturnType = Omit<
+export type CreateLeaseServerReturnType = Omit<
   Server<typeof IncomingMessage, typeof ServerResponse>,
   'address'
 > & {
   address(): AddressInfo | null
   start(): Promise<() => Promise<void>>
   stop(): Promise<void>
+}
+
+export type CreateServerReturnType = CreateLeaseServerReturnType & {
+  /**
+   * Returns the URL of instance `id` (`http://host:port/id`), or the server's URL without `id`.
+   * With `url`, returns that URL for any `id`.
+   */
+  url(id?: number | undefined): string
 }
 
 /**
@@ -76,15 +111,15 @@ export function create<instance extends Instance = Instance>(
 ): CreateServerReturnType
 export function create<instance extends Instance = Instance>(
   parameters: CreateLeaseServerParameters<instance>,
-): CreateServerReturnType
+): CreateLeaseServerReturnType
 export function create<instance extends Instance = Instance>(
   parameters:
     | CreateLeaseServerParameters<instance>
     | CreateServerParameters<instance>,
-): CreateServerReturnType {
+): CreateServerReturnType | CreateLeaseServerReturnType {
   if ('pool' in parameters) return createLeaseServer(parameters)
 
-  const { host, instance, limit, port } = parameters
+  const { host, instance, limit, port, ready, url: external } = parameters
 
   const pool = Pool.define({ instance, limit })
   const proxy = createProxyServer({
@@ -201,14 +236,34 @@ export function create<instance extends Instance = Instance>(
   })
 
   return Object.assign(server as any, {
-    start() {
-      return new Promise<() => Promise<void>>((resolve) => {
+    async start() {
+      if (external) {
+        const { chainId, timeout = 10_000 } = ready ?? {}
+        await waitUntilReady([external], { chainId, timeout })
+        return this.stop
+      }
+      await new Promise<void>((resolve) => {
         if (host !== undefined || port !== undefined)
-          server.listen(port ?? 0, host ?? '::', () => resolve(this.stop))
-        else server.listen(() => resolve(this.stop))
+          server.listen(port ?? 0, host ?? '::', resolve)
+        else server.listen(resolve)
       })
+      if (!ready) return this.stop
+      const { chainId, ids = [1], timeout = 300_000 } = ready
+      try {
+        await waitUntilReady(
+          ids.map((id) => this.url(id)),
+          { chainId, timeout },
+          // Starts each instance directly, so a failed start rejects at once.
+          ids.map((id) => () => pool.start(id)),
+        )
+      } catch (error) {
+        await this.stop().catch(() => {})
+        throw error
+      }
+      return this.stop
     },
     async stop() {
+      if (!server.listening) return
       await settle([
         new Promise<void>((resolve, reject) =>
           server.close((error) => (error ? reject(error) : resolve())),
@@ -216,12 +271,23 @@ export function create<instance extends Instance = Instance>(
         pool.destroyAll(),
       ])
     },
+    url(id?: number) {
+      if (external) return external
+      const address = server.address() as AddressInfo | null
+      if (!address) throw new Error('Server is not listening.')
+      const hostname = ['::', '0.0.0.0'].includes(address.address)
+        ? '127.0.0.1'
+        : address.address.includes(':')
+          ? `[${address.address}]`
+          : address.address
+      return `http://${hostname}:${address.port}${id === undefined ? '' : `/${id}`}`
+    },
   })
 }
 
 function createLeaseServer<instance extends Instance = Instance>(
   parameters: CreateLeaseServerParameters<instance>,
-): CreateServerReturnType {
+): CreateLeaseServerReturnType {
   const { host, pool, port } = parameters
   const leases = new Map<string, Pool.Lease<instance>>()
   const server = createServer_(async (request, response) => {
@@ -301,6 +367,80 @@ function createLeaseServer<instance extends Instance = Instance>(
       }
     },
   })
+}
+
+/**
+ * Waits until every URL answers `eth_chainId`, with `chainId` when set. Runs each `start` first.
+ * Rejects at `timeout`, at a failed start, or when an instance serves another chain.
+ */
+async function waitUntilReady(
+  urls: readonly string[],
+  options: { chainId: number | undefined; timeout: number },
+  starts: readonly (() => Promise<unknown>)[] = [],
+) {
+  const { chainId, timeout } = options
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeout)
+  try {
+    await Promise.all(
+      urls.map(async (url, index) => {
+        let last = 'no response'
+        const timedOut = () =>
+          new Error(
+            `Instance at ${url} did not answer \`eth_chainId\` within ${timeout}ms (last: ${last}).`,
+          )
+        const aborted = new Promise<never>((_, reject) => {
+          if (controller.signal.aborted) reject(timedOut())
+          controller.signal.addEventListener('abort', () => reject(timedOut()))
+        })
+        aborted.catch(() => {})
+        const start = starts[index]
+        if (start) await Promise.race([start(), aborted])
+        while (!controller.signal.aborted) {
+          const response = await fetch(url, {
+            body: JSON.stringify({
+              id: 1,
+              jsonrpc: '2.0',
+              method: 'eth_chainId',
+            }),
+            headers: { 'Content-Type': 'application/json' },
+            method: 'POST',
+            signal: AbortSignal.any([
+              controller.signal,
+              AbortSignal.timeout(5_000),
+            ]),
+          }).catch((error: Error) => {
+            last = error.message
+            return undefined
+          })
+          const body = response
+            ? await response
+                .text()
+                .then((text) => {
+                  last = `${response.status} ${text}`
+                  return JSON.parse(text) as { result?: string | undefined }
+                })
+                .catch(() => undefined)
+            : undefined
+          if (response?.ok && typeof body?.result === 'string') {
+            const id = Number(body.result)
+            if (chainId === undefined || id === chainId) return
+            throw new Error(
+              `Instance at ${url} serves chain ${id}, not chain ${chainId}.`,
+            )
+          }
+          await Promise.race([
+            new Promise((resolve) => setTimeout(resolve, 500)),
+            aborted,
+          ])
+        }
+        throw timedOut()
+      }),
+    )
+  } finally {
+    clearTimeout(timer)
+    controller.abort()
+  }
 }
 
 function httpProxyTarget(endpoint: Endpoint) {
