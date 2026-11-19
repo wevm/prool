@@ -1,6 +1,10 @@
+import * as fs from 'node:fs'
+import * as os from 'node:os'
+import * as path from 'node:path'
 import getPort from 'get-port'
-import { Instance } from 'prool/testcontainers'
-import { afterEach, describe, expect, test } from 'vitest'
+import { Instance, TempoId } from 'prool/testcontainers'
+import { GenericContainer, PullPolicy } from 'testcontainers'
+import { afterEach, beforeAll, describe, expect, test } from 'vitest'
 
 const instances: Instance.Instance[] = []
 const slowTestTimeout = 120_000
@@ -105,25 +109,28 @@ test('behavior: faucet funds address', { timeout: 120_000 }, async () => {
 
   expect(
     JSON.stringify(json).replaceAll(/0x[0-9a-f]{64}/g, '<hash>'),
-  ).toMatchInlineSnapshot(
-    `"{"jsonrpc":"2.0","id":0,"result":["<hash>","<hash>","<hash>","<hash>"]}"`,
-  )
+  ).toMatchInlineSnapshot(`"{"jsonrpc":"2.0","id":0,"result":["<hash>"]}"`)
 
-  // balanceOf(0x...beef) on the first faucet token.
-  let balance = 0n
-  for (let i = 0; i < 100; i++) {
-    const { result } = await rpc('eth_call', [
-      {
-        data: '0x70a08231000000000000000000000000000000000000000000000000000000000000beef',
-        to: '0x20c0000000000000000000000000000000000000',
-      },
-      'latest',
-    ])
-    balance = BigInt(result ?? 0)
-    if (balance > 0n) break
-    await new Promise((resolve) => setTimeout(resolve, 500))
+  // balanceOf(0x...beef) on the first faucet token and on OUSD.
+  for (const token of [
+    '0x20c0000000000000000000000000000000000000',
+    '0x20c0000000000000000000006a37da5c996874be',
+  ]) {
+    let balance = 0n
+    for (let i = 0; i < 100; i++) {
+      const { result } = await rpc('eth_call', [
+        {
+          data: '0x70a08231000000000000000000000000000000000000000000000000000000000000beef',
+          to: token,
+        },
+        'latest',
+      ])
+      balance = BigInt(result ?? 0)
+      if (balance > 0n) break
+      await new Promise((resolve) => setTimeout(resolve, 500))
+    }
+    expect(balance).toBeGreaterThan(0n)
   }
-  expect(balance).toBeGreaterThan(0n)
 })
 
 const zonePort = await getPort()
@@ -246,4 +253,127 @@ test('behavior: selects hardfork', { timeout: slowTestTimeout }, async () => {
   const { result, error } = await response.json()
   expect(error).toBeUndefined()
   expect(result.active).toBe('T10')
+})
+
+describe('tempoId', () => {
+  // Stands in for the private `id-dev` image: serves its health and code routes on `PORT`, and
+  // echoes its environment.
+  const image = 'prool-test/id-dev:local'
+  const server = `
+    const env = process.env
+    require('node:http').createServer((request, response) => {
+      const url = new URL(request.url, 'http://localhost')
+      if (url.pathname === '/__id-dev/health') return response.writeHead(204).end()
+      if (url.pathname === '/__id-dev/code')
+        return url.searchParams.get('email') === 'alice@example.org'
+          ? response.end(JSON.stringify({ code: '123456' }))
+          : response.writeHead(404).end()
+      if (url.pathname === '/env') return response.end(JSON.stringify(env))
+      response.writeHead(404).end()
+    }).listen(Number(env.PORT), '0.0.0.0')
+  `
+
+  beforeAll(async () => {
+    const context = fs.mkdtempSync(path.join(os.tmpdir(), 'prool-id-dev-'))
+    fs.writeFileSync(path.join(context, 'server.js'), server)
+    fs.writeFileSync(
+      path.join(context, 'Dockerfile'),
+      'FROM node:22-alpine\nCOPY server.js /server.js\nCMD ["node", "/server.js"]\n',
+    )
+    await GenericContainer.fromDockerfile(context).build(image, {
+      deleteOnExit: false,
+    })
+  }, slowTestTimeout)
+
+  test('serves on a fixed host port with apps and RPC URLs', async () => {
+    const port = await getPort()
+    const apps = [
+      {
+        clientId: 'prool-e2e',
+        name: 'Prool',
+        redirectUris: ['http://localhost:5173/callback'],
+      },
+    ]
+    const instance = Instance.tempoId({
+      apps,
+      environment: { PORT: '1', SECRET: 'secret' },
+      image,
+      port,
+      pullPolicy: PullPolicy.defaultPolicy(),
+      resources: [{ identifier: 'https://api.example.org', name: 'API' }],
+      rpcUrls: {
+        local: { chainId: 1337, url: 'http://127.0.0.1:9545/1' },
+        devnet: { chainId: 31318, url: 'https://rpc.example.org/' },
+      },
+    })
+    instances.push(instance)
+    await instance.start()
+
+    expect(instance.url).toBe(`http://localhost:${port}`)
+    const env = await fetch(`${instance.url}/env`).then((r) => r.json())
+    expect({
+      ID_DEV_APPS: JSON.parse(env.ID_DEV_APPS),
+      ID_DEV_RESOURCES: JSON.parse(env.ID_DEV_RESOURCES),
+      PORT: env.PORT,
+      RPC_URLS: env.RPC_URLS,
+      SECRET: env.SECRET,
+    }).toEqual({
+      ID_DEV_APPS: apps,
+      ID_DEV_RESOURCES: [
+        { identifier: 'https://api.example.org', name: 'API' },
+      ],
+      PORT: String(port),
+      RPC_URLS:
+        'local:1337=http://host.docker.internal:9545/1,devnet:31318=https://rpc.example.org',
+      SECRET: 'secret',
+    })
+    expect(
+      await TempoId.code({ email: 'alice@example.org', url: instance.url }),
+    ).toBe('123456')
+    expect(
+      await TempoId.code({ email: 'bob@example.org', url: instance.url }),
+    ).toBeUndefined()
+
+    await instance.stop()
+    await expect(fetch(instance.url)).rejects.toThrow()
+  })
+
+  test('serves on the port of create()', async () => {
+    const port = await getPort()
+    const instance = Instance.tempoId({
+      image,
+      pullPolicy: PullPolicy.defaultPolicy(),
+    }).create({ port })
+    instances.push(instance as Instance.Instance)
+    await instance.start()
+
+    expect(instance.url).toBe(`http://localhost:${port}`)
+    const env = await fetch(`${instance.url}/env`).then((r) => r.json())
+    expect(env.PORT).toBe(String(port))
+  })
+
+  test('checks an external instance without starting a container', async () => {
+    const port = await getPort()
+    const container = Instance.tempoId({
+      image,
+      port,
+      pullPolicy: PullPolicy.defaultPolicy(),
+    })
+    instances.push(container)
+    await container.start()
+
+    const external = Instance.tempoId({
+      image: 'prool-test/does-not-exist',
+      url: `http://127.0.0.1:${port}/ignored`,
+    })
+    await external.start()
+    expect(external.url).toBe(`http://127.0.0.1:${port}`)
+    await external.stop()
+
+    await container.stop()
+    const unhealthy = Instance.tempoId({ url: `http://127.0.0.1:${port}` })
+    await expect(unhealthy.start()).rejects.toThrowError(
+      `Tempo ID at http://127.0.0.1:${port} failed its health check. Start an \`id-dev\` instance there, or unset \`url\`.`,
+    )
+  })
 })

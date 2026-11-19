@@ -55,6 +55,7 @@ You can also create your own custom instances by using the [`Instance.define` fu
   - [`Pool.create`](#poolcreate)
   - [`Pool.define`](#pooldefine)
   - [Vitest](#vitest)
+  - [Playwright](#playwright)
 
 
 ## Install
@@ -209,6 +210,21 @@ const server = Server.create({ pool })
 await server.start()
 ```
 
+Pass `ready` to start instances in `start()` and wait until they answer `eth_chainId`, instead of
+starting each one on its first request. Pass `url` to use a running instance instead: `start()` then
+neither listens nor starts an instance, and only waits for that URL.
+
+```ts
+const server = Server.create({
+  instance: Instance.tempo(),
+  port: 9545,
+  ready: { chainId: 1337, ids: [1], timeout: 300_000 },
+  url: process.env.TEMPO_RPC_URL,
+})
+await server.start()
+server.url(1) // process.env.TEMPO_RPC_URL, or "http://127.0.0.1:9545/1"
+```
+
 #### API
 
 | Name       | Description                                              | Type                                    |
@@ -218,6 +234,8 @@ await server.start()
 | `pool`     | Exclusive lease pool.                                    | `LeasePool`                             |
 | `host`     | Host for the server.                                     | `string`                                |
 | `port`     | Port for the server.                                     | `number`                                |
+| `ready`    | Instance IDs to start and wait for in `start()`, an optional chain ID, and a timeout. | `{ ids?: number[], chainId?: number, timeout?: number }` |
+| `url`      | URL of a running instance to check instead of serving one. | `string`                              |
 | returns    | Server                                                   | `Server.Server`                         |
 
 ### `Instance.define`
@@ -477,6 +495,49 @@ import { inject } from 'vitest'
 
 export const { l1, l2 } = Pool.get(inject('chainUrls'))
 ```
+
+### Playwright
+
+`Setup.define` returns a Playwright global setup. It starts services (instances, servers, or anything
+with `start` and `stop`) in order, stops the started ones in reverse order if a later one fails, sets
+`env` on `process.env` for the workers, and returns the teardown. A factory runs once the services
+before it have started.
+
+```ts
+// e2e/setup.ts
+import { Server } from 'prool'
+import { Setup } from 'prool/playwright'
+import { Instance, TempoId } from 'prool/testcontainers'
+
+const chain = Server.create({
+  instance: Instance.tempo({ port: 9545 }),
+  port: 9545,
+  ready: { chainId: 1337 },
+  url: process.env.TEMPO_RPC_URL,
+})
+
+export default Setup.define({
+  instances: {
+    chain,
+    id: () =>
+      Instance.tempoId({
+        apps: [{ clientId: 'my-app-e2e', name: 'My App', redirectUris: ['http://localhost:5173/callback'] }],
+        rpcUrls: { local: { chainId: 1337, url: chain.url(1) } },
+        url: process.env.TEMPO_ID_URL,
+      }),
+  },
+  env: ({ chain, id }) => ({ TEMPO_RPC_URL: chain.url(1), TEMPO_ID_URL: id.url }),
+})
+
+// In a test: await TempoId.code({ email, url: process.env.TEMPO_ID_URL! })
+```
+
+`Instance.tempoId` runs the `ghcr.io/tempoxyz/id-dev` image (pulling it needs `docker login ghcr.io`
+with access) on a fixed host port, since Tempo ID bakes its origin into every token. `prool/testcontainers`
+also exports `Network.reachable(url)` (rewrites loopback URLs to `host.docker.internal`),
+`Network.hostGateway` (for `withExtraHosts`), and `Images.pulled()` (waits for an image pull that CI
+started earlier). Every container instance takes a `pullPolicy`, such as `PullPolicy.defaultPolicy()`
+to reuse a pre-pulled image.
 
 ## Authors
 

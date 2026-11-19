@@ -9,7 +9,8 @@
     "paths": {
       "prool": ["./src/index.ts"],
       "prool/testcontainers": ["./src/testcontainers/index.ts"],
-      "prool/vitest": ["./src/vitest/index.ts"]
+      "prool/vitest": ["./src/vitest/index.ts"],
+      "prool/playwright": ["./src/playwright/index.ts"]
     },
     "types": ["node", "vitest/globals"],
 
