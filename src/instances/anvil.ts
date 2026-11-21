@@ -14,7 +14,11 @@ import { execa } from '../processes/execa.js'
  * ```
  */
 export const anvil = Instance.define((parameters?: anvil.Parameters) => {
-  const { binary = 'anvil', ...args } = parameters || {}
+  const {
+    binary = 'anvil',
+    silent: _silent,
+    ...args
+  } = (parameters as anvil.Parameters & { silent?: boolean }) || {}
 
   const name = 'anvil'
   const process = execa({ name })
@@ -267,10 +271,6 @@ export declare namespace anvil {
      * @defaultValue 5
      */
     retries?: number | undefined
-    /**
-     * Don't print anything on startup and don't print logs.
-     */
-    silent?: boolean | undefined
     /**
      * Slots in an epoch.
      */
