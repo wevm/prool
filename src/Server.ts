@@ -424,7 +424,11 @@ async function waitUntilReady(
                 })
                 .catch(() => undefined)
             : undefined
-          if (response?.ok && typeof body?.result === 'string') {
+          if (
+            response?.ok &&
+            typeof body?.result === 'string' &&
+            /^0x[0-9a-f]+$/i.test(body.result)
+          ) {
             const id = Number(body.result)
             if (chainId === undefined || id === chainId) return
             throw new Error(
